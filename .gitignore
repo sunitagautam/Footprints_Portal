@@ -1,0 +1,19 @@
+# Maven
+target/
+*.class
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Mac
+.DS_Store
+
+# Screenshots — don't push test artifacts
+screenshots/
+result/
+
+# Logs
+*.log
