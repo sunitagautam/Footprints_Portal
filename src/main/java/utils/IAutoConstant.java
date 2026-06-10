@@ -23,6 +23,7 @@ public final class IAutoConstant {
     public static final String USERNAME = "Rakesh";
     public static final String PASSWORD = "Dev@123";
 
+
     // ═══════════════════════════════════════════════
     // EXCEL INPUT FILES
     // ═══════════════════════════════════════════════
@@ -30,6 +31,9 @@ public final class IAutoConstant {
             BASE_PATH + File.separator + "testData" +
                     File.separator + "input_Credential.xlsx";
 
+    public static final String USER_RIGHTS_EXCEL =
+            BASE_PATH + File.separator + "testData" +
+                    File.separator + "input_UserRights.xlsx";
     // ═══════════════════════════════════════════════
     // OUTPUT PATHS
     // ═══════════════════════════════════════════════

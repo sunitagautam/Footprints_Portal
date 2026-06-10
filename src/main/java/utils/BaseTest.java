@@ -2,12 +2,12 @@ package utils;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.io.FileUtils;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.ITestResult;
 import org.testng.Reporter;
 import org.testng.annotations.*;
@@ -15,14 +15,14 @@ import pages.Onboarding.LoginPage;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BaseTest {
 
-    protected WebDriver driver;
-
     protected static AtomicInteger passCount = new AtomicInteger(0);
     protected static AtomicInteger failCount = new AtomicInteger(0);
+    protected WebDriver driver;
 
     // ═══════════════════════════════════════════════
     // BEFORE SUITE — init folders
@@ -34,11 +34,12 @@ public class BaseTest {
     }
 
     // ═══════════════════════════════════════════════
-    // BEFORE CLASS — launch browser
+    // BEFORE CLASS — launch browser + login
     // ═══════════════════════════════════════════════
     @BeforeClass
     @Parameters("browser")
-    public void openBrowser(@Optional("chrome") String browser) {
+    public void openBrowser(@Optional("chrome") String browser)
+            throws InterruptedException {
         System.out.println("▶ Launching browser: " + browser);
 
         if (browser.equalsIgnoreCase("chrome")) {
@@ -60,11 +61,182 @@ public class BaseTest {
 
         driver.manage().window().maximize();
 
-        // ✅ Auto Login after browser launch
+        // ══════════════════════════════════════════
+        // STEP 1 — Login as Rakesh
+        // ══════════════════════════════════════════
         driver.get(IAutoConstant.LOGIN_URL);
         LoginPage loginPage = new LoginPage(driver);
         loginPage.loginWithDefaultCredentials();
-        System.out.println("✅ Logged in as: " + IAutoConstant.USERNAME);
+        System.out.println("✅ Logged in as: "
+                + IAutoConstant.USERNAME);
+        Thread.sleep(1500);
+
+        // ══════════════════════════════════════════
+        // STEP 2 — Acknowledge all policy notifications
+        // ✅ Uses Next button to go through all bells
+        // ══════════════════════════════════════════
+        acknowledgePolicyNotificationIfPresent();
+
+        // ══════════════════════════════════════════
+        // STEP 3 — Close notification dropdown
+        // ✅ Prevents menu click interception
+        // ══════════════════════════════════════════
+        closeNotificationDropdownIfOpen();
+    }
+
+    // ═══════════════════════════════════════════════
+    // ACKNOWLEDGE POLICY NOTIFICATION POPUP
+    //
+    // ✅ Flow:
+    //    Bell 1 → Acknowledge → OK alert
+    //           → Next button → Bell 2 loads
+    //    Bell 2 → Acknowledge → OK alert
+    //           → Next button → Bell 3 loads
+    //    ...
+    //    Last bell → Acknowledge → OK alert
+    //              → No Next button → done ✅
+    // ═══════════════════════════════════════════════
+    protected void acknowledgePolicyNotificationIfPresent()
+            throws InterruptedException {
+        try {
+            // ✅ Check if popup present (wait 5s)
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions
+                            .presenceOfElementLocated(
+                                    By.cssSelector(
+                                            ".step-indicator")));
+
+            System.out.println(
+                    "▶ Policy notification popup detected");
+
+            int acknowledged = 0;
+
+            for (int bell = 1; bell <= 10; bell++) {
+
+                // ✅ Safety — dismiss any lingering alert
+                dismissAlertIfPresent();
+
+                // ✅ Wait for Acknowledge button
+                WebElement ackBtn;
+                try {
+                    ackBtn = new WebDriverWait(driver,
+                            Duration.ofSeconds(5))
+                            .until(ExpectedConditions
+                                    .elementToBeClickable(
+                                            By.cssSelector(
+                                                    "button.notifyStatus" +
+                                                            "[data-notification-status" +
+                                                            "='Acknowledgement']")));
+                } catch (Exception e) {
+                    System.out.println(
+                            "✅ No more notifications to acknowledge");
+                    break;
+                }
+
+                // ✅ Click Acknowledge via JS
+                ((JavascriptExecutor) driver)
+                        .executeScript(
+                                "arguments[0].click();", ackBtn);
+                System.out.println(
+                        "▶ Acknowledge clicked — bell " + bell);
+                Thread.sleep(500);
+
+                // ✅ Accept browser alert
+                // "Are You Sure To Acknowledgement This Notification?"
+                try {
+                    new WebDriverWait(driver,
+                            Duration.ofSeconds(5))
+                            .until(ExpectedConditions
+                                    .alertIsPresent());
+                    driver.switchTo().alert().accept();
+                    acknowledged++;
+                    System.out.println(
+                            "✅ Bell " + bell
+                                    + " acknowledged permanently");
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    System.out.println(
+                            "⚠ Alert not found: "
+                                    + e.getMessage());
+                    break;
+                }
+
+                // ✅ Click Next button to go to next bell
+                // data-notification-status="Next"
+                try {
+                    WebElement nextBtn = new WebDriverWait(
+                            driver, Duration.ofSeconds(3))
+                            .until(ExpectedConditions
+                                    .elementToBeClickable(
+                                            By.cssSelector(
+                                                    "button.notifyStatus" +
+                                                            "[data-notification-status" +
+                                                            "='Next']")));
+
+                    ((JavascriptExecutor) driver)
+                            .executeScript(
+                                    "arguments[0].click();",
+                                    nextBtn);
+                    System.out.println(
+                            "▶ Next → loading bell "
+                                    + (bell + 1));
+                    Thread.sleep(1000);
+
+                } catch (Exception e) {
+                    // ✅ No Next button = last bell = all done
+                    System.out.println(
+                            "✅ Last bell done — no Next button");
+                    break;
+                }
+            }
+
+            System.out.println(
+                    "✅ Policy acknowledged: " + acknowledged
+                            + " notification(s) permanently");
+
+        } catch (Exception e) {
+            // ✅ No popup — continue normally
+            System.out.println(
+                    "▶ No policy notification — continuing");
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // CLOSE NOTIFICATION DROPDOWN
+    // ✅ Removes popdown panel blocking menu clicks
+    // ✅ class="popdown-mynotify-outter p-15 pt-5"
+    // ═══════════════════════════════════════════════
+    protected void closeNotificationDropdownIfOpen()
+            throws InterruptedException {
+        try {
+            ((JavascriptExecutor) driver).executeScript(
+                    "document.querySelectorAll(" +
+                            "'[class*=\"popdown-mynotify\"]')" +
+                            ".forEach(function(el){" +
+                            "  el.style.display='none';" +
+                            "});" +
+                            "document.body.click();"
+            );
+            Thread.sleep(500);
+            System.out.println(
+                    "✅ Notification dropdown closed");
+        } catch (Exception e) {
+            System.out.println(
+                    "▶ No notification dropdown");
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // DISMISS ALERT IF PRESENT — safety helper
+    // ═══════════════════════════════════════════════
+    protected void dismissAlertIfPresent() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(2))
+                    .until(ExpectedConditions.alertIsPresent());
+            driver.switchTo().alert().accept();
+            System.out.println("▶ Lingering alert dismissed");
+        } catch (Exception ignored) {
+        }
     }
 
     // ═══════════════════════════════════════════════
@@ -104,7 +276,8 @@ public class BaseTest {
             FileUtils.copyFile(src, new File(path));
             Reporter.log("📸 Screenshot: " + path, true);
         } catch (IOException e) {
-            System.out.println("❌ Screenshot failed: " + e.getMessage());
+            System.out.println("❌ Screenshot failed: "
+                    + e.getMessage());
         }
     }
 
@@ -125,11 +298,15 @@ public class BaseTest {
     @AfterSuite(alwaysRun = true)
     public void printReport() {
         Reporter.log("", true);
-        Reporter.log("══════════════ TEST SUMMARY ══════════════", true);
+        Reporter.log(
+                "══════════════ TEST SUMMARY ══════════════",
+                true);
         Reporter.log("✅ Passed : " + passCount.get(), true);
         Reporter.log("❌ Failed : " + failCount.get(), true);
         Reporter.log("   Total  : " +
                 (passCount.get() + failCount.get()), true);
-        Reporter.log("==========================================", true);
+        Reporter.log(
+                "==========================================",
+                true);
     }
 }

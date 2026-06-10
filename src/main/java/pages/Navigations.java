@@ -55,6 +55,18 @@ public class Navigations {
     @FindBy(xpath = "//a[contains(.,'Invoices')]")
     private WebElement invoicesLink;
 
+    // ✅ EXACT XPath from browser inspector
+    @FindBy(xpath = "//*[@id='navbar-second-toggle']" +
+            "//ul//li[7]//div//div[1]//div//div[2]" +
+            "//ul//li[1]//a[@href='onetime_charges']")
+    private WebElement oneTimeChargesLink;
+
+    // ═══════════════════════════════════════════════
+    // SETTINGS SUB-MENU ITEMS
+    // ═══════════════════════════════════════════════
+    @FindBy(xpath = "//a[contains(.,'User Rights')]")
+    private WebElement userRightsLink;
+
     // ═══════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════
@@ -66,29 +78,26 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
-    // CLOSE ANY OPEN MODAL
-    // ✅ Called before every navigation
-    // ✅ Prevents ElementClickInterceptedException
+    // CLOSE ANY OPEN MODAL + NOTIFICATION DROPDOWN
     // ═══════════════════════════════════════════════
     private void closeModalIfOpen() {
         try {
-            // ✅ Also remove modal-backdrop via JS
             ((JavascriptExecutor) driver).executeScript(
-                    "var backdrops = document.querySelectorAll(" +
-                            "'.modal-backdrop, .modal-backdrop.fade');" +
-                            "backdrops.forEach(function(el){ el.remove(); });" +
-                            // ✅ Also close any alert warnings
-                            "var alerts = document.querySelectorAll(" +
-                            "'.alert.alert-warning');" +
-                            "alerts.forEach(function(el){ el.remove(); });" +
-                            // ✅ Also hide any open modals
-                            "var modals = document.querySelectorAll('.modal');" +
-                            "modals.forEach(function(el){" +
+                    "document.querySelectorAll(" +
+                            "'.modal-backdrop,.modal-backdrop.fade')" +
+                            ".forEach(el => el.remove());" +
+                            "document.querySelectorAll(" +
+                            "'.alert.alert-warning')" +
+                            ".forEach(el => el.remove());" +
+                            "document.querySelectorAll('.modal')" +
+                            ".forEach(el => {" +
                             "  el.style.display='none';" +
                             "  el.classList.remove('in','show');" +
                             "});" +
-                            // ✅ Remove modal-open class from body
-                            "document.body.classList.remove('modal-open');"
+                            "document.body.classList.remove('modal-open');" +
+                            "document.querySelectorAll(" +
+                            "'[class*=\"popdown-mynotify\"]')" +
+                            ".forEach(el => el.style.display='none');"
             );
             Thread.sleep(500);
             System.out.println("✅ Cleaned up modals/alerts via JS");
@@ -99,12 +108,19 @@ public class Navigations {
 
     // ═══════════════════════════════════════════════
     // HELPER — Click main menu then sub-menu
-    // ✅ Closes modal + navigates
+    // ✅ Re-initialises PageFactory before each click
+    //    to handle StaleElementReferenceException
+    //    after user switch causes full page reload
     // ═══════════════════════════════════════════════
     private void clickMenu(WebElement menu, WebElement subItem,
                            String screenName)
             throws InterruptedException {
-        closeModalIfOpen();                          // ✅ Always close first
+        closeModalIfOpen();
+
+        // ✅ Re-init — fixes stale elements after
+        //    user switch causes full page reload
+        PageFactory.initElements(driver, this);
+
         wait.until(ExpectedConditions.elementToBeClickable(menu));
         menu.click();
         System.out.println("▶ Menu clicked");
@@ -139,5 +155,24 @@ public class Navigations {
     public void goToInvoices()
             throws InterruptedException {
         clickMenu(supportMenu, invoicesLink, "Invoices");
+    }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → ONETIME CHARGES
+    // ✅ Exact XPath from browser inspector
+    // ═══════════════════════════════════════════════
+    public void goToOneTimeCharges()
+            throws InterruptedException {
+        clickMenu(supportMenu, oneTimeChargesLink,
+                "OneTime Charges");
+    }
+
+    // ═══════════════════════════════════════════════
+    // SETTINGS → USER RIGHTS
+    // ═══════════════════════════════════════════════
+    public void goToUserRights()
+            throws InterruptedException {
+        clickMenu(settingsMenu, userRightsLink,
+                "User Rights");
     }
 }

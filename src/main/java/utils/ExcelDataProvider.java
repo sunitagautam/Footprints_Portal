@@ -13,6 +13,9 @@ public class ExcelDataProvider {
     // ExpectedResult, ExpectedErrorMsg, Remarks
     private static final int LOGIN_COL_COUNT = 7;
 
+    // ✅ ADD — UserRights — 3 columns:
+    // UserName, ScreenName, RightTitle
+    private static final int USER_RIGHTS_COL_COUNT = 3;
 
     // ═══════════════════════════════════════════════
     // DATA PROVIDER — Login Validations
@@ -21,9 +24,19 @@ public class ExcelDataProvider {
     public static Object[][] getLoginData() {
         String excelPath = IAutoConstant.INPUT_CREDENTIALS;
         String sheetName = IAutoConstant.SHEET_LOGIN;
-        return loadExcelData(excelPath, sheetName, LOGIN_COL_COUNT);
+        return loadExcelData(excelPath, sheetName,
+                LOGIN_COL_COUNT);
     }
 
+    // ✅ ADD — DATA PROVIDER — User Rights
+    // ═══════════════════════════════════════════════
+    @DataProvider(name = "userRightsData")
+    public static Object[][] getUserRightsData() {
+        String excelPath = IAutoConstant.USER_RIGHTS_EXCEL;
+        String sheetName = IAutoConstant.SHEET_USER_RIGHTS;
+        return loadExcelData(excelPath, sheetName,
+                USER_RIGHTS_COL_COUNT);
+    }
 
     // ═══════════════════════════════════════════════
     // SHARED HELPER — Reusable Excel loader
@@ -45,11 +58,13 @@ public class ExcelDataProvider {
         int rowCount = FWUtils.getRowCount(excelPath, sheetName);
         int colCount = FWUtils.getColCount(excelPath, sheetName);
 
-        System.out.println("══════════════════════════════════════════");
+        System.out.println(
+                "══════════════════════════════════════════");
         System.out.println("📊 Excel Sheet  : " + sheetName);
         System.out.println("📋 Data Rows    : " + rowCount);
         System.out.println("📋 Columns      : " + colCount);
-        System.out.println("══════════════════════════════════════════");
+        System.out.println(
+                "══════════════════════════════════════════");
 
         // ✅ Validate column count
         if (colCount != expectedColCount) {
@@ -62,17 +77,19 @@ public class ExcelDataProvider {
         }
 
         // ✅ Load rows — skip empty ones
-        java.util.List<Object[]> dataList = new java.util.ArrayList<>();
+        java.util.List<Object[]> dataList =
+                new java.util.ArrayList<>();
 
         for (int i = 1; i <= rowCount; i++) {
 
-            Object[] rowData   = new Object[colCount];
+            Object[] rowData = new Object[colCount];
             boolean isEmptyRow = true;
 
             for (int j = 0; j < colCount; j++) {
                 String cellValue = FWUtils.readXLData(
                         excelPath, sheetName, i, j);
-                rowData[j] = (cellValue == null) ? "" : cellValue.trim();
+                rowData[j] = (cellValue == null)
+                        ? "" : cellValue.trim();
                 if (!rowData[j].toString().isEmpty()) {
                     isEmptyRow = false;
                 }
@@ -80,17 +97,22 @@ public class ExcelDataProvider {
 
             // ✅ Skip completely empty rows
             if (isEmptyRow) {
-                System.out.println("⚠ Skipping empty row: " + i);
+                System.out.println(
+                        "⚠ Skipping empty row: " + i);
                 continue;
             }
 
             dataList.add(rowData);
-            System.out.println("✅ Row " + i + " loaded: " + rowData[0]);
+            System.out.println(
+                    "✅ Row " + i + " loaded: " + rowData[0]);
         }
 
-        System.out.println("══════════════════════════════════════════");
-        System.out.println("▶ Total valid rows: " + dataList.size());
-        System.out.println("══════════════════════════════════════════");
+        System.out.println(
+                "══════════════════════════════════════════");
+        System.out.println(
+                "▶ Total valid rows: " + dataList.size());
+        System.out.println(
+                "══════════════════════════════════════════");
 
         return dataList.toArray(new Object[0][]);
     }
