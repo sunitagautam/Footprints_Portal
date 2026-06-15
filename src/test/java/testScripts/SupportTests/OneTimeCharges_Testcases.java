@@ -1,10 +1,5 @@
 package testScripts.SupportTests;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.testng.Assert;
 import org.testng.Reporter;
 import org.testng.annotations.*;
@@ -13,8 +8,6 @@ import pages.Settings.UserRightsPage;
 import pages.Support.OneTimeChargesPage;
 import utils.BaseTest;
 import utils.IAutoConstant;
-
-import java.io.FileInputStream;
 
 public class OneTimeCharges_Testcases extends BaseTest {
 
@@ -49,31 +42,6 @@ public class OneTimeCharges_Testcases extends BaseTest {
         };
     }
 
-    private String getUserForScreen(String screenName) throws Exception {
-        FileInputStream fis = new FileInputStream(IAutoConstant.USER_RIGHTS_EXCEL);
-        Workbook wb = new XSSFWorkbook(fis);
-        Sheet sheet = wb.getSheet("UserRights");
-        String user = "";
-        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-            Row row = sheet.getRow(i);
-            if (row == null) continue;
-            Cell screenCell = row.getCell(1);
-            if (screenCell == null) continue;
-            String screen = screenCell.getStringCellValue().trim();
-            if (screen.equalsIgnoreCase(screenName)) {
-                Cell userCell = row.getCell(0);
-                if (userCell != null) {
-                    user = userCell.getStringCellValue().trim();
-                    break;
-                }
-            }
-        }
-        wb.close();
-        fis.close();
-        System.out.println("▶ User for [" + screenName + "]: " + user);
-        return user;
-    }
-
     // ═══════════════════════════════════════════════
     // BEFORE CLASS — login as Rakesh, switch to user
     // ═══════════════════════════════════════════════
@@ -99,6 +67,7 @@ public class OneTimeCharges_Testcases extends BaseTest {
     // ═══════════════════════════════════════════════
     @BeforeMethod(alwaysRun = true)
     public void navigateToPage() throws InterruptedException {
+        Thread.sleep(3000);
         navigations.goToOneTimeCharges();
         System.out.println("▶ Ready: OneTime Charges");
     }

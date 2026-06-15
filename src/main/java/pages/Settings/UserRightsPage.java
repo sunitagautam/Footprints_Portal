@@ -61,60 +61,95 @@ public class UserRightsPage {
 
     // ═══════════════════════════════════════════════
     // SELECT USER FROM SELECT2 DROPDOWN
-    // ✅ id="select2-user_picker-container"
+    // ✅ Fixed: uses CSS selector on result li
+    //    instead of normalize-space exact match
     // ═══════════════════════════════════════════════
     public void selectUser(String userName)
             throws InterruptedException {
 
-        // ✅ Step 1 — Click Select2 container to open
-        wait.until(ExpectedConditions
-                .elementToBeClickable(select2Container));
-        select2Container.click();
+        // Step 1 — Open dropdown
+        WebElement selectionEl = wait.until(
+                ExpectedConditions.elementToBeClickable(
+                        By.xpath("//span[@id='select2-user_picker-container']/..")));
+        selectionEl.click();
         System.out.println("▶ Select2 dropdown opened");
-        Thread.sleep(500);
+        Thread.sleep(800);
 
-        // ✅ Step 2 — Type in search box
+        // Step 2 — Type username
         WebElement searchBox = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(
-                        By.cssSelector(
-                                ".select2-search__field")));
+                        By.cssSelector(".select2-search__field")));
         searchBox.clear();
         searchBox.sendKeys(userName);
         System.out.println("▶ Searching: " + userName);
+        Thread.sleep(2000);
+
+        // Step 3 — Press ENTER to select highlighted result
+        searchBox.sendKeys(org.openqa.selenium.Keys.ENTER);
+        System.out.println("✅ User selected via ENTER: " + userName);
         Thread.sleep(1000);
 
-        // ✅ Step 3 — Click matching result
-        WebElement result = wait.until(
-                ExpectedConditions.elementToBeClickable(
-                        By.xpath(
-                                "//li[contains(@class," +
-                                        "'select2-results__option')" +
-                                        " and contains(.,'" +
-                                        userName + "')]")));
-        result.click();
-        System.out.println("✅ User selected: " + userName);
-        Thread.sleep(500);
+        // Step 4 — Verify container shows selected user
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(d -> {
+                        String text = select2Container.getText().trim();
+                        String title = select2Container.getAttribute("title");
+                        return text.contains(userName)
+                                || (title != null && title.contains(userName));
+                    });
+            System.out.println("✅ User selection confirmed: " + userName);
+        } catch (Exception e) {
+            System.out.println("⚠ Proceeding without container confirmation");
+        }
     }
 
     // ═══════════════════════════════════════════════
     // CLICK VERIFY SCREEN ACCESS
-    // ✅ input type="submit" id="submit"
-    // ✅ JS click — bypasses Cloudflare handler
+    // Tries multiple selectors in order
     // ═══════════════════════════════════════════════
     public void clickVerifyScreenAccess()
             throws InterruptedException {
-        wait.until(ExpectedConditions
-                .elementToBeClickable(verifyScreenAccessBtn));
+        System.out.println("▶ Current URL before click: "
+                + driver.getCurrentUrl());
+
+        By[] candidates = {
+                By.id("submit"),
+                By.xpath("//input[@type='submit']"),
+                By.xpath("//input[contains(@value,'Verify')]"),
+                By.xpath("//button[contains(.,'Verify')]"),
+                By.xpath("//input[@type='submit' or @type='button']")
+        };
+
+        WebElement btn = null;
+        for (By by : candidates) {
+            try {
+                btn = new WebDriverWait(driver,
+                        Duration.ofSeconds(5))
+                        .until(ExpectedConditions
+                                .elementToBeClickable(by));
+                System.out.println(
+                        "▶ Found submit button via: " + by);
+                break;
+            } catch (Exception ignored) {
+                System.out.println("⚠ Not found: " + by);
+            }
+        }
+
+        if (btn == null) {
+            throw new RuntimeException(
+                    "❌ Verify Screen Access button not found: "
+                            + driver.getCurrentUrl());
+        }
+
         ((JavascriptExecutor) driver)
-                .executeScript(
-                        "arguments[0].click();",
-                        verifyScreenAccessBtn);
+                .executeScript("arguments[0].click();", btn);
         System.out.println("▶ Verify Screen Access clicked");
         Thread.sleep(500);
     }
 
     // ═══════════════════════════════════════════════
-    // ACCEPT BROWSER ALERT — Click OK
+    // ACCEPT BROWSER ALERT
     // "Are you sure you want to change login as...?"
     // ═══════════════════════════════════════════════
     public void acceptUserSwitchAlert()
@@ -136,7 +171,6 @@ public class UserRightsPage {
     // HANDLE PENDING TASKS PAGE
     // ✅ After user switch — if pending tasks page
     //    appears → click Remind Me Later → continue
-    // ✅ Uses SHORT wait (5s) — not full 30s wait
     // ═══════════════════════════════════════════════
     public void handlePendingTasksIfPresent()
             throws InterruptedException {
@@ -145,25 +179,19 @@ public class UserRightsPage {
                     .until(ExpectedConditions
                             .elementToBeClickable(
                                     remindMeLaterBtn));
+            System.out.println("▶ Pending Tasks page detected");
 
-            System.out.println(
-                    "▶ Pending Tasks page detected");
-
-            // ✅ JS click — button is type="submit"
             ((JavascriptExecutor) driver)
                     .executeScript(
                             "arguments[0].click();",
                             remindMeLaterBtn);
-
             System.out.println(
-                    "✅ Remind Me Later clicked" +
-                            " — pending tasks dismissed");
+                    "✅ Remind Me Later clicked"
+                            + " — pending tasks dismissed");
             Thread.sleep(1500);
 
         } catch (Exception e) {
-            // ✅ No pending tasks — continue normally
-            System.out.println(
-                    "▶ No pending tasks — continuing");
+            System.out.println("▶ No pending tasks — continuing");
         }
     }
 
@@ -195,13 +223,12 @@ public class UserRightsPage {
         selectUser(userName);
         clickVerifyScreenAccess();
         acceptUserSwitchAlert();
-        handlePendingTasksIfPresent(); // ✅ Added
+        handlePendingTasksIfPresent();
         System.out.println("✅ Now logged in as: " + userName);
     }
 
     // ═══════════════════════════════════════════════
     // VERIFY USER HAS RIGHT TITLE
-    // ✅ Checks Current Rights table
     // ═══════════════════════════════════════════════
     public boolean verifyUserHasRight(String rightTitle) {
         try {

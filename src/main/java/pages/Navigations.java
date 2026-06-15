@@ -122,7 +122,8 @@ public class Navigations {
         PageFactory.initElements(driver, this);
 
         wait.until(ExpectedConditions.elementToBeClickable(menu));
-        menu.click();
+        ((org.openqa.selenium.JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", menu);
         System.out.println("▶ Menu clicked");
         Thread.sleep(500);
         wait.until(ExpectedConditions.elementToBeClickable(subItem));

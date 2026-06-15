@@ -13,7 +13,14 @@ import org.testng.Reporter;
 import org.testng.annotations.*;
 import pages.Onboarding.LoginPage;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -279,6 +286,36 @@ public class BaseTest {
             System.out.println("❌ Screenshot failed: "
                     + e.getMessage());
         }
+    }
+
+    // ═══════════════════════════════════════════════
+    // SHARED HELPER — look up user for a screen
+    //                 from input_UserRights.xlsx
+    // ═══════════════════════════════════════════════
+    protected String getUserForScreen(String screenName) throws Exception {
+        FileInputStream fis = new FileInputStream(
+                IAutoConstant.USER_RIGHTS_EXCEL);
+        Workbook wb = new XSSFWorkbook(fis);
+        Sheet sheet = wb.getSheet("UserRights");
+        String user = "";
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+            Cell screenCell = row.getCell(1);
+            if (screenCell == null) continue;
+            if (screenCell.getStringCellValue().trim()
+                    .equalsIgnoreCase(screenName)) {
+                Cell userCell = row.getCell(0);
+                if (userCell != null) {
+                    user = userCell.getStringCellValue().trim();
+                    break;
+                }
+            }
+        }
+        wb.close();
+        fis.close();
+        System.out.println("▶ User for [" + screenName + "]: " + user);
+        return user;
     }
 
     // ═══════════════════════════════════════════════

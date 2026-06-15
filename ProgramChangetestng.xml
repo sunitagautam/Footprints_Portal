@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Footprint Automation Suite"
+       configfailurepolicy="continue">
+
+    <parameter name="browser" value="chrome"/>
+    <test verbose="2" preserve-order="true"
+          name="Program Change Tests">
+        <classes>
+            <class name="testScripts.SupportTests.ServiceRequest_ProgramChangeTest">
+                <methods>
+                    <include name="sc001_tc001_parentWindowDays1To5"/>
+                    <include name="sc001_tc002_parentBlockedAfterDay5"/>
+                    <include name="sc001_tc003_parentCannotBackdate"/>
+                    <include name="sc002_tc001_supportWindowDays1To5WithBackdate"/>
+                    <include name="sc002_tc002_supportBlockedAfterDay5"/>
+                    <include name="sc003_tc001_exceptionUserDays1To10"/>
+                    <include name="sc003_tc003_afterDay10OnlyNextMonth1st"/>
+                    <include name="sc004_tc001_upgradeHalfToFullDay"/>
+                    <include name="sc004_tc002_upgradeEffective1stNoProration"/>
+                    <include name="sc005_tc001_downgradeFullToExtendedPreschool"/>
+                    <include name="sc005_tc002_downgradeEffective1st"/>
+                    <include name="sc007_tc001_timeSlotOnlyChange"/>
+                    <include name="sc009_tc001_pausedChildCannotSubmit"/>
+                    <include name="sc009_tc002_inactiveChildCannotSubmit"/>
+                    <include name="sc012_tc001_sameProgramRejected"/>
+                    <include name="sc012_tc002_newProgramNotSelected"/>
+                    <include name="sc012_tc003_cancelOnConfirmationPopup"/>
+                    <include name="sc012_tc004_noInvoiceChildProgramUpdated"/>
+                    <include name="sc012_tc006_parentUINoBackdateOrExceptionWindow"/>
+                    <include name="sc013_tc003_corporateTieupProratedInvoice"/>
+                    <include name="sc013_tc004_corporateTieupCreditSourceGuardNotApplicable"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>
