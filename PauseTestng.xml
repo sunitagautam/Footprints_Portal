@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Footprint Automation Suite"
+       configfailurepolicy="continue">
+
+    <parameter name="browser" value="chrome"/>
+    <test verbose="2" preserve-order="true"
+          name="Child Pause Tests">
+        <classes>
+            <class name="testScripts.SupportTests.ServiceRequest_PauseTest">
+                <methods>
+                    <include name="sc001_tc001_valid30DaySameMonthPause"/>
+                    <include name="sc001_tc002_valid31DayFullMonthMay"/>
+                    <include name="sc001_tc003_invalid31DayNotFromFirst"/>
+                    <include name="sc001_tc004_twoMonth30DayPause"/>
+                    <include name="sc001_tc005_under30DayTreatedAsLeave"/>
+                    <include name="sc001_tc006_exactly29DayLeave"/>
+                    <include name="sc001_tc007_60DayRuleBlocked"/>
+                    <include name="sc008_tc001_endDateBeforeStart"/>
+                    <include name="sc008_tc002_oneDayPauseAsLeave"/>
+                    <include name="sc008_tc003_cancelOnConfirmationPopup"/>
+                    <include name="sc008_tc004_reasonBlankValidation"/>
+                    <include name="sc009_tc001_exceptionUIFieldsVisible"/>
+                    <include name="sc009_tc004_ticketIdMandatoryWhenExceptionChecked"/>
+                    <include name="sc010_tc001_exception90DayPauseAllowed"/>
+                    <include name="sc010_tc002_exception91DayBlocked"/>
+                    <include name="sc010_tc003_exception90DayBoundary"/>
+                    <include name="sc010_tc004_exception31DayAccepted"/>
+                    <include name="sc014_tc001_exceptionCheckedTicketIdBlank"/>
+                    <include name="sc014_tc002_noExceptionFlag45DaysBlocked"/>
+                    <include name="sc014_tc003_exceptionInvalidDateRange"/>
+                    <include name="sc014_tc005_cancelOnExceptionPopup"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

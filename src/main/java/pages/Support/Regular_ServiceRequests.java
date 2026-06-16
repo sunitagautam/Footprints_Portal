@@ -681,6 +681,29 @@ public class Regular_ServiceRequests {
         }
     }
 
+    public String selectFirstAvailableProgram() throws InterruptedException {
+        wait.until(ExpectedConditions.visibilityOf(pc_newProgram_dropdown));
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].scrollIntoView({block:'center'});", pc_newProgram_dropdown);
+        Thread.sleep(300);
+        Select sel = new Select(pc_newProgram_dropdown);
+        String selected = "";
+        for (WebElement opt : sel.getOptions()) {
+            String txt = opt.getText().trim();
+            if (!txt.isEmpty() && !txt.equals("--Select--")) {
+                selected = txt;
+                break;
+            }
+        }
+        if (!selected.isEmpty()) {
+            selectPCNewProgram(selected);
+            System.out.println("✅ First available program: " + selected);
+        } else {
+            System.out.println("⚠ No non-placeholder program option found");
+        }
+        return selected;
+    }
+
     public void submitProgramChange() throws InterruptedException {
         wait.until(ExpectedConditions.elementToBeClickable(pc_btn_submit));
         ((JavascriptExecutor) driver)
@@ -1381,8 +1404,9 @@ public class Regular_ServiceRequests {
      * Navigate calendar to next month via the > arrow button.
      */
     public void calendarNextMonth() throws InterruptedException {
-        driver.findElement(By.cssSelector(
-                ".picker__nav--next:not(.picker__nav--disabled)")).click();
+        org.openqa.selenium.WebElement nextArrow = driver.findElement(By.cssSelector(
+                ".picker__nav--next:not(.picker__nav--disabled)"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", nextArrow);
         Thread.sleep(500);
         System.out.println("▶ Calendar: navigated to next month");
     }

@@ -52,6 +52,9 @@ public class Navigations {
     @FindBy(xpath = "//a[contains(.,'Account Statement')]")
     private WebElement accountStatementLink;
 
+    @FindBy(xpath = "//a[contains(.,'Recent Customer')]")
+    private WebElement recentCustomerRequestsLink;
+
     @FindBy(xpath = "//a[contains(.,'Invoices')]")
     private WebElement invoicesLink;
 
@@ -148,6 +151,16 @@ public class Navigations {
             throws InterruptedException {
         clickMenu(supportMenu, accountStatementLink,
                 "Account Statement");
+    }
+
+    // ═══════════════════════════════════════════════
+    // CHILDREN → RECENT CUSTOMER REQUESTS
+    // Sub-tab is under Children menu, not Support
+    // ═══════════════════════════════════════════════
+    public void goToRecentCustomerRequests()
+            throws InterruptedException {
+        clickMenu(childrenMenu, recentCustomerRequestsLink,
+                "Recent Customer Requests");
     }
 
     // ═══════════════════════════════════════════════

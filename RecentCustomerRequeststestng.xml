@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Footprint Automation Suite"
+       configfailurepolicy="continue">
+
+    <parameter name="browser" value="chrome"/>
+    <test verbose="2" preserve-order="true"
+          name="Recent Customer Requests Tests">
+        <classes>
+            <class name="testScripts.SupportTests.RecentCustomerRequests_Testcases">
+                <methods>
+                    <include name="tc001_pageLoadsSuccessfully"/>
+                    <include name="tc002_defaultSearchReturnsResults"/>
+                    <include name="tc003_searchByAdmissionId"/>
+                    <include name="tc004_dateRangeFilter"/>
+                    <include name="tc005_filterByStatusApproved"/>
+                    <include name="tc006_combinedAdmissionIdAndDateFilter"/>
+                    <include name="tc007_verifyTableHeaders"/>
+                    <include name="tc008_downloadButtonVisible"/>
+                    <include name="tc009_tableSearchFiltersRows"/>
+                    <include name="tc010_horizontalScroll"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>
