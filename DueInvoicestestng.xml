@@ -6,45 +6,34 @@
     <parameter name="browser" value="chrome"/>
 
     <!--
-    ═══════════════════════════════════════════════════════════════
-     DATA CAPTURE — extract hidden JSONs and save to JMeter CSV
-     testData/jmeter_payment_data.csv
-     Run these to build the JMeter dataset WITHOUT processing
-     any real payments.
-    ═══════════════════════════════════════════════════════════════
+    ══════════════════════════════════════════════════════════════
+     TC_001  extractUpiPaymentJson      Extract UPI JSON + POST API + mark Paid
+     TC_002  completeCardPaymentFlow    Full ICICI gateway browser payment
+     TC_003  captureUpiJsonForJmeter    Extract UPI JSON → save JMeter CSV only
+     TC_004  captureCcdcJsonForJmeter   Extract CC/DC JSON → save JMeter CSV only
+     TC_005  extractCcdcJsonAndPostApi  Extract CC/DC JSON + POST API + mark Paid
+    ══════════════════════════════════════════════════════════════
     -->
 
-    <!-- TC_003 — Capture UPI JSON only → jmeter_payment_data.csv -->
-    <test name="Capture UPI JSON for JMeter">
+    <!-- ════ RUN ALL — TC_001 through TC_005 in order ════ -->
+    <test name="Due Invoices - All Tests">
         <classes>
             <class name="testScripts.SupportTests.DueInvoices_Testcases">
                 <methods>
+                    <include name="extractUpiPaymentJson"/>
+                    <include name="completeCardPaymentFlow"/>
                     <include name="captureUpiJsonForJmeter"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC_004 — Capture CC/DC JSON only → jmeter_payment_data.csv -->
-    <test name="Capture Card JSON for JMeter">
-        <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
-                <methods>
                     <include name="captureCcdcJsonForJmeter"/>
+                    <include name="extractCcdcJsonAndPostApi"/>
                 </methods>
             </class>
         </classes>
     </test>
 
-    <!--
-    ═══════════════════════════════════════════════════════════════
-     FULL PAYMENT PROCESSING — calls APIs and marks child as Paid
-     Run these to actually process invoices in the test environment.
-    ═══════════════════════════════════════════════════════════════
-    -->
+    <!-- ════ INDIVIDUAL RUNS ════ -->
 
-    <!-- TC_001 — Process UPI payment + save both JSONs to JMeter CSV -->
-    <test name="Process UPI Payment">
+    <!-- TC_001 -->
+    <test name="TC_001 - Process UPI Payment">
         <classes>
             <class name="testScripts.SupportTests.DueInvoices_Testcases">
                 <methods>
@@ -54,23 +43,46 @@
         </classes>
     </test>
 
-    <!-- TC_005 — Extract CC/DC JSON → POST to Eventlistener/iciciPaymentEvents -->
-    <test name="Process Card JSON via API">
+    <!-- TC_002 -->
+    <test name="TC_002 - Process Card Payment via Gateway">
         <classes>
             <class name="testScripts.SupportTests.DueInvoices_Testcases">
                 <methods>
-                    <include name="extractCcdcJsonAndPostApi"/>
+                    <include name="completeCardPaymentFlow"/>
                 </methods>
             </class>
         </classes>
     </test>
 
-    <!-- TC_002 — Process Credit / Debit Card payment via ICICI gateway (browser) -->
-    <test name="Process Card Payment via Gateway">
+    <!-- TC_003 -->
+    <test name="TC_003 - Capture UPI JSON for JMeter">
         <classes>
             <class name="testScripts.SupportTests.DueInvoices_Testcases">
                 <methods>
-                    <include name="completeCardPaymentFlow"/>
+                    <include name="captureUpiJsonForJmeter"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <!-- TC_004 -->
+    <test name="TC_004 - Capture Card JSON for JMeter">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="captureCcdcJsonForJmeter"/>
+                </methods>
+            </class>
+
+        </classes>
+    </test>
+
+    <!-- TC_005 -->
+    <test name="TC_005 - Process Card JSON via API">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="extractCcdcJsonAndPostApi"/>
                 </methods>
             </class>
         </classes>
