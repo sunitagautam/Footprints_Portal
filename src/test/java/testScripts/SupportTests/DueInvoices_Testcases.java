@@ -269,6 +269,76 @@ public class DueInvoices_Testcases extends BaseTest {
     }
 
     // ═══════════════════════════════════════════════
+    // TC_005 — Extract CC/DC JSON → POST to payment API
+    //
+    // Mirror of TC_001 but for the card hidden JSON:
+    //   id="payment_json_icici_ccdc"
+    // Posts directly to {{Base_URL}}Eventlistener/iciciPaymentEvents
+    // — no ICICI gateway browser flow required.
+    // Child is marked Paid in CSV after a successful API response.
+    // ═══════════════════════════════════════════════
+    @Test(priority = 5,
+            dataProvider = "childIds",
+            description = "SC_DI_TC_005 — Extract CC/DC JSON and POST to payment event API")
+    public void extractCcdcJsonAndPostApi(String childId)
+            throws InterruptedException {
+
+        Reporter.log("══════════════════════════════════════", true);
+        Reporter.log("▶ SC_DI_TC_005 — CC/DC JSON via API | Child: " + childId, true);
+
+        // Step 1 — Generate Account Statement for child
+        accountStatementPage.generateAccountStatement(childId);
+        Thread.sleep(1000);
+        Reporter.log("✅ Step 1 — Account Statement generated", true);
+
+        // Step 2 — Click Customer Portal (opens billing tab)
+        Set<String> tabsBefore = driver.getWindowHandles();
+        accountStatementPage.clickCustomerPortal();
+        portalPage.waitAndSwitchToNewTab(tabsBefore);
+        Reporter.log("✅ Step 2 — Customer Portal (billing) opened", true);
+
+        // Step 3 — Check for due invoices
+        if (!portalPage.isPayDueInvoiceBtnPresent()) {
+            Reporter.log("⚠ Child " + childId + " — No due invoices, skipping", true);
+            portalPage.closeAllExtraTabsAndReturn(mainWindowHandle);
+            return;
+        }
+
+        // Step 4 — Click Pay Due Invoice (opens payment tab)
+        Set<String> tabsBefore2 = driver.getWindowHandles();
+        portalPage.clickPayDueInvoice();
+        portalPage.waitAndSwitchToNewTab(tabsBefore2);
+        Reporter.log("✅ Step 4 — Payment page opened", true);
+
+        // Step 5 — Extract CC/DC hidden payment JSON
+        String ccdcJson = portalPage.extractCcdcPaymentJson();
+        Assert.assertFalse(ccdcJson.isEmpty(),
+                "❌ CC/DC JSON empty for child: " + childId);
+        Reporter.log("✅ Step 5 — CC/DC JSON extracted", true);
+
+        // Step 6 — POST to Eventlistener/iciciPaymentEvents
+        Response apiResponse = APIs.postPaymentEvent(ccdcJson);
+        Assert.assertTrue(
+                apiResponse.getStatusCode() >= 200
+                        && apiResponse.getStatusCode() < 300,
+                "❌ CC/DC POST failed — HTTP " + apiResponse.getStatusCode()
+                        + " | " + apiResponse.getBody().asString());
+        Reporter.log("✅ Step 6 — CC/DC POST: HTTP "
+                + apiResponse.getStatusCode(), true);
+
+        // Step 7 — Mark child as Paid in CSV
+        markChildAsPaid(childId);
+        Reporter.log("✅ Step 7 — CSV updated: Child " + childId + " → Paid", true);
+
+        Reporter.log("✅ Child       : " + childId, true);
+        Reporter.log("✅ CC/DC JSON  : " + ccdcJson, true);
+        Reporter.log("✅ API Status  : " + apiResponse.getStatusCode(), true);
+        Reporter.log("✅ API Response: " + apiResponse.getBody().asString(), true);
+        Reporter.log("══════════════════════════════════════", true);
+        System.out.println("✅ SC_DI_TC_005 PASSED — Child: " + childId);
+    }
+
+    // ═══════════════════════════════════════════════
     // TC_002 — Complete Credit / Debit Card payment
     //
     // NOTE: This test submits a real test-env payment.
@@ -560,7 +630,8 @@ public class DueInvoices_Testcases extends BaseTest {
             try (FileWriter fw = new FileWriter(csvFile, true)) {
                 if (writeHeader) {
                     fw.write("txnid,txn_id,payment_mode,amount,convenience_charge,"
-                            + "firstname,email,phone,productinfo,udf1,udf2,udf3"
+                            + "firstname,email,phone,productinfo,udf1,udf2,udf3,"
+                            + "json_payload"
                             + System.lineSeparator());
                     System.out.println("✅ JMeter CSV created: "
                             + csvFile.getAbsolutePath());
@@ -578,7 +649,8 @@ public class DueInvoices_Testcases extends BaseTest {
                     csv(json.optString("productinfo"))   + "," +
                     json.optString("udf1")               + "," +
                     json.opt("udf2")                     + "," +
-                    json.optString("udf3")
+                    json.optString("udf3")               + "," +
+                    csv(validJson)                        // full JSON for API-only runs
                     + System.lineSeparator()
                 );
 

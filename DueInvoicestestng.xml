@@ -54,8 +54,19 @@
         </classes>
     </test>
 
-    <!-- TC_002 — Process Credit / Debit Card payment via ICICI gateway -->
-    <test name="Process Card Payment">
+    <!-- TC_005 — Extract CC/DC JSON → POST to Eventlistener/iciciPaymentEvents -->
+    <test name="Process Card JSON via API">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="extractCcdcJsonAndPostApi"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <!-- TC_002 — Process Credit / Debit Card payment via ICICI gateway (browser) -->
+    <test name="Process Card Payment via Gateway">
         <classes>
             <class name="testScripts.SupportTests.DueInvoices_Testcases">
                 <methods>
