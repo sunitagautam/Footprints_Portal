@@ -183,6 +183,92 @@ public class DueInvoices_Testcases extends BaseTest {
     }
 
     // ═══════════════════════════════════════════════
+    // TC_003 — Capture UPI JSON → JMeter CSV
+    // Data-capture only: extracts id="payment_json_icici_upi"
+    // and appends one row to jmeter_payment_data.csv.
+    // Does NOT call any payment API or mark child as Paid.
+    // Use this to build the JMeter dataset without
+    // processing real payments.
+    // ═══════════════════════════════════════════════
+    @Test(priority = 3,
+            dataProvider = "childIds",
+            description = "SC_DI_TC_003 — Capture UPI JSON and save to JMeter CSV")
+    public void captureUpiJsonForJmeter(String childId)
+            throws InterruptedException {
+
+        Reporter.log("══════════════════════════════════════", true);
+        Reporter.log("▶ SC_DI_TC_003 — UPI JSON Capture | Child: " + childId, true);
+
+        accountStatementPage.generateAccountStatement(childId);
+        Thread.sleep(1000);
+
+        Set<String> t1 = driver.getWindowHandles();
+        accountStatementPage.clickCustomerPortal();
+        portalPage.waitAndSwitchToNewTab(t1);
+
+        if (!portalPage.isPayDueInvoiceBtnPresent()) {
+            Reporter.log("⚠ Child " + childId + " — No due invoices, skipping", true);
+            portalPage.closeAllExtraTabsAndReturn(mainWindowHandle);
+            return;
+        }
+
+        Set<String> t2 = driver.getWindowHandles();
+        portalPage.clickPayDueInvoice();
+        portalPage.waitAndSwitchToNewTab(t2);
+
+        String upiJson = portalPage.extractUpiPaymentJson();
+        Assert.assertFalse(upiJson.isEmpty(),
+                "❌ UPI JSON empty for child: " + childId);
+
+        saveToJmeterCsv(childId, "UPI", upiJson);
+        Reporter.log("✅ UPI JSON saved to JMeter CSV — child: " + childId, true);
+        Reporter.log("══════════════════════════════════════", true);
+        System.out.println("✅ SC_DI_TC_003 PASSED — Child: " + childId);
+    }
+
+    // ═══════════════════════════════════════════════
+    // TC_004 — Capture CC/DC JSON → JMeter CSV
+    // Data-capture only: extracts id="payment_json_icici_ccdc"
+    // and appends one row to jmeter_payment_data.csv.
+    // Does NOT call any payment API or mark child as Paid.
+    // ═══════════════════════════════════════════════
+    @Test(priority = 4,
+            dataProvider = "childIds",
+            description = "SC_DI_TC_004 — Capture CC/DC JSON and save to JMeter CSV")
+    public void captureCcdcJsonForJmeter(String childId)
+            throws InterruptedException {
+
+        Reporter.log("══════════════════════════════════════", true);
+        Reporter.log("▶ SC_DI_TC_004 — CC/DC JSON Capture | Child: " + childId, true);
+
+        accountStatementPage.generateAccountStatement(childId);
+        Thread.sleep(1000);
+
+        Set<String> t1 = driver.getWindowHandles();
+        accountStatementPage.clickCustomerPortal();
+        portalPage.waitAndSwitchToNewTab(t1);
+
+        if (!portalPage.isPayDueInvoiceBtnPresent()) {
+            Reporter.log("⚠ Child " + childId + " — No due invoices, skipping", true);
+            portalPage.closeAllExtraTabsAndReturn(mainWindowHandle);
+            return;
+        }
+
+        Set<String> t2 = driver.getWindowHandles();
+        portalPage.clickPayDueInvoice();
+        portalPage.waitAndSwitchToNewTab(t2);
+
+        String ccdcJson = portalPage.extractCcdcPaymentJson();
+        Assert.assertFalse(ccdcJson.isEmpty(),
+                "❌ CC/DC JSON empty for child: " + childId);
+
+        saveToJmeterCsv(childId, "CARD", ccdcJson);
+        Reporter.log("✅ CC/DC JSON saved to JMeter CSV — child: " + childId, true);
+        Reporter.log("══════════════════════════════════════", true);
+        System.out.println("✅ SC_DI_TC_004 PASSED — Child: " + childId);
+    }
+
+    // ═══════════════════════════════════════════════
     // TC_002 — Complete Credit / Debit Card payment
     //
     // NOTE: This test submits a real test-env payment.

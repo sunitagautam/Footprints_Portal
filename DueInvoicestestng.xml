@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="Due Invoices Payment Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <!--
+    ═══════════════════════════════════════════════════════════════
+     DATA CAPTURE — extract hidden JSONs and save to JMeter CSV
+     testData/jmeter_payment_data.csv
+     Run these to build the JMeter dataset WITHOUT processing
+     any real payments.
+    ═══════════════════════════════════════════════════════════════
+    -->
+
+    <!-- TC_003 — Capture UPI JSON only → jmeter_payment_data.csv -->
+    <test name="Capture UPI JSON for JMeter">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="captureUpiJsonForJmeter"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <!-- TC_004 — Capture CC/DC JSON only → jmeter_payment_data.csv -->
+    <test name="Capture Card JSON for JMeter">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="captureCcdcJsonForJmeter"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <!--
+    ═══════════════════════════════════════════════════════════════
+     FULL PAYMENT PROCESSING — calls APIs and marks child as Paid
+     Run these to actually process invoices in the test environment.
+    ═══════════════════════════════════════════════════════════════
+    -->
+
+    <!-- TC_001 — Process UPI payment + save both JSONs to JMeter CSV -->
+    <test name="Process UPI Payment">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="extractUpiPaymentJson"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <!-- TC_002 — Process Credit / Debit Card payment via ICICI gateway -->
+    <test name="Process Card Payment">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="completeCardPaymentFlow"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>
