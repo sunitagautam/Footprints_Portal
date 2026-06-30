@@ -16,6 +16,9 @@ public final class IAutoConstant {
     public static final String LOGIN_URL =
             "https://test-franchise.footprintseducation.in/login";
 
+    public static final String SMS_VIEW_URL =
+            "https://test-franchise.footprintseducation.in/sms_view";
+
 
     // ═══════════════════════════════════════════════
     // LOGIN CREDENTIALS
@@ -52,11 +55,24 @@ public final class IAutoConstant {
     public static final String SHEET_USER_RIGHTS = "UserRights";
     // ═══════════════════════════════════════════════
 
+    // CSV FILES : Due Invoices — Invoice Report
+    // ═══════════════════════════════════════════════
+    public static final String INVOICE_REPORT_CSV =
+            BASE_PATH + File.separator + "testData" +
+                    File.separator + "Invoices_Due.csv";
+
     // CSV FILES : OnlinePayment Received page
-// ═══════════════════════════════════════════════
+    // ═══════════════════════════════════════════════
     public static final String PAYMENT_NOT_RECEIVED_CSV =
             BASE_PATH + File.separator + "testData" +
                     File.separator + "payment_not_received.csv";
+
+    // CSV FILES : JMeter load-test payload data
+    // Columns: child_id, payment_mode, txn_id, amount, firstname, json_payload
+    // ═══════════════════════════════════════════════
+    public static final String JMETER_PAYMENTS_CSV =
+            BASE_PATH + File.separator + "testData" +
+                    File.separator + "jmeter_payment_data.csv";
     // ═══════════════════════════════════════════════
     // TIMEOUTS (seconds)
     // ═══════════════════════════════════════════════

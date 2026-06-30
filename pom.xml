@@ -96,6 +96,15 @@
             <version>5.4.0</version>
         </dependency>
 
+        <!-- ══════════════════════════════════════════ -->
+        <!-- org.json — JSON parsing for JMeter CSV     -->
+        <!-- ══════════════════════════════════════════ -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20240303</version>
+        </dependency>
+
     </dependencies>
 
     <!-- Build Plugins -->

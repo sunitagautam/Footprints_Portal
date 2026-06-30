@@ -211,6 +211,38 @@ public class CustomerPortal_PayDueInvoices {
     }
 
     // ═══════════════════════════════════════════════
+    // CC/DC HIDDEN JSON — id="payment_json_icici_ccdc"
+    // Extracts the CC/DC payment JSON hidden input,
+    // present on the same payment page as the UPI one.
+    // ═══════════════════════════════════════════════
+
+    public String extractCcdcPaymentJson() throws InterruptedException {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions.presenceOfElementLocated(
+                            By.id("payment_json_icici_ccdc")));
+            Thread.sleep(500);
+
+            String json = (String) ((JavascriptExecutor) driver)
+                    .executeScript(
+                            "return document.getElementById(" +
+                                    "'payment_json_icici_ccdc').value;");
+
+            if (json != null && !json.isEmpty()) {
+                System.out.println("✅ CC/DC JSON extracted (length="
+                        + json.length() + ")");
+            } else {
+                System.out.println("⚠ CC/DC JSON value is empty");
+            }
+            return json != null ? json : "";
+        } catch (Exception e) {
+            System.out.println("❌ CC/DC JSON extraction failed: "
+                    + e.getMessage());
+            return "";
+        }
+    }
+
+    // ═══════════════════════════════════════════════
     // CREDIT / DEBIT CARD FLOW
     // ═══════════════════════════════════════════════
 

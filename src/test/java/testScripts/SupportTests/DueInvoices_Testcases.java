@@ -154,6 +154,12 @@ public class DueInvoices_Testcases extends BaseTest {
                 "❌ UPI JSON empty for child: " + childId);
         Reporter.log("✅ Step 5 — UPI JSON extracted", true);
 
+        // Step 5b — Extract CC/DC hidden payment JSON and save both to JMeter CSV
+        String ccdcJson = portalPage.extractCcdcPaymentJson();
+        saveToJmeterCsv(childId, "UPI",  upiJson);
+        saveToJmeterCsv(childId, "CARD", ccdcJson);
+        Reporter.log("✅ Step 5b — Both JSONs saved to JMeter CSV", true);
+
         // Step 6 — POST UPI payment event to backend
         Response upiResponse = APIs.postUpiPaymentEvent(upiJson);
         Assert.assertTrue(
@@ -324,7 +330,21 @@ public class DueInvoices_Testcases extends BaseTest {
             "visibility:visible !important;opacity:1 !important;" +
             "height:30px !important;width:80px !important;';", yearEl);
         Thread.sleep(300);
-        new Select(yearEl).selectByValue(ICICI_EXPIRY_YYYY);
+        // Year options load asynchronously after month selection — wait until populated
+        wait.until(d -> new Select(d.findElement(By.id("year"))).getOptions().size() > 1);
+        Select yearSelect = new Select(yearEl);
+        System.out.println("▶ Year dropdown options: " +
+            yearSelect.getOptions().stream()
+                .map(o -> "'" + o.getAttribute("value") + "'")
+                .collect(java.util.stream.Collectors.joining(", ")));
+        // Gateway may use 4-digit ("2029") or 2-digit ("29") option values
+        try {
+            yearSelect.selectByValue(ICICI_EXPIRY_YYYY);
+        } catch (Exception e) {
+            String twoDigit = ICICI_EXPIRY_YYYY.substring(2);
+            System.out.println("⚠ Value '" + ICICI_EXPIRY_YYYY + "' not found, trying '" + twoDigit + "'");
+            yearSelect.selectByValue(twoDigit);
+        }
         ((JavascriptExecutor) driver).executeScript(
             "var el=arguments[0];" +
             "el.dispatchEvent(new Event('change',{bubbles:true}));" +
@@ -418,6 +438,82 @@ public class DueInvoices_Testcases extends BaseTest {
                 processResp.getStatusCode() >= 200 && processResp.getStatusCode() < 300,
                 "❌ checkAndProcessData failed — HTTP " + processResp.getStatusCode()
                         + " | " + processResp.getBody().asString());
+    }
+
+    // ═══════════════════════════════════════════════
+    // HELPER — Save payment JSON row to JMeter CSV
+    //
+    // Output file : testData/jmeter_payment_data.csv
+    // Columns     : txnid, txn_id, payment_mode, amount,
+    //               convenience_charge, firstname, email,
+    //               phone, productinfo, udf1, udf2, udf3
+    //
+    // Each field becomes a JMeter variable (${txnid},
+    // ${amount}, etc.) for use in HTTP Request bodies.
+    // File is created with headers on first write and
+    // appended to on subsequent runs.
+    // ═══════════════════════════════════════════════
+    private void saveToJmeterCsv(String childId,
+                                 String paymentMode,
+                                 String rawJson) {
+        if (rawJson == null || rawJson.isEmpty()) {
+            System.out.println("⚠ saveToJmeterCsv — empty JSON for child "
+                    + childId + " / " + paymentMode + ", skipping");
+            return;
+        }
+
+        // Convert single→double quotes to get valid JSON
+        String validJson = APIs.convertSingleQuotesToDouble(rawJson);
+
+        try {
+            org.json.JSONObject json = new org.json.JSONObject(validJson);
+
+            File csvFile = new File(IAutoConstant.JMETER_PAYMENTS_CSV);
+            boolean writeHeader = !csvFile.exists() || csvFile.length() == 0;
+
+            try (FileWriter fw = new FileWriter(csvFile, true)) {
+                if (writeHeader) {
+                    fw.write("txnid,txn_id,payment_mode,amount,convenience_charge,"
+                            + "firstname,email,phone,productinfo,udf1,udf2,udf3"
+                            + System.lineSeparator());
+                    System.out.println("✅ JMeter CSV created: "
+                            + csvFile.getAbsolutePath());
+                }
+
+                fw.write(
+                    json.optString("txnid")              + "," +
+                    json.optString("txn_id")             + "," +
+                    json.optString("payment_mode")       + "," +
+                    json.optString("amount")             + "," +
+                    json.optString("convenience_charge") + "," +
+                    csv(json.optString("firstname"))     + "," +
+                    json.optString("email")              + "," +
+                    json.optString("phone")              + "," +
+                    csv(json.optString("productinfo"))   + "," +
+                    json.optString("udf1")               + "," +
+                    json.opt("udf2")                     + "," +
+                    json.optString("udf3")
+                    + System.lineSeparator()
+                );
+
+                System.out.println("✅ JMeter CSV row saved — child=" + childId
+                        + " mode=" + json.optString("payment_mode")
+                        + " txn=" + json.optString("txn_id")
+                        + " amount=" + json.optString("amount"));
+            }
+        } catch (Exception e) {
+            System.out.println("⚠ saveToJmeterCsv — error for child "
+                    + childId + ": " + e.getMessage());
+        }
+    }
+
+    // Wraps a CSV field in double-quotes if it contains a comma or quote.
+    private String csv(String value) {
+        if (value == null) return "";
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     // ═══════════════════════════════════════════════
