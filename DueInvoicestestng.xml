@@ -9,21 +9,20 @@
     ══════════════════════════════════════════════════════════════
      TC_001  extractUpiPaymentJson      Extract UPI JSON + POST API + mark Paid
      TC_002  completeCardPaymentFlow    Full ICICI gateway browser payment
-     TC_003  captureUpiJsonForJmeter    Extract UPI JSON → save JMeter CSV only
-     TC_004  captureCcdcJsonForJmeter   Extract CC/DC JSON → save JMeter CSV only
      TC_005  extractCcdcJsonAndPostApi  Extract CC/DC JSON + POST API + mark Paid
+
+     TC_003 / TC_004 (JSON capture for JMeter) moved to:
+     DueInvoices_CaptureJSONtestng.xml
     ══════════════════════════════════════════════════════════════
     -->
 
-    <!-- ════ RUN ALL — TC_001 through TC_005 in order ════ -->
+    <!-- ════ RUN ALL — TC_001, TC_002, TC_005 in order ════ -->
     <test name="Due Invoices - All Tests">
         <classes>
             <class name="testScripts.SupportTests.DueInvoices_Testcases">
                 <methods>
                     <include name="extractUpiPaymentJson"/>
                     <include name="completeCardPaymentFlow"/>
-                    <include name="captureUpiJsonForJmeter"/>
-                    <include name="captureCcdcJsonForJmeter"/>
                     <include name="extractCcdcJsonAndPostApi"/>
                 </methods>
             </class>
@@ -51,29 +50,6 @@
                     <include name="completeCardPaymentFlow"/>
                 </methods>
             </class>
-        </classes>
-    </test>
-
-    <!-- TC_003 -->
-    <test name="TC_003 - Capture UPI JSON for JMeter">
-        <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
-                <methods>
-                    <include name="captureUpiJsonForJmeter"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC_004 -->
-    <test name="TC_004 - Capture Card JSON for JMeter">
-        <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
-                <methods>
-                    <include name="captureCcdcJsonForJmeter"/>
-                </methods>
-            </class>
-
         </classes>
     </test>
 
