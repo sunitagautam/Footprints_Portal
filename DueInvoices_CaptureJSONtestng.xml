@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="Due Invoices - Capture JSON for JMeter" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <!-- TC_003 — Extract UPI JSON → save to testData/jmeter_payment_data.csv -->
+    <test name="TC_003 - Capture UPI JSON for JMeter">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="captureUpiJsonForJmeter"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <!-- TC_004 — Extract CC/DC JSON → save to testData/jmeter_payment_data.csv -->
+    <test name="TC_004 - Capture Card JSON for JMeter">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+                <methods>
+                    <include name="captureCcdcJsonForJmeter"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>
