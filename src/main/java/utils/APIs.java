@@ -29,6 +29,18 @@ public class APIs {
             "middleware/checkAndProcessData";
 
     // ═══════════════════════════════════════════════
+    // CENTER SHIFT CRON ENDPOINTS
+    // ═══════════════════════════════════════════════
+    private static final String CS_PENDING_TO_PROCESSING =
+            "Financialprocess/getAllPendingRequests/";
+
+    private static final String CS_PROCESSING_TO_APPROVED =
+            "servicerequest/cronProcessCenterShiftRequests";
+
+    private static final String CS_ATTRITION_PROCESS =
+            "parentapp/processChildApprovedRequest";
+
+    // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
     //
     // URL  : {{Base_URL}}Eventlistener/iciciPaymentEvents
@@ -133,6 +145,93 @@ public class APIs {
                 .response();
 
         System.out.println("✅ Check & Process — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // CENTER SHIFT — Pending → Processing
+    //
+    // URL : {{Base_URL}}Financialprocess/getAllPendingRequests/
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373
+    // Use : Move center shift from Pending to Processing status
+    // Note: "chid_id" (not child_id) — matches API spec exactly
+    // ═══════════════════════════════════════════════
+    public static Response getCenterShiftPendingToProcessing(String childId) {
+        String endpoint = CS_PENDING_TO_PROCESSING
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&chid_id=" + childId
+                + "&ckey=B47C56483AAE7373";
+        System.out.println("▶ Center Shift: Pending → Processing");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Pending→Processing — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // CENTER SHIFT — Processing → Approved
+    //
+    // URL : {{Base_URL}}servicerequest/cronProcessCenterShiftRequests
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&child_id=<child_id>&ckey=B43C083098B7
+    // Use : Approve center shift, creates new child + attrition row
+    //       Response JSON: { status:"ok", old_child_id:..., new_child_id:... }
+    // Note: Cron only processes requests where Joining Date is within ±5 days of today
+    // ═══════════════════════════════════════════════
+    public static Response getCenterShiftProcessingToApproved(String childId) {
+        String endpoint = CS_PROCESSING_TO_APPROVED
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&child_id=" + childId
+                + "&ckey=B43C083098B7";
+        System.out.println("▶ Center Shift: Processing → Approved");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Processing→Approved — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // CENTER SHIFT — Old Child Attrition Processing
+    //
+    // URL : {{Base_URL}}parentapp/processChildApprovedRequest
+    //       ?child_id=<old_child_id>&ckey=9414D96600C5
+    // Use : Change old child status from Active to Attrition
+    //       Use old_child_id returned from getCenterShiftProcessingToApproved()
+    // ═══════════════════════════════════════════════
+    public static Response processOldChildAttrition(String oldChildId) {
+        String endpoint = CS_ATTRITION_PROCESS
+                + "?child_id=" + oldChildId
+                + "&ckey=9414D96600C5";
+        System.out.println("▶ Center Shift: Old Child Attrition Processing");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Attrition Processing — Status: " + response.getStatusCode());
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }
