@@ -1,114 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 
-<suite name="Center Shift Service Request Suite" verbose="1">
+<suite name="Center Shift - Critical Tests" verbose="1">
 
     <parameter name="browser" value="chrome"/>
 
     <!--
-    ══════════════════════════════════════════════════════════════════════
-     Center Shift — based on TC_ServiceRequest_CenterShift_Final.xlsx
-     Sheet: TC_CenterShift
+        11 Center Shift tests — run in priority order (1 → 11)
 
-     TC001 — SC003_TC_001 : Submit Center Shift form (UI → Pending status)
-     TC002 — SC003_TC_002 : Pending → Processing via cron API GET
-     TC003 — SC003_TC_003 : Processing → Approved via cron API GET
-                            (creates new child + attrition row)
-     TC004 — SC003_TC_004 : Old child attrition processing via API GET
-     TC005 — SC006_TC_001 : Cancel Pending center shift (UI)
+        PRE-CONDITIONS (set constants in ServiceRequest_CenterShiftTest.java):
+          CS_CHILD_ID        — Active Regular child; no pending CS; no unpaid invoice;
+                               last approved CS >= 60 days ago (or first CS ever)
+          CS_NEW_CENTER      — Valid "Shift To" center for CS_CHILD_ID (Sector 122, Noida)
+          CS_CORPORATE_NO    — Corporate tie-up child with flag=NO  (blocked)
+          CS_COOLDOWN_CHILD  — Child whose last approved CS was < 60 days ago  (TODO)
+          CS_UNPAID_CHILD    — Child with at least one unpaid invoice  (TODO)
+          CS_CANCEL_CHILD    — Child for cancel/cleanup test
+          CS_CORPORATE_YES   — Corporate tie-up child with flag=YES (optional, TODO)
 
-     USER: Jaydeep Kar (Account Statement rights — from input_UserRights.xlsx)
-
-     TIMING NOTE for TC003:
-       Cron only processes where Joining Date is within ±5 days of today.
-       TC001 sets Joining Date = first day of next month. Run TC002–TC003
-       when today is within 5 days of that joining date.
-
-     UPDATE BEFORE RUNNING:
-       CenterShift_ServiceRequestTestcases.java → CS_CHILD_ID, CS_NEW_CENTER
-    ══════════════════════════════════════════════════════════════════════
+        FLOW:
+          tc001 → submit CS → Pending
+          tc002 → try duplicate → blocked
+          tc003 → Cron: Pending → Processing  (RestAssured)
+          tc004 → Cron: Processing → Approved  (RestAssured, Joining Date must be within ±5 days)
+          tc005 → Cron: Old child Attrition    (RestAssured)
+          tc006 → Corporate flag=NO child → blocked
+          tc007 → Joining Date today+1 → server rejects
+          tc008 → 60-day cooldown → blocked  (skips if TODO)
+          tc009 → Unpaid invoice → blocked    (skips if TODO)
+          tc010 → Cancel pending CS (cleanup)
+          tc011 → Corporate flag=YES → CS accessible (optional, skips if TODO)
     -->
 
-    <!-- ════ RUN ALL — TC001 through TC005 in order ════ -->
-    <test name="Center Shift - All Tests">
+    <test name="Center Shift - All Critical Tests">
         <classes>
             <class name="testScripts.SupportTests.ServiceRequest_CenterShiftTest">
                 <methods>
                     <include name="tc001_submitCenterShift"/>
-                    <include name="tc002_pendingToProcessing"/>
-                    <include name="tc003_processingToApproved"/>
-                    <include name="tc004_oldChildAttritionProcessing"/>
-                    <include name="tc005_cancelPendingCenterShift"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- ════ INDIVIDUAL RUNS ════ -->
-
-    <!-- TC001 — Submit Center Shift form (UI) -->
-    <test name="TC001 - Submit Center Shift">
-        <classes>
-            <class name="testScripts.SupportTests.ServiceRequest_CenterShiftTest">
-                <methods>
-                    <include name="tc001_submitCenterShift"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC002 — Pending → Processing API -->
-    <test name="TC002 - Pending to Processing API">
-        <classes>
-            <class name="testScripts.SupportTests.ServiceRequest_CenterShiftTest">
-                <methods>
-                    <include name="tc002_pendingToProcessing"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC003 — Processing → Approved API -->
-    <test name="TC003 - Processing to Approved API">
-        <classes>
-            <class name="testScripts.SupportTests.ServiceRequest_CenterShiftTest">
-                <methods>
-                    <include name="tc003_processingToApproved"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC004 — Old Child Attrition API -->
-    <test name="TC004 - Old Child Attrition API">
-        <classes>
-            <class name="testScripts.SupportTests.ServiceRequest_CenterShiftTest">
-                <methods>
-                    <include name="tc004_oldChildAttritionProcessing"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC005 — Cancel Pending Center Shift (UI) -->
-    <test name="TC005 - Cancel Pending Center Shift">
-        <classes>
-            <class name="testScripts.SupportTests.ServiceRequest_CenterShiftTest">
-                <methods>
-                    <include name="tc005_cancelPendingCenterShift"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- ════ API-ONLY RUN (TC002 + TC003 + TC004) ════ -->
-    <test name="Center Shift - API Transitions Only">
-        <classes>
-            <class name="testScripts.SupportTests.ServiceRequest_CenterShiftTest">
-                <methods>
-                    <include name="tc002_pendingToProcessing"/>
-                    <include name="tc003_processingToApproved"/>
-                    <include name="tc004_oldChildAttritionProcessing"/>
+                    <include name="tc002_duplicateBlocked"/>
+                    <include name="tc003_pendingToProcessing"/>
+                    <include name="tc004_processingToApproved"/>
+                    <include name="tc005_oldChildAttrition"/>
+                    <include name="tc006_corporateBlocked"/>
+                    <include name="tc007_minDateBlocked"/>
+                    <include name="tc008_cooldownBlocked"/>
+                    <include name="tc009_unpaidInvoiceBlocked"/>
+                    <include name="tc010_cancelPending"/>
+                    <include name="tc011_corporateYesAllowed"/>
                 </methods>
             </class>
         </classes>
