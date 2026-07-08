@@ -71,13 +71,13 @@ public class AccountStatementPage {
     @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[2]//span[text()='Child Plan']")
     private WebElement childPlanLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[3]//span[text()='Center Plan']")
+    @FindBy(xpath = "//a[.//span[normalize-space()='Center Plan']]")
     private WebElement centerPlanLink;
 
     @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[4]//span[text()='Diary Notes']")
     private WebElement diaryNotesLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[5]//span[text()='Child History']")
+    @FindBy(xpath = "//a[.//span[normalize-space()='Child History']]")
     private WebElement childHistoryLink;
 
     @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[6]//span[text()='Child Info']")
@@ -86,7 +86,7 @@ public class AccountStatementPage {
     @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[7]//span[text()='Service Request']")
     private WebElement serviceRequestLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[8]//span[text()='Customer Portal']")
+    @FindBy(xpath = "//a[.//span[normalize-space()='Customer Portal']]")
     private WebElement customerPortalLink;
 
     @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[9]//span[text()='Customer Requests']")
@@ -273,7 +273,8 @@ public class AccountStatementPage {
         List<WebElement> options = sel.getOptions();
         for (WebElement opt : options) {
             String text = opt.getText().trim();
-            if (!text.isEmpty()) {
+            // Skip blank placeholders like "--Select--", "-- Select --"
+            if (!text.isEmpty() && !text.startsWith("-")) {
                 sel.selectByVisibleText(text);
                 System.out.println("✅ " + label + ": " + text);
                 break;
@@ -520,6 +521,28 @@ public class AccountStatementPage {
     }
 
     // ═══════════════════════════════════════════════
+    // CENTER PLAN — HALF DAY FEE (SHORT TERM / V2)
+    // Confirmed DOM (Center Fee Plan popup table):
+    // <tr><td>Half Day</td><td class="amt">V1 amount</td><td class="amt">V2 amount</td></tr>
+    // Columns are positional: td[1]=Program label, td[2]=Long Term Fee (V1),
+    // td[3]=Short Term Fee (V2) — this is the value used for the Extended
+    // Daycare per-day pricing formula.
+    // ═══════════════════════════════════════════════
+    public double getHalfDayFeeV2FromCenterPlan() {
+        try {
+            WebElement cell = driver.findElement(By.xpath(
+                    "//tr[td[1][normalize-space(.)='Half Day']]/td[3]"));
+            String cleaned = cell.getText().replace("₹", "").replace(",", "").trim();
+            double amount = Double.parseDouble(cleaned);
+            System.out.println("✅ Half Day fee V2 (Center Plan): " + amount);
+            return amount;
+        } catch (Exception e) {
+            System.out.println("⚠ getHalfDayFeeV2FromCenterPlan: " + e.getMessage());
+        }
+        return -1;
+    }
+
+    // ═══════════════════════════════════════════════
     // DIARY NOTES MODAL  — id="note_text", "add_notes_button"
     // ═══════════════════════════════════════════════
     public void clickDiaryNotes() throws InterruptedException {
@@ -760,6 +783,96 @@ public class AccountStatementPage {
         } catch (Exception e) {
             System.out.println("⚠ Close tab: " + e.getMessage());
         }
+    }
+
+    // ═══════════════════════════════════════════════
+    // MONTHLY SUBSCRIPTION — PLAN AMOUNT
+    // Half-day/full-day plan fee varies by center, so tests must read the
+    // actual displayed amount rather than assume a fixed value.
+    // Confirmed DOM: <div class="col-md-12"><b>Plan Amount :</b>
+    //   <i class="fa fa-inr"></i> 12999.00 (Monthly)</div>
+    // The Monthly Subscription box renders before the Yearly Subscription
+    // box, so the first matching div is the monthly one.
+    // ═══════════════════════════════════════════════
+    public double getMonthlyPlanAmount() {
+        try {
+            List<WebElement> planAmountDivs = driver.findElements(By.xpath(
+                    "//div[contains(@class,'col-md-12')][b[contains(normalize-space(.),'Plan Amount')]]"));
+            if (!planAmountDivs.isEmpty()) {
+                String text = planAmountDivs.get(0).getText();
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("([\\d,]+(?:\\.\\d+)?)").matcher(text);
+                if (m.find()) {
+                    double amount = Double.parseDouble(m.group(1).replace(",", ""));
+                    System.out.println("✅ Monthly Plan Amount: " + amount);
+                    return amount;
+                }
+            }
+            System.out.println("⚠ getMonthlyPlanAmount: 'Plan Amount' div not found — falling back to text scan");
+
+            // Fallback: scan visible page text between the subscription headers
+            String bodyText = driver.findElement(By.tagName("body")).getText();
+            int start = bodyText.indexOf("Monthly Subscription");
+            if (start == -1) return -1;
+            int end = bodyText.indexOf("Yearly Subscription", start);
+            String section = end > start ? bodyText.substring(start, end) : bodyText.substring(start);
+
+            java.util.regex.Matcher m2 = java.util.regex.Pattern.compile(
+                    "Plan Amount\\s*:?\\s*[₹Rs.]*\\s*([\\d,]+(?:\\.\\d+)?)").matcher(section);
+            if (m2.find()) {
+                double amount = Double.parseDouble(m2.group(1).replace(",", ""));
+                System.out.println("✅ Monthly Plan Amount (fallback): " + amount);
+                return amount;
+            }
+            System.out.println("⚠ getMonthlyPlanAmount: 'Plan Amount' not found in Monthly Subscription section");
+        } catch (Exception e) {
+            System.out.println("⚠ getMonthlyPlanAmount: " + e.getMessage());
+        }
+        return -1;
+    }
+
+    // ═══════════════════════════════════════════════
+    // EXTENDED DAYCARE — INVOICE LINE ITEMS
+    // Rendered as sibling .row divs, always visible under the invoice
+    // (no expand click needed): Daycare Fee, Preschool Fee, SGST, CGST,
+    // Roundoff. Each row: .col-md-3 = label, .col-md-7 = booking comment,
+    // .col-md-2 = amount (fa-inr icon glyph has no text content).
+    // ═══════════════════════════════════════════════
+    public boolean isExtendedDaycareInvoiceVisible() {
+        try {
+            return !driver.findElements(By.xpath(
+                    "//div[contains(@class,'row')]"
+                            + "[.//div[contains(@class,'col-md-3')][normalize-space(.)='Daycare Fee']]"
+                            + "//div[contains(@class,'col-md-7')][contains(normalize-space(.),'Extended Daycare Charges')]"))
+                    .isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public java.util.Map<String, Double> getExtendedDaycareInvoiceLineItems() {
+        java.util.Map<String, Double> items = new java.util.LinkedHashMap<>();
+        try {
+            WebElement daycareFeeRow = driver.findElement(By.xpath(
+                    "//div[contains(@class,'row')]"
+                            + "[.//div[contains(@class,'col-md-3')][normalize-space(.)='Daycare Fee']]"));
+            WebElement container = daycareFeeRow.findElement(By.xpath(".."));
+            List<WebElement> rows = container.findElements(By.xpath("./div[contains(@class,'row')]"));
+            for (WebElement row : rows) {
+                String label = row.findElement(By.cssSelector(".col-md-3")).getText().trim();
+                String amtText = row.findElement(By.cssSelector(".col-md-2")).getText()
+                        .replace(",", "").replace("₹", "").trim();
+                items.put(label, Double.parseDouble(amtText));
+            }
+            System.out.println("✅ Extended Daycare invoice line items: " + items);
+        } catch (Exception e) {
+            System.out.println("⚠ getExtendedDaycareInvoiceLineItems: " + e.getMessage());
+        }
+        return items;
+    }
+
+    public double getExtendedDaycareInvoiceTotal() {
+        return getExtendedDaycareInvoiceLineItems().values().stream()
+                .mapToDouble(Double::doubleValue).sum();
     }
 
     // ═══════════════════════════════════════════════

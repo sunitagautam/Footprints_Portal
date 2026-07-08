@@ -5,6 +5,30 @@ import io.restassured.response.Response;
 
 import static io.restassured.RestAssured.given;
 
+/**
+ * Index of API methods implemented in this class (grouped by feature):
+ * <p>
+ * PAYMENT EVENTS
+ * postPaymentEvent(json)                          — POST Eventlistener/iciciPaymentEvents (unified UPI/Card)
+ * postUpiPaymentEvent(upiJson)                     — POST Eventlistener/iciciPaymentEvents (UPI/NetBanking)
+ * postCardPaymentEvent(dataPost)                   — POST create/icici_payment (Credit/Debit Card)
+ * getCheckAndProcessData()                         — GET middleware/checkAndProcessData
+ * <p>
+ * CENTER SHIFT
+ * getCenterShiftPendingToProcessing(childId)       — GET Financialprocess/getAllPendingRequests/ (Pending → Processing)
+ * getCenterShiftProcessingToApproved(childId)      — GET servicerequest/cronProcessCenterShiftRequests (Processing → Approved)
+ * processOldChildAttrition(oldChildId)             — GET parentapp/processChildApprovedRequest (old child → Attrition)
+ * <p>
+ * EXTENDED DAYCARE
+ * getExtendedDaycarePendingToApproved(childId)     — GET Financialprocess/getAllPendingRequests/ (Pending → Approved)
+ *                                                     NOTE: not actually scoped by chid_id — approves whatever
+ *                                                     Extended Daycare request is currently pending system-wide.
+ * runExtendedDaycareCronJob()                      — GET parentapp/extendedDaycareCronJob (End Date → Completed)
+ * <p>
+ * HELPERS
+ * convertSingleQuotesToDouble(json)                — {'k':'v'} → {"k":"v"}
+ * decodeHtmlEntities(raw)                          — &quot;/&amp;/&#39;/&lt;/&gt; → literal chars
+ */
 public class APIs {
 
     // ═══════════════════════════════════════════════
@@ -39,6 +63,17 @@ public class APIs {
 
     private static final String CS_ATTRITION_PROCESS =
             "parentapp/processChildApprovedRequest";
+
+    // ═══════════════════════════════════════════════
+    // EXTENDED DAYCARE ENDPOINTS
+    // ═══════════════════════════════════════════════
+    // Same physical endpoint as CS_PENDING_TO_PROCESSING — Extended Daycare
+    // goes Pending → Approved directly on this call (no Processing step).
+    private static final String ED_APPROVE_REQUEST =
+            "Financialprocess/getAllPendingRequests/";
+
+    private static final String ED_CRON_JOB =
+            "parentapp/extendedDaycareCronJob";
 
     // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
@@ -232,6 +267,66 @@ public class APIs {
                 .response();
 
         System.out.println("✅ Attrition Processing — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // EXTENDED DAYCARE — Pending → Approved
+    //
+    // URL : {{Base_URL}}Financialprocess/getAllPendingRequests/
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&child_id=<child_id>&ckey=B47C56483AAE7373
+    // Use : Same physical endpoint as Center Shift's Pending→Processing call.
+    //       For Extended Daycare it moves the request directly to Approved
+    //       (no Processing status in between).
+    // Note: uses "child_id" (unlike Center Shift's "chid_id" on the same path) —
+    //       confirmed the correct param; "chid_id" was silently ignored, causing
+    //       the endpoint to process whatever was pending system-wide instead of
+    //       the intended child.
+    // ═══════════════════════════════════════════════
+    public static Response getExtendedDaycarePendingToApproved(String childId) {
+        String endpoint = ED_APPROVE_REQUEST
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&child_id=" + childId
+                + "&ckey=B47C56483AAE7373";
+        System.out.println("▶ Extended Daycare: Pending → Approved");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Pending→Approved — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // EXTENDED DAYCARE — Cron Job (End Date → Completed)
+    //
+    // URL : {{Base_URL}}parentapp/extendedDaycareCronJob?ckey=7A533862C14E
+    // Use : Run on/after End Date to mark the request Completed.
+    //       Response JSON: { status:"ok", message:"...Completed...", ... }
+    //       Running before End Date must NOT complete the request.
+    // ═══════════════════════════════════════════════
+    public static Response runExtendedDaycareCronJob() {
+        String endpoint = ED_CRON_JOB + "?ckey=7A533862C14E";
+        System.out.println("▶ Extended Daycare: Cron Job");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Cron Job — Status: " + response.getStatusCode());
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }

@@ -73,3 +73,126 @@ src/test/java/
 **JS workarounds** — Several form fields are `readonly` or blocked by overlays. The page objects use `JavascriptExecutor` to remove `readonly`/`disabled` attributes, fire `input`/`change` events, and force-hide modal backdrops when the app's own close buttons are unreachable.
 
 **Suite XML files** — Each feature area has its own TestNG XML at the project root (e.g. `OneTimeChargestestng.xml`). The `browser` parameter defaults to `chrome` and is passed to `BaseTest.openBrowser()` via `@Parameters`. Maven Surefire looks for `testng.xml` by default; use `-Dsurefire.suiteXmlFiles=` to target a specific suite.
+
+## Requirements — Extended Daycare Service Request (`ServiceRequest_ExtendedDaycareTest.java`)
+
+Source: `TC_Extended_Daycare_Final.xlsx` (sheet `TC_Extended Daycare`). 10 test cases selected for automation.
+
+### SC002_TC_001 — Happy Path: Submit → Pending (Critical)
+Screen: `recent_update_details?child_id=<child_id>`
+Prerequisites: Active Regular child. Login as Support staff. No pending Extended Daycare request.
+Test Data: Start Date: 2026-07-02 | End Date: 2026-07-30 | Admission ID: 68671
+
+1. Login as Support → Account Statement → enter Admission ID → click SERVICE REQUEST. **Expect:** Service Request popup opens.
+2. Select 'Extended Daycare'. Enter Start Date = 2026-07-02, End Date = 2026-07-30. Submit → OK. **Expect:** Toast 'Extended Daycare request submitted successfully'.
+3. Navigate to Customer Request screen. **Expect:** screen loads.
+4. Verify Request Type = 'Extended Daycare', Status = 'Pending', Approval Status = 'NA'.
+5. Verify Center Name = child's center, WEF Date = Start Date, End Date = End Date selected.
+6. Verify Created By = logged-in user name.
+7. Verify CANCEL button (red) visible at Pending status.
+
+### SC002_TC_002 — Happy Path: Pending → Approved via getAllPendingRequests API (Critical)
+Screen: `recent_update_details?child_id=<child_id>`
+Prerequisites: Extended Daycare request in Pending status.
+API: `{{Base_URL}}Financialprocess/getAllPendingRequests/?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373`
+Note: unlike Center Shift, ED goes directly Pending → Approved (no Processing step).
+
+1. Confirm status = Pending on Customer Request screen.
+2. Run `getAllPendingRequests` API. **Expect:** response status = ok.
+3. Refresh Customer Request screen. **Expect:** Status = Approved.
+4. Verify Approval Status = NA (stays NA even after Approved — unlike Center Shift).
+5. Verify Actions column is EMPTY after Approved (no CANCEL / PROCESSING DETAILS).
+6. Verify Support Executive column populated after approval.
+
+### SC002_TC_003 — Happy Path: Child History "Extended Daycare Started" entry (Critical)
+Screen: Support → Account Statement → Child History
+Prerequisites: Extended Daycare request approved.
+
+1. Navigate to Account Statement → CHILD HISTORY icon. **Expect:** Child Updates History popup opens.
+2. Verify entry: 'Extended Daycare - Extended Daycare Started'.
+3. Verify timestamp = approval time (when getAllPendingRequests API ran).
+4. Verify child status remains ACTIVE and program unchanged.
+
+### SC002_TC_004 — Happy Path: extendedDaycareCronJob on End Date → Completed (Critical)
+Screen: Support → Account Statement → Child History
+Prerequisites: Extended Daycare Approved. End Date = today.
+API: `{{Base_URL}}parentapp/extendedDaycareCronJob?ckey=7A533862C14E`
+Expected response: `status=ok`, message='Extended Daycare duration Completed', Total 1 Records Updated
+
+1. On End Date, run cron API. **Expect:** API executes.
+2. Verify response: status=ok, message contains 'Extended Daycare duration Completed', Total 1 Records Updated.
+3. Verify response includes Child ID, Child Name, Start Date, End Date, Status=Completed.
+4. Navigate to Child History. Verify entry: 'Extended Daycare - Extended Daycare duration Completed'.
+5. Verify timestamp of Completed entry = End Date cron run time.
+6. Verify child remains on ORIGINAL program (ED is an additional service, not a program change).
+7. Verify child status still = ACTIVE after completion.
+
+### SC003_TC_001 — Pricing: Per-day charge = round(6.67% × half-day fee) (Critical)
+Screen: Support → Account Statement
+Prerequisites: Child with half-day fee = Rs.11,999. Extended Daycare approved for 1 day.
+Expected per-day charge: round(0.0667 × 11,999) = Rs.800
+
+1. Submit Extended Daycare for 1 day (Start Date = End Date). Run Approval API. **Expect:** approved.
+2. Navigate to Account Statement → find Extended Daycare invoice.
+3. Verify Daycare Fee = Rs.800.
+4. Verify calculation: 0.0667 × 11,999 = 799.93 → rounded = Rs.800.
+
+### SC003_TC_002 — Pricing: Invoice line items (Critical)
+Screen: Support → Account Statement
+Prerequisites: Extended Daycare approved. Invoice visible.
+Expected: Daycare Fee + Preschool Fee + SGST 9% + CGST 9% + Roundoff, Total: Rs.23,200. GST applies to Daycare Fee component only.
+
+1. Navigate to Account Statement → find Extended Daycare invoice (PI/XXXXXX). **Expect:** invoice visible with all line items.
+2. Verify line item: Daycare Fee | Booking Head = 'Extended Daycare Charges'.
+3. Verify line item: Preschool Fee | Booking Comment = 'Extended Daycare Charges'.
+4. Verify SGST = 9% of Daycare Fee component (e.g. Rs.4,522.03 × 9% = Rs.406.99).
+5. Verify CGST = 9% of Daycare Fee component (same as SGST).
+6. Verify Roundoff line item present (e.g. -0.01).
+7. Verify invoice total = Daycare Fee + Preschool Fee + SGST + CGST + Roundoff.
+8. Verify invoice raised immediately on approval (not on End Date).
+9. Verify invoice due date = Start Date + 4 days (observed: due date 06-Jul for 02-Jul invoice).
+
+### SC003_TC_003 — Pricing: credit_debit_amount matches invoice total (High)
+Screen: Support → Account Statement
+Expected: API response credit_debit_amount = 23200 matches Invoice total Rs.23,200.
+
+1. Submit Extended Daycare. Note credit_debit_amount from getAllPendingRequests API response.
+2. Navigate to Account Statement. Note Extended Daycare invoice total.
+3. Verify credit_debit_amount (23200) matches invoice total (Rs.23,200).
+
+### SC008_TC_001 — Negative: Inactive child cannot submit Extended Daycare (High)
+Screen: Support → Account Statement → Service Request → Extended Daycare
+Prerequisites: Inactive or Attrition child.
+
+1. Open Account Statement for Inactive/Attrition child → SERVICE REQUEST. **Expect:** popup opens.
+2. Verify Extended Daycare not available in dropdown OR blocked if selected.
+
+### SC008_TC_002 — Negative: Duplicate Extended Daycare blocked (High)
+Screen: Support → Account Statement → Service Request → Extended Daycare
+Prerequisites: Extended Daycare already Pending/Approved for child.
+
+1. Submit Extended Daycare. Confirm status = Pending.
+2. Attempt to submit another Extended Daycare for same child with overlapping dates. **Expect:** system blocks.
+3. Verify error: 'Extended Daycare request already exists for this period.'
+4. Verify no duplicate record on Customer Request screen.
+
+### SC008_TC_003 — Negative: extendedDaycareCronJob before End Date → no premature completion (Medium)
+Screen: Support → Account Statement → Child History
+Prerequisites: Extended Daycare Approved. End Date not yet reached.
+API: `{{Base_URL}}parentapp/extendedDaycareCronJob?ckey=7A533862C14E`
+
+1. Confirm End Date is in future.
+2. Run cron API before End Date. **Expect:** cron runs.
+3. Verify request NOT marked Completed (End Date not reached).
+4. Verify no 'Completed' history entry in Child History.
+5. On actual End Date, run cron. Verify Completed correctly.
+
+### Existing building blocks to reuse
+- `pages/Support/Regular_ServiceRequests.java` — Extended Daycare form already wired: `isExtendedDaycareFormVisible()`, `setEDFromDate()`, `setEDToDate()`, `submitExtendedDaycare()`.
+- `utils/APIs.java` — unused constants `ED_APPROVE_REQUEST` (= Center Shift's `getAllPendingRequests`, ckey `B47C56483AAE7373`) and `ED_CRON_JOB` (`parentapp/extendedDaycareCronJob`, ckey `7A533862C14E`). Need methods built on them (no `getExtendedDaycare...` methods exist yet).
+- `pages/Support/AccountStatementPage.java` — has `isExtendedDaycareInvoiceVisible()`, `getExtendedDaycareInvoiceLineItems()`, `getExtendedDaycareInvoiceTotal()` for invoice checks (SC003_TC_002/003).
+- Reference pattern to follow: `ServiceRequest_CenterShiftTest.java` + `CenterShifttestng.xml`.
+
+### Open items to confirm before automating
+- Concrete child IDs for: inactive/attrition child (SC008_TC_001), child with an existing pending ED request (SC008_TC_002), child with half-day fee = Rs.11,999 (SC003_TC_001/002/003).
+- UI selectors on the Customer Request screen for Request Type, Status, Approval Status, Center Name, WEF Date, Created By, Support Executive, Actions — reuse/extend `RecentCustomerRequestsPage.java`.

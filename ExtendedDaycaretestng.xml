@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="Extended Daycare - Test Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <!--
+        10 Extended Daycare tests — run in priority order (1 → 10)
+
+        PRE-CONDITIONS (set constants in ServiceRequest_ExtendedDaycareTest.java):
+          ED_CHILD_ID             — Active Regular child; no pending/approved ED request.
+                                     Confirmed working end-to-end: #68671 (Dhruvan Rajeshuni).
+          ED_INACTIVE_CHILD_ID    — Inactive/Attrition child (reused from ProgramChangeTest: 67348, TODO confirm).
+          ED_FUTURE_CHILD_ID      — Second Active Regular child, no pending ED request (TODO — tc008 skips if unset).
+          ED_HALFDAY_FEE_CHILD_ID — Active Regular child on a half-day plan priced at Rs.11,999 (TODO — tc010 skips if unset).
+
+        FLOW:
+          tc001 → submit ED → Pending                                            (SC002_TC_001)
+          tc002 → duplicate submit while Pending → blocked                       (SC008_TC_002)
+          tc003 → API: Pending → Approved (no Processing step)                   (SC002_TC_002)
+          tc004 → Child History "Extended Daycare Started" entry                 (SC002_TC_003)
+          tc005 → Invoice line items (Daycare Fee/Preschool Fee/SGST/CGST/Roundoff) (SC003_TC_002)
+          tc006 → credit_debit_amount (API) matches invoice total                (SC003_TC_003)
+          tc007 → Cron on End Date → Completed (verified via Child History)      (SC002_TC_004)
+          tc008 → Cron before End Date → no premature completion (skips if TODO) (SC008_TC_003)
+          tc009 → Inactive child blocked                                        (SC008_TC_001)
+          tc010 → Per-day charge = round(6.67% x half-day fee) (skips if TODO)   (SC003_TC_001)
+    -->
+
+    <test name="Extended Daycare - All Tests">
+        <classes>
+            <class name="testScripts.SupportTests.ServiceRequest_ExtendedDaycareTest">
+                <methods>
+                    <include name="tc001_submitExtendedDaycare"/>
+                    <include name="tc002_duplicateBlockedWhilePending"/>
+                    <include name="tc003_pendingToApproved"/>
+                    <include name="tc004_childHistoryStarted"/>
+                    <include name="tc005_invoiceLineItems"/>
+                    <include name="tc006_creditDebitAmountMatchesInvoice"/>
+                    <include name="tc007_cronCompletesOnEndDate"/>
+                    <include name="tc008_cronBeforeEndDateNoPrematureComplete"/>
+                    <include name="tc009_inactiveChildBlocked"/>
+                    <include name="tc010_perDayChargeFormula"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>

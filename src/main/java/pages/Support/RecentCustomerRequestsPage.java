@@ -538,6 +538,79 @@ public class RecentCustomerRequestsPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // EXTENDED DAYCARE-SPECIFIC HELPERS (called from ServiceRequest_ExtendedDaycareTest)
+    // Filters by Admission ID via direct URL, then finds the row whose
+    // "Request Type" column is "Extended Daycare" — a child's most recent
+    // Customer Request row is not necessarily an Extended Daycare one, so
+    // reading row 1 blindly can silently pick up an unrelated request type.
+    // ══════════════════════════════════════════════════════════════════════
+
+    private int findExtendedDaycareRow() {
+        int rows = getRowCount();
+        for (int row = 1; row <= rows; row++) {
+            if ("Extended Daycare".equalsIgnoreCase(getColumnValueForRow(row, "Request Type"))) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    public String getEDColumnValue(String admId, String columnHeader)
+            throws InterruptedException {
+        navigateByChildId(admId);
+        int row = findExtendedDaycareRow();
+        if (row == -1) return "";
+        return getColumnValueForRow(row, columnHeader);
+    }
+
+    public String getEDRequestStatus(String admId) throws InterruptedException {
+        return getEDColumnValue(admId, "Request Status");
+    }
+
+    public String getEDApprovalStatus(String admId) throws InterruptedException {
+        return getEDColumnValue(admId, "Approval Status");
+    }
+
+    public String getEDCenterName(String admId) throws InterruptedException {
+        return getEDColumnValue(admId, "Center Name");
+    }
+
+    public String getEDWEFDate(String admId) throws InterruptedException {
+        return getEDColumnValue(admId, "WEF Date");
+    }
+
+    public String getEDEndDate(String admId) throws InterruptedException {
+        return getEDColumnValue(admId, "End Date");
+    }
+
+    public String getEDCreatedBy(String admId) throws InterruptedException {
+        return getEDColumnValue(admId, "Created By");
+    }
+
+    public String getEDSupportExecutive(String admId) throws InterruptedException {
+        return getEDColumnValue(admId, "Support Executive");
+    }
+
+    /**
+     * Returns true if the Actions column for this child's Extended Daycare
+     * row contains a CANCEL control (Pending status — cancellable).
+     */
+    public boolean isEDCancelVisible(String admId) throws InterruptedException {
+        String actions = getEDColumnValue(admId, "Actions");
+        return actions != null && actions.toUpperCase().contains("CANCEL");
+    }
+
+    /**
+     * Returns true if the Actions column for this child's Extended Daycare
+     * row is empty (Approved/Completed status — no actions available).
+     */
+    public boolean isEDActionsEmpty(String admId) throws InterruptedException {
+        String actions = getEDColumnValue(admId, "Actions");
+        return actions == null || actions.trim().isEmpty();
+    }
+
+
+    // ══════════════════════════════════════════════════════════════════════
     // PRIVATE — jQuery datepicker value setter
     // This page uses jQuery UI Datepicker (hasDatepicker class), NOT Pickaday
     // ══════════════════════════════════════════════════════════════════════
