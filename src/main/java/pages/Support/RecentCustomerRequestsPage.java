@@ -153,17 +153,21 @@ public class RecentCustomerRequestsPage {
     WebElement dataTable;
 
     // ══════════════════════════════════════════════════════════════════════
-    // EARLY RESUME MODAL (SC004)
-    // Confirmed from DOM: id="update_date_to"
+    // ROW-LEVEL ACTION BUTTONS — confirmed from live DOM
+    //
+    // Pause rows show two buttons per row:
+    //   CANCEL            → class="cancel_pause"       (Pending/Approved rows)
+    //   PROCESSING DETAILS→ class="processing-details" (Pending/Approved rows)
+    //
+    // Early Resume / Extend buttons appear only AFTER pause is Approved.
+    // All buttons carry request_id attribute for row identification.
     // ══════════════════════════════════════════════════════════════════════
-
     /**
      * Extend/Resume date input — id="update_date_to"  name="update_date_to"
      * Used in both Early Resume and Extend modals
      */
     @FindBy(id = "update_date_to")
     WebElement extendResumeDateInput;
-
     /**
      * Extend/Resume Confirm button
      * class="btn btn-primary btn-model-extension-cancel"
@@ -171,28 +175,509 @@ public class RecentCustomerRequestsPage {
      */
     @FindBy(css = ".btn-model-extension-cancel")
     WebElement btnExtendConfirm;
-
     /**
      * Cancel Request modal Confirm button
      * class="btn btn-primary btn-model-cancel"
      */
     @FindBy(css = ".btn-model-cancel")
     WebElement btnCancelConfirm;
-
     /**
      * Close/Reject modal button — class="btn btn-danger"  text="Close"
      */
     @FindBy(xpath = "//button[contains(@class,'btn-danger') and normalize-space(text())='Close']")
     WebElement btnModalClose;
 
-    // ══════════════════════════════════════════════════════════════════════
-    // CONSTRUCTOR
-    // ══════════════════════════════════════════════════════════════════════
-
     public RecentCustomerRequestsPage(WebDriver driver) {
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(30));
         PageFactory.initElements(driver, this);
+    }
+
+    /**
+     * Click CANCEL button for a specific child's pause request.
+     * Finds the row matching the Admission ID, then clicks cancel_pause button.
+     * After click, a confirmation modal appears — call confirmCancelRequest() next.
+     * <p>
+     * Flow: filterByAdmId → find cancel_pause button in that row → click
+     *
+     * @param admId Admission ID to search e.g. "49149"
+     */
+    public void clickCancelPause(String admId) throws InterruptedException {
+        enterAdmissionId(admId);
+        clickSubmit();
+
+        // Find the cancel button in the row containing this child's record
+        WebElement cancelBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.cancel_pause")));
+        String requestId = cancelBtn.getAttribute("request_id");
+        System.out.println("▶ Clicking CANCEL for admId=" + admId
+                + " request_id=" + requestId);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", cancelBtn);
+        Thread.sleep(800);
+    }
+
+
+    /**
+     * Click PROCESSING DETAILS button for a specific child's pause request.
+     * Opens a modal or section showing processing status.
+     *
+     * @param admId Admission ID to search
+     */
+    public void clickProcessingDetails(String admId) throws InterruptedException {
+        enterAdmissionId(admId);
+        clickSubmit();
+
+        WebElement detailsBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.processing-details")));
+        String requestId = detailsBtn.getAttribute("request_id");
+        System.out.println("▶ Clicking PROCESSING DETAILS for admId=" + admId
+                + " request_id=" + requestId);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", detailsBtn);
+        Thread.sleep(1000);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // PAUSE — CANCEL + PROCESSING DETAILS
+    // Confirmed: Pending/Approved pause rows
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Click PROCESSING DETAILS button for a specific request_id.
+     */
+    public void clickProcessingDetailsByRequestId(String requestId)
+            throws InterruptedException {
+        WebElement detailsBtn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.processing-details[request_id='" + requestId + "']")));
+        System.out.println("▶ Clicking PROCESSING DETAILS for request_id=" + requestId);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", detailsBtn);
+        Thread.sleep(1000);
+    }
+
+    /**
+     * Returns true if CANCEL button is present for a given Admission ID.
+     * Indicates the pause is in Pending/Approved status (cancellable).
+     */
+    public boolean isCancelButtonVisible(String admId) throws InterruptedException {
+        enterAdmissionId(admId);
+        clickSubmit();
+        return !driver.findElements(By.cssSelector("button.cancel_pause")).isEmpty();
+    }
+
+    // ── CANCEL — Child Pause (cancel_pause) ──────────────────────────────
+
+    /**
+     * Returns true if PROCESSING DETAILS button is present for a given Admission ID.
+     */
+    public boolean isProcessingDetailsButtonVisible(String admId)
+            throws InterruptedException {
+        enterAdmissionId(admId);
+        clickSubmit();
+        return !driver.findElements(By.cssSelector("button.processing-details")).isEmpty();
+    }
+
+
+    // ── CANCEL — Program Change (cancel_customer_request) ────────────────
+
+    /**
+     * Dismiss the cancel modal — class="btn-danger"  text="Close"
+     */
+    public void dismissCancelModal() throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//button[contains(@class,'btn-danger')"
+                        + " and normalize-space(text())='Close']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(500);
+        System.out.println("✅ Cancel modal dismissed");
+    }
+
+    /**
+     * Returns true if CANCEL button visible for Pause (Pending status)
+     */
+    public boolean isCancelPauseButtonVisible() {
+        return !driver.findElements(By.cssSelector("button.cancel_pause")).isEmpty();
+    }
+
+    /**
+     * Returns true if Pause CANCEL button gone (cancelled successfully)
+     */
+    public boolean isCancelPauseButtonGone() {
+        return driver.findElements(By.cssSelector("button.cancel_pause")).isEmpty();
+    }
+
+    /**
+     * Click CANCEL for a Pending Pause request
+     */
+    public void clickCancelPause() throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.cancel_pause")));
+        System.out.println("▶ CANCEL Pause clicked, request_id="
+                + btn.getAttribute("request_id"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+    }
+
+    // ── CANCEL — Generic (works for both Pause and Program Change) ────────
+
+    /**
+     * Click CANCEL for a specific Pause request_id
+     */
+    public void clickCancelPauseByRequestId(String requestId) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.cancel_pause[request_id='" + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ CANCEL Pause clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Returns true if CANCEL button visible for Program Change (Pending status)
+     */
+    public boolean isCancelProgramChangeButtonVisible() {
+        return !driver.findElements(
+                By.cssSelector("button.cancel_customer_request")).isEmpty();
+    }
+
+    /**
+     * Returns true if Program Change CANCEL button gone
+     */
+    public boolean isCancelProgramChangeButtonGone() {
+        return driver.findElements(
+                By.cssSelector("button.cancel_customer_request")).isEmpty();
+    }
+
+    /**
+     * Click CANCEL for a Pending Program Change request
+     */
+    public void clickCancelProgramChange() throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.cancel_customer_request")));
+        System.out.println("▶ CANCEL Program Change clicked, request_id="
+                + btn.getAttribute("request_id"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+    }
+
+    /**
+     * Click CANCEL Program Change for a specific request_id
+     */
+    public void clickCancelProgramChangeByRequestId(String requestId)
+            throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.cancel_customer_request[request_id='"
+                        + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ CANCEL Program Change clicked, request_id=" + requestId);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // PAUSE — EARLY RESUME + EXTEND
+    // Only appear when Approval Status = Approved.
+    // TODO: Run DOM dump after filtering Pause + Approved to confirm class names:
+    //   document.querySelectorAll('button').forEach(b=>
+    //     console.log(b.className,'|',b.getAttribute('request_id'),'|',b.innerText?.trim()))
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns true if ANY cancel button visible (pause or program change)
+     */
+    public boolean isCancelButtonVisible() {
+        return !driver.findElements(By.cssSelector(
+                "button.cancel_pause, button.cancel_customer_request")).isEmpty();
+    }
+
+    /**
+     * Returns true if ALL cancel buttons gone
+     */
+    public boolean isCancelButtonGone() {
+        return driver.findElements(By.cssSelector(
+                "button.cancel_pause, button.cancel_customer_request")).isEmpty();
+    }
+
+    /**
+     * Returns true if PROCESSING DETAILS button visible
+     */
+    public boolean isProcessingDetailsVisible() {
+        return !driver.findElements(By.cssSelector("button.processing-details")).isEmpty();
+    }
+
+    /**
+     * Get request_id of first CANCEL button — use for chaining
+     */
+    public String getFirstCancelRequestId() {
+        try {
+            return driver.findElement(By.cssSelector("button.cancel_pause"))
+                    .getAttribute("request_id");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Get request_id of first PROCESSING DETAILS button
+     */
+    public String getFirstProcessingDetailsRequestId() {
+        try {
+            return driver.findElement(By.cssSelector("button.processing-details"))
+                    .getAttribute("request_id");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Click EARLY RESUME for a specific child row.
+     * Confirmed from live DOM (50-page scan):
+     * Enabled  → <a class="popdown_medium btn btn-primary bg-blue btn-xs label">EARLY RESUME</a>
+     * Disabled → <a class="disabled btn bg-slate-400 btn-ladda btn-xs label">EARLY RESUME</a>
+     * Opens a popdown with update_date_to input + Confirm button.
+     *
+     * @param childName exact child name as shown in Child Name column
+     */
+    public void clickEarlyResumeForChild(String childName) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//tr[.//a[contains(@class,'popdown_big')"
+                        + " and normalize-space(text())='" + childName + "']]"
+                        + "//a[contains(@class,'popdown_medium')"
+                        + " and normalize-space(text())='EARLY RESUME']")));
+        System.out.println("▶ Clicking EARLY RESUME for: " + childName);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(1000);
+    }
+
+    /**
+     * Click EARLY RESUME — first enabled button in table.
+     * Use after filtering by Admission ID so only one row is visible.
+     */
+    public void clickEarlyResume() throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//a[contains(@class,'popdown_medium')"
+                        + " and contains(@class,'bg-blue')"
+                        + " and normalize-space(text())='EARLY RESUME']")));
+        System.out.println("▶ Clicking EARLY RESUME");
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(1000);
+    }
+
+    /**
+     * Click EXTEND PAUSE for a specific child row.
+     * Same DOM pattern as Early Resume — popdown_medium class when enabled.
+     *
+     * @param childName exact child name as shown in Child Name column
+     */
+    public void clickExtendPauseForChild(String childName) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//tr[.//a[contains(@class,'popdown_big')"
+                        + " and normalize-space(text())='" + childName + "']]"
+                        + "//a[contains(@class,'popdown_medium')"
+                        + " and normalize-space(text())='EXTEND PAUSE']")));
+        System.out.println("▶ Clicking EXTEND PAUSE for: " + childName);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(1000);
+    }
+
+    /**
+     * Click EXTEND PAUSE — first enabled button in table.
+     */
+    public void clickExtendPause() throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("//a[contains(@class,'popdown_medium')"
+                        + " and contains(@class,'bg-blue')"
+                        + " and normalize-space(text())='EXTEND PAUSE']")));
+        System.out.println("▶ Clicking EXTEND PAUSE");
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(1000);
+    }
+
+    /**
+     * Returns true if EARLY RESUME button is ENABLED for a child.
+     * Enabled = popdown_medium + bg-blue class.
+     */
+    public boolean isEarlyResumeEnabled(String childName) {
+        return !driver.findElements(By.xpath(
+                "//tr[.//a[contains(@class,'popdown_big')"
+                        + " and normalize-space(text())='" + childName + "']]"
+                        + "//a[contains(@class,'popdown_medium') and contains(@class,'bg-blue')"
+                        + " and normalize-space(text())='EARLY RESUME']")).isEmpty();
+    }
+
+    /**
+     * Returns true if EARLY RESUME button is DISABLED for a child.
+     * Disabled = class contains 'disabled' + 'btn-ladda' (old-policy pause).
+     * Verifies SC007_TC001 — old-policy pauses must show disabled buttons.
+     */
+    public boolean isEarlyResumeDisabled(String childName) {
+        return !driver.findElements(By.xpath(
+                "//tr[.//a[contains(@class,'popdown_big')"
+                        + " and normalize-space(text())='" + childName + "']]"
+                        + "//a[contains(@class,'disabled') and contains(@class,'btn-ladda')"
+                        + " and normalize-space(text())='EARLY RESUME']")).isEmpty();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // CHILD ATTRITION — RETAIN, PRORATED INVOICE, APPROVE, UPDATE REQUEST
+    // Confirmed from live DOM
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns true if EXTEND PAUSE button is ENABLED for a child.
+     */
+    public boolean isExtendPauseEnabled(String childName) {
+        return !driver.findElements(By.xpath(
+                "//tr[.//a[contains(@class,'popdown_big')"
+                        + " and normalize-space(text())='" + childName + "']]"
+                        + "//a[contains(@class,'popdown_medium') and contains(@class,'bg-blue')"
+                        + " and normalize-space(text())='EXTEND PAUSE']")).isEmpty();
+    }
+
+    /**
+     * Returns true if EXTEND PAUSE button is DISABLED for a child.
+     */
+    public boolean isExtendPauseDisabled(String childName) {
+        return !driver.findElements(By.xpath(
+                "//tr[.//a[contains(@class,'popdown_big')"
+                        + " and normalize-space(text())='" + childName + "']]"
+                        + "//a[contains(@class,'disabled') and contains(@class,'btn-ladda')"
+                        + " and normalize-space(text())='EXTEND PAUSE']")).isEmpty();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // TRANSPORT — APPROVE, REJECT
+    // Confirmed from live DOM
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Full Early Resume flow:
+     * filter by admId → click EARLY RESUME → set date → confirm
+     *
+     * @param admId      Admission ID to filter
+     * @param resumeDate ISO date "YYYY-MM-DD"
+     */
+    public void doEarlyResume(String admId, String resumeDate)
+            throws InterruptedException {
+        enterAdmissionId(admId);
+        clickSubmit();
+        clickEarlyResume();
+        Thread.sleep(500);
+        setExtendResumeDate(resumeDate);
+        confirmExtendResume();
+    }
+
+    /**
+     * Full Extend Pause flow:
+     * filter by admId → click EXTEND PAUSE → set new end date → confirm
+     *
+     * @param admId      Admission ID to filter
+     * @param newEndDate ISO date "YYYY-MM-DD"
+     */
+    public void doExtendPause(String admId, String newEndDate)
+            throws InterruptedException {
+        enterAdmissionId(admId);
+        clickSubmit();
+        clickExtendPause();
+        Thread.sleep(500);
+        setExtendResumeDate(newEndDate);
+        confirmExtendResume();
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // GENERIC HELPERS — response message after any action
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Click RETAIN button — class="retained_attrition"  text="RETAIN"
+     */
+    public void clickRetain(String requestId) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.retained_attrition[request_id='" + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ RETAIN clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Click PRORATED MONTHLY INVOICE — class="prorated-invoice"
+     */
+    public void clickProratedMonthlyInvoice(String requestId) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.prorated-invoice[request_id='" + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ PRORATED MONTHLY INVOICE clicked, request_id=" + requestId);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // EARLY RESUME MODAL (SC004)
+    // Confirmed from DOM: id="update_date_to"
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Click PRORATED ANNUAL INVOICE — class="prorated-annual-invoice"
+     */
+    public void clickProratedAnnualInvoice(String requestId) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.prorated-annual-invoice[request_id='" + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ PRORATED ANNUAL INVOICE clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Click APPROVE button — class="approve"  text="APPROVE"
+     */
+    public void clickApprove(String requestId) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.approve[request_id='" + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ APPROVE clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Click REJECT button — class="reject"  text="REJECT"
+     */
+    public void clickReject(String requestId) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("button.reject[request_id='" + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ REJECT clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Get response message after any button action (alert or toast).
+     */
+    public String getActionResponseMessage() {
+        // Check JS alert first
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(4))
+                    .until(ExpectedConditions.alertIsPresent());
+            return driver.switchTo().alert().getText().trim();
+        } catch (Exception ignored) {
+        }
+        // Check toast/ajax message
+        try {
+            return new WebDriverWait(driver, Duration.ofSeconds(6))
+                    .until(ExpectedConditions.visibilityOfElementLocated(
+                            By.cssSelector(".alert-ajax-response,.alert-message,.toast")))
+                    .getText().trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CONSTRUCTOR
+    // ══════════════════════════════════════════════════════════════════════
+
+    public void acceptActionAlert() throws InterruptedException {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.alertIsPresent());
+            driver.switchTo().alert().accept();
+            Thread.sleep(500);
+        } catch (Exception ignored) {
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -609,6 +1094,104 @@ public class RecentCustomerRequestsPage {
         return actions == null || actions.trim().isEmpty();
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // TIME EXTENSION-SPECIFIC HELPERS (called from ServiceRequest_TimeExtensionTest)
+    // Filters by Admission ID via direct URL, then finds the row whose
+    // "Request Type" column matches "Start Time Extension" or "Stop Time
+    // Extension" — a child progresses through both request types in sequence,
+    // so reading row 1 blindly could pick up the wrong one.
+    //
+    // Confirmed from live DOM: Approve/Reject buttons carry request_type as a
+    // plain HTML attribute (id="approve_extension"/"reject_extention"), so they
+    // can be located directly without first resolving a row/request_id — e.g.
+    // #approve_extension[request_type='Start Time Extension'].
+    // ══════════════════════════════════════════════════════════════════════
+
+    private int findTimeExtensionRow(String requestType) {
+        int rows = getRowCount();
+        for (int row = 1; row <= rows; row++) {
+            if (requestType.equalsIgnoreCase(getColumnValueForRow(row, "Request Type"))) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    public String getTEColumnValue(String admId, String requestType, String columnHeader)
+            throws InterruptedException {
+        navigateByChildId(admId);
+        int row = findTimeExtensionRow(requestType);
+        if (row == -1) return "";
+        return getColumnValueForRow(row, columnHeader);
+    }
+
+    public String getTERequestStatus(String admId, String requestType) throws InterruptedException {
+        return getTEColumnValue(admId, requestType, "Request Status");
+    }
+
+    public String getTEApprovalStatus(String admId, String requestType) throws InterruptedException {
+        return getTEColumnValue(admId, requestType, "Approval Status");
+    }
+
+    /**
+     * Click the APPROVE button for a given request type ("Start Time Extension"
+     * or "Stop Time Extension"). Opens the "Time Extension Request" summary
+     * modal — call confirmTimeExtensionApproval() next.
+     */
+    public void clickApproveExtension(String requestType) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("#approve_extension[request_type='" + requestType + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ APPROVE (Time Extension) clicked for request_type=" + requestType);
+    }
+
+    /**
+     * Click the REJECT button for a given request type.
+     */
+    public void clickRejectExtension(String requestType) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("#reject_extention[request_type='" + requestType + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ REJECT (Time Extension) clicked for request_type=" + requestType);
+    }
+
+    /**
+     * Confirm the approval on the "Time Extension Request" summary modal —
+     * class="btn-model-extension-cancel" (misleading name — this IS Confirm).
+     * Reuses the same generic modal already wired for Pause Extend/Resume.
+     */
+    public void confirmTimeExtensionApproval() throws InterruptedException {
+        confirmExtendResume();
+    }
+
+    /**
+     * Close the "Request Approved Successfully" state of the same modal
+     * (its Confirm button is disabled once approved — Close is the only action).
+     * The approval itself already completed via confirmTimeExtensionApproval()
+     * + the native "Prorated Invoice..." confirm — observed live that the modal
+     * does not reliably re-render with a Close button afterward, so this step
+     * is best-effort cleanup only and must never fail the calling test.
+     */
+    public void closeTimeExtensionModal() throws InterruptedException {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(8))
+                    .until(ExpectedConditions.elementToBeClickable(btnModalClose));
+            ((JavascriptExecutor) driver)
+                    .executeScript("arguments[0].click();", btnModalClose);
+            Thread.sleep(500);
+            System.out.println("✅ Time Extension modal closed");
+        } catch (Exception e) {
+            System.out.println("⚠ Close button not found within 8s — force-hiding modal via JS (approval already completed)");
+            ((JavascriptExecutor) driver).executeScript(
+                    "document.querySelectorAll('.modal.show, .modal[style*=\"display: block\"]')" +
+                            ".forEach(function(m){ m.classList.remove('show'); m.style.display='none'; });" +
+                            "document.querySelectorAll('.modal-backdrop').forEach(function(b){ b.remove(); });" +
+                            "document.body.classList.remove('modal-open');");
+            Thread.sleep(300);
+        }
+    }
 
     // ══════════════════════════════════════════════════════════════════════
     // PRIVATE — jQuery datepicker value setter

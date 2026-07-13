@@ -25,6 +25,10 @@ import static io.restassured.RestAssured.given;
  *                                                     Extended Daycare request is currently pending system-wide.
  * runExtendedDaycareCronJob()                      — GET parentapp/extendedDaycareCronJob (End Date → Completed)
  * <p>
+ * TIME EXTENSION
+ * getTimeExtensionPendingRequests(childId)         — GET Financialprocess/getAllPendingRequests/ (chid_id scopes correctly here)
+ * processTimeExtensionRequest(childId)             — GET childservices/processTimeExtentionRequest (child_id, after Approve)
+ * <p>
  * HELPERS
  * convertSingleQuotesToDouble(json)                — {'k':'v'} → {"k":"v"}
  * decodeHtmlEntities(raw)                          — &quot;/&amp;/&#39;/&lt;/&gt; → literal chars
@@ -74,6 +78,17 @@ public class APIs {
 
     private static final String ED_CRON_JOB =
             "parentapp/extendedDaycareCronJob";
+
+    // ═══════════════════════════════════════════════
+    // TIME EXTENSION ENDPOINTS
+    // ═══════════════════════════════════════════════
+    // Same physical endpoint as CS_PENDING_TO_PROCESSING/ED_APPROVE_REQUEST —
+    // confirmed via real captured examples that "chid_id" correctly scopes here.
+    private static final String TE_PENDING_REQUESTS =
+            "Financialprocess/getAllPendingRequests/";
+
+    private static final String TE_PROCESS_REQUEST =
+            "childservices/processTimeExtentionRequest";
 
     // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
@@ -327,6 +342,67 @@ public class APIs {
                 .response();
 
         System.out.println("✅ Cron Job — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // TIME EXTENSION — getAllPendingRequests
+    //
+    // URL : {{Base_URL}}Financialprocess/getAllPendingRequests/
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373
+    // Use : Same physical endpoint as Center Shift/Extended Daycare. Confirmed via
+    //       real captured examples (doc: "Start Time Extension Service Request")
+    //       that "chid_id" IS the correct param for this endpoint in the Time
+    //       Extension context (unlike Extended Daycare, where "child_id" was
+    //       needed instead) — do not assume the two behave identically.
+    // ═══════════════════════════════════════════════
+    public static Response getTimeExtensionPendingRequests(String childId) {
+        String endpoint = TE_PENDING_REQUESTS
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&chid_id=" + childId
+                + "&ckey=B47C56483AAE7373";
+        System.out.println("▶ Time Extension: getAllPendingRequests");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ getAllPendingRequests — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // TIME EXTENSION — Process Request (Approve → Processed)
+    //
+    // URL : http://test-admissions.footprintseducation.in/api/childservices/
+    //       processTimeExtentionRequest?child_id=<child_id>&ckey=3E529969372D
+    // Use : Run after clicking Approve on the Customer Request screen.
+    //       Response JSON: {"status":"ok","message":"Time Extension request processed"}
+    //       Confirmed "child_id" (not "chid_id") from the doc's real examples.
+    // ═══════════════════════════════════════════════
+    public static Response processTimeExtensionRequest(String childId) {
+        String endpoint = TE_PROCESS_REQUEST
+                + "?child_id=" + childId
+                + "&ckey=3E529969372D";
+        System.out.println("▶ Time Extension: Process Request");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Process Request — Status: " + response.getStatusCode());
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }

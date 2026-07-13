@@ -9,16 +9,37 @@
         <classes>
             <class name="testScripts.SupportTests.RecentCustomerRequests_Testcases">
                 <methods>
+                    <!-- Filter / search tests -->
                     <include name="tc001_pageLoadsSuccessfully"/>
                     <include name="tc002_defaultSearchReturnsResults"/>
                     <include name="tc003_searchByAdmissionId"/>
                     <include name="tc004_dateRangeFilter"/>
-                    <include name="tc005_filterByStatusApproved"/>
+                    <include name="tc005_filterByStatusPending"/>
+                    <include name="tc005b_filterByStatusApproved"/>
                     <include name="tc006_combinedAdmissionIdAndDateFilter"/>
                     <include name="tc007_verifyTableHeaders"/>
                     <include name="tc008_downloadButtonVisible"/>
                     <include name="tc009_tableSearchFiltersRows"/>
                     <include name="tc010_horizontalScroll"/>
+                    <!-- Navigation / edge-case tests -->
+                    <include name="tc011_directUrlNavigationByChildId"/>
+                    <include name="tc012_invalidAdmissionIdNoData"/>
+                    <!-- Action-button visibility tests (read-only) -->
+                    <include name="tc013_pausePendingCancelButtonVisible"/>
+                    <include name="tc014_pausePendingProcessingDetailsVisible"/>
+                    <!-- TC016 before TC015: dismiss-modal must run while button still exists -->
+                    <include name="tc016_dismissCancelModal"/>
+                    <include name="tc015_cancelPendingPauseRequest"/>
+                    <!-- Program Change -->
+                    <include name="tc017_programChangePendingCancelVisible"/>
+                    <include name="tc018_cancelPendingProgramChange"/>
+                    <!-- Approved pause action buttons -->
+                    <include name="tc019_approvedPauseEarlyResumeEnabled"/>
+                    <include name="tc020_approvedPauseExtendEnabled"/>
+                    <include name="tc021_oldPolicyPauseButtonsDisabled"/>
+                    <!-- Flow tests (modify data) -->
+                    <include name="tc022_earlyResumeFlow"/>
+                    <include name="tc023_extendPauseFlow"/>
                 </methods>
             </class>
         </classes>

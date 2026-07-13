@@ -43,6 +43,7 @@ import java.time.Duration;
  * Transport    → t1_ / t2_ / st1_ / st2_
  * Time Ext     → ste_ / stp_
  * Withdraw     → wd_
+ *
  */
 public class Regular_ServiceRequests {
 
@@ -305,19 +306,15 @@ public class Regular_ServiceRequests {
 
     // ══════════════════════════════════════════════════════════════════════════
     // 10. START TIME EXTENSION — form id="frm-start-time-extension"
+    // Confirmed from live DOM: only ONE date field ("Start Date"), id="startFrom"
+    // — NOT "breakFrom". There is no "To" date on this form.
     // ══════════════════════════════════════════════════════════════════════════
 
     /**
-     * From date — id="breakFrom" scoped to frm-start-time-extension
+     * Start date — id="startFrom" scoped to frm-start-time-extension
      */
-    @FindBy(css = "#frm-start-time-extension #breakFrom")
+    @FindBy(css = "#frm-start-time-extension #startFrom")
     public WebElement ste_fromDate;
-
-    /**
-     * To date — id="breakTo" scoped to frm-start-time-extension
-     */
-    @FindBy(css = "#frm-start-time-extension #breakTo")
-    public WebElement ste_toDate;
 
     /**
      * Submit button — scoped to frm-start-time-extension
@@ -327,12 +324,14 @@ public class Regular_ServiceRequests {
 
     // ══════════════════════════════════════════════════════════════════════════
     // 11. STOP TIME EXTENSION — form id="frm-stop-time-extension"
+    // Confirmed from live DOM: the single date field is "End Date", id="endFrom"
+    // — NOT "breakFrom".
     // ══════════════════════════════════════════════════════════════════════════
 
     /**
-     * From date — id="breakFrom" scoped to frm-stop-time-extension
+     * End date — id="endFrom" scoped to frm-stop-time-extension
      */
-    @FindBy(css = "#frm-stop-time-extension #breakFrom")
+    @FindBy(css = "#frm-stop-time-extension #endFrom")
     public WebElement stp_fromDate;
 
     /**
@@ -660,13 +659,13 @@ public class Regular_ServiceRequests {
         // inside a scrollable panel where native select interaction is intercepted
         ((JavascriptExecutor) driver).executeScript(
                 "var sel=arguments[0]; var txt=arguments[1];" +
-                "for(var i=0;i<sel.options.length;i++){" +
-                "    if(sel.options[i].text.trim()===txt.trim()){" +
-                "        sel.selectedIndex=i; break;" +
-                "    }" +
-                "}" +
-                "sel.dispatchEvent(new Event('change',{bubbles:true}));" +
-                "sel.dispatchEvent(new Event('input',{bubbles:true}));",
+                        "for(var i=0;i<sel.options.length;i++){" +
+                        "    if(sel.options[i].text.trim()===txt.trim()){" +
+                        "        sel.selectedIndex=i; break;" +
+                        "    }" +
+                        "}" +
+                        "sel.dispatchEvent(new Event('change',{bubbles:true}));" +
+                        "sel.dispatchEvent(new Event('input',{bubbles:true}));",
                 pc_newProgram_dropdown, visibleText);
         System.out.println("✅ New Program: " + visibleText);
         Thread.sleep(500);
@@ -943,10 +942,6 @@ public class Regular_ServiceRequests {
         setDateByJs(ste_fromDate, date);
     }
 
-    public void setSTEToDate(String date) throws InterruptedException {
-        setDateByJs(ste_toDate, date);
-    }
-
     public void submitStartTimeExtension() throws InterruptedException {
         wait.until(ExpectedConditions.elementToBeClickable(ste_btn_submit));
         ((JavascriptExecutor) driver)
@@ -1015,13 +1010,13 @@ public class Regular_ServiceRequests {
         // Try the Pickaday internal API first; fall back to a native focus + click
         ((JavascriptExecutor) driver).executeScript(
                 "var el=arguments[0];" +
-                "if(el._picker && typeof el._picker.open==='function'){" +
-                "    el._picker.open();" +
-                "} else {" +
-                "    el.removeAttribute('readonly');" +
-                "    el.focus();" +
-                "    el.click();" +
-                "}",
+                        "if(el._picker && typeof el._picker.open==='function'){" +
+                        "    el._picker.open();" +
+                        "} else {" +
+                        "    el.removeAttribute('readonly');" +
+                        "    el.focus();" +
+                        "    el.click();" +
+                        "}",
                 dateField);
         Thread.sleep(500);
         // Scope the wait to the picker wrapper that becomes .picker--opened

@@ -189,4 +189,16 @@ public class Navigations {
         clickMenu(settingsMenu, userRightsLink,
                 "User Rights");
     }
+
+    // ═══════════════════════════════════════════════
+    // SETTINGS → SMS VIEW
+    // Navigates directly via URL — no sub-menu link
+    // needed since the screen URL is known.
+    // ═══════════════════════════════════════════════
+    public void goToSmsView() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.SMS_VIEW_URL);
+        System.out.println("✅ Navigated to: SMS View");
+        Thread.sleep(1500);
+    }
 }

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="Time Extension - Test Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <!--
+        6 Time Extension tests — run in priority order (1 → 6), one continuous
+        flow on a single child.
+
+        PRE-CONDITION (set constant in ServiceRequest_TimeExtensionTest.java):
+          TE_CHILD_ID — Active Regular child, Time Extension enabled at its
+                        center, no conflicting pending Start/Stop Time
+                        Extension request. Skips gracefully if left as TODO.
+
+        FLOW:
+          tc001 → submit Start Time Extension (incl. Cancel path) → Pending      (SC002_TC_001)
+          tc002 → API verify Pending fields → Approve → process API → addon/invoice (SC002_TC_002)
+          tc003 → verify Approved status + addon amount                          (SC002_TC_010)
+          tc004 → submit Stop Time Extension → Pending                          (SC003_TC_001)
+          tc005 → getAllPendingRequests fields verified for Stop                (SC003_TC_003)
+          tc006 → Approve Stop → process API → addon removed                    (SC003_TC_005)
+    -->
+
+    <test name="Time Extension - All Tests">
+        <classes>
+            <class name="testScripts.SupportTests.ServiceRequest_TimeExtensionTest">
+                <methods>
+                    <include name="tc001_submitStartTimeExtension"/>
+                    <include name="tc002_startFullFlowApproveAndProcess"/>
+                    <include name="tc003_startProcessApiResponseVerify"/>
+                    <include name="tc004_submitStopTimeExtension"/>
+                    <include name="tc005_stopPendingRequestApiVerify"/>
+                    <include name="tc006_stopApproveAndProcessAddonRemoved"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>

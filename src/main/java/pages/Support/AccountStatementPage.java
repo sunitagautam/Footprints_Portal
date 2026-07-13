@@ -876,6 +876,80 @@ public class AccountStatementPage {
     }
 
     // ═══════════════════════════════════════════════
+    // TIME EXTENSION — ADDONS LINE
+    // Confirmed DOM: <div class="col-md-12"><b>Addons :</b> Time Extension
+    //   ( <i class="fa fa-inr"></i> 1500.00)</div>
+    // Absent state shows "Addons : Not Available" instead.
+    // ═══════════════════════════════════════════════
+    public String getAddonsText() {
+        try {
+            WebElement el = driver.findElement(By.xpath(
+                    "//div[contains(@class,'col-md-12')][b[contains(normalize-space(.),'Addons')]]"));
+            String text = el.getText().trim();
+            System.out.println("✅ Addons: " + text);
+            return text;
+        } catch (Exception e) {
+            System.out.println("⚠ getAddonsText: " + e.getMessage());
+            return "";
+        }
+    }
+
+    public boolean isTimeExtensionAddonPresent() {
+        return getAddonsText().toLowerCase().contains("time extension");
+    }
+
+    public boolean isTimeExtensionAddonAbsent() {
+        String text = getAddonsText();
+        return text.toLowerCase().contains("not available") || !text.toLowerCase().contains("time extension");
+    }
+
+    // ═══════════════════════════════════════════════
+    // TIME EXTENSION — INVOICE LINE ITEMS
+    // Same row structure as Extended Daycare (.col-md-3/7/2), but the booking
+    // comment reads "Prorated Time Extension Charges - <Month>, <Year> (<N>
+    // days)" instead of "Extended Daycare Charges". Confirmed DOM shows only
+    // Daycare Fee/SGST/CGST rows (no separate Preschool Fee/Roundoff), but the
+    // sibling-row scan below captures whatever rows are actually present.
+    // ═══════════════════════════════════════════════
+    public boolean isTimeExtensionInvoiceVisible() {
+        try {
+            return !driver.findElements(By.xpath(
+                    "//div[contains(@class,'col-md-7')]"
+                            + "[contains(normalize-space(.),'Prorated Time Extension Charges')]"))
+                    .isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public java.util.Map<String, Double> getTimeExtensionInvoiceLineItems() {
+        java.util.Map<String, Double> items = new java.util.LinkedHashMap<>();
+        try {
+            WebElement anchorComment = driver.findElement(By.xpath(
+                    "//div[contains(@class,'col-md-7')]"
+                            + "[contains(normalize-space(.),'Prorated Time Extension Charges')]"));
+            WebElement anchorRow = anchorComment.findElement(By.xpath(".."));
+            WebElement container = anchorRow.findElement(By.xpath(".."));
+            List<WebElement> rows = container.findElements(By.xpath("./div[contains(@class,'row')]"));
+            for (WebElement row : rows) {
+                String label = row.findElement(By.cssSelector(".col-md-3")).getText().trim();
+                String amtText = row.findElement(By.cssSelector(".col-md-2")).getText()
+                        .replace(",", "").replace("₹", "").trim();
+                items.put(label, Double.parseDouble(amtText));
+            }
+            System.out.println("✅ Time Extension invoice line items: " + items);
+        } catch (Exception e) {
+            System.out.println("⚠ getTimeExtensionInvoiceLineItems: " + e.getMessage());
+        }
+        return items;
+    }
+
+    public double getTimeExtensionInvoiceTotal() {
+        return getTimeExtensionInvoiceLineItems().values().stream()
+                .mapToDouble(Double::doubleValue).sum();
+    }
+
+    // ═══════════════════════════════════════════════
     // FORCE-CLOSE ALL MODALS VIA JS — used in @AfterMethod
     // ═══════════════════════════════════════════════
     public void closeModalByJs() {

@@ -7,16 +7,16 @@ import pages.Navigations;
 import pages.Settings.UserRightsPage;
 import pages.Support.OneTimeChargesPage;
 import utils.BaseTest;
-import utils.IAutoConstant;
 
 public class OneTimeCharges_Testcases extends BaseTest {
 
     // ✅ Child ID used across all TCs
-    private static final String CHILD_ID = "65598";
+    private static final String CHILD_ID = "46195";
 
     OneTimeChargesPage oneTimeChargesPage;
     UserRightsPage userRightsPage;
     Navigations navigations;
+
 
     @DataProvider(name = "chargeTypeData")
     public Object[][] chargeTypeData() {

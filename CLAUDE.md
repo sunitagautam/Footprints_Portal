@@ -196,3 +196,97 @@ API: `{{Base_URL}}parentapp/extendedDaycareCronJob?ckey=7A533862C14E`
 ### Open items to confirm before automating
 - Concrete child IDs for: inactive/attrition child (SC008_TC_001), child with an existing pending ED request (SC008_TC_002), child with half-day fee = Rs.11,999 (SC003_TC_001/002/003).
 - UI selectors on the Customer Request screen for Request Type, Status, Approval Status, Center Name, WEF Date, Created By, Support Executive, Actions — reuse/extend `RecentCustomerRequestsPage.java`.
+
+## Requirements — Time Extension Service Request (`ServiceRequest_TimeExtensionTest.java`)
+
+Source: `TC_Time_Extension_Updated.xlsx` (sheet `TC_Time Extension`). 6 test cases selected for automation.
+
+### SC002_TC_001 — Start Time Extension: Submit request via Service Request form (High)
+Screen: Support → Account Statement → Service Request → Start/Stop Time Extension
+Prerequisites: Active Regular child. Time Extension enabled at center.
+Test Data: Admission ID: 46085 | Service Type: Start Time Extension
+Note: Parents can extend services by 90 min — drop off 8:15 AM, pick up by 7:15 PM.
+
+1. Login as Support → Account Statement → enter Admission ID → click SERVICE REQUEST. **Expect:** popup opens.
+2. Select 'Start Time Extension' from Services dropdown. **Expect:** form loads.
+3. Enter WEF date. Click Submit. **Expect:** confirmation popup 'Do you want to send request for time extension?' with OK & Cancel.
+4. Click Cancel on popup. **Expect:** request NOT submitted, form stays open.
+5. Click Submit again → OK. **Expect:** toast 'Your request submitted successfully.'
+6. Navigate to Customer Request screen. Verify Request Type = 'Start Time Extension', Status = Pending.
+
+### SC002_TC_002 — Start Time Extension: Full flow Submit → API → Approve → Process API (High)
+Screen: `recent_update_details?child_id=<child_id>`
+Prerequisites: Active Regular child. Admission ID: 70800.
+APIs:
+- `{{Base_URL}}Financialprocess/getAllPendingRequests/?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373` (**Note:** per the Extended Daycare finding, the real param is `child_id`, not `chid_id` — verify which one actually scopes correctly here too before trusting results.)
+- `http://test-admissions.footprintseducation.in/api/childservices/processTimeExtentionRequest?child_id=<child_id>&ckey=3E529969372D`
+
+1. Submit Start Time Extension request. **Expect:** toast success, Status = Pending.
+2. Run `getAllPendingRequests` API. **Expect:** status=ok, type='Start Time Extension', status='Pending', admission_id correct, credit_debit_amount='0', parent_name='Support Request', current_status='Active', admission_type='Regular'.
+3. Navigate to Customer Request screen. Verify Approve button displayed.
+4. Click Approve button → confirm. **Expect:** request approved on Customer Request screen.
+5. Run `processTimeExtentionRequest` API. **Expect:** `{"status":"ok","message":"Time Extension request processed"}`.
+6. Navigate to Customer Request screen. Verify Status = Approved.
+7. Navigate to Account Statement. Verify Addons section shows 'Time Extension'.
+8. Verify prorated invoice generated: 'Prorated Time Extension Charges - <Month>, <Year> (<N> days)'.
+
+### SC002_TC_010 — Start Time Extension: processTimeExtentionRequest API response (Critical)
+Screen: API / Postman
+Prerequisites: Start Time Extension approved on Customer Request screen.
+API: `http://test-admissions.footprintseducation.in/api/childservices/processTimeExtentionRequest?child_id=<child_id>&ckey=3E529969372D`
+Expected: `{"status":"ok","message":"Time Extension request processed"}`
+
+1. Approve Start Time Extension on Customer Request screen.
+2. Run `processTimeExtentionRequest` API.
+3. Verify response status = 'ok'.
+4. Verify response message = 'Time Extension request processed'.
+5. Navigate to Customer Request screen. Verify Status = Approved.
+6. Navigate to Account Statement. Verify Addons: Time Extension (₹1,500.00) shown.
+
+### SC003_TC_001 — Stop Time Extension: Submit request via Service Request form (High)
+Screen: Support → Account Statement → Service Request → Start/Stop Time Extension
+Prerequisites: Active child with Time Extension active.
+Test Data: Admission ID: 46085 | Service Type: Stop Time Extension
+
+1. Login as Support → Account Statement → enter Admission ID → click SERVICE REQUEST. **Expect:** popup opens.
+2. Select 'Stop Time Extension' from Services dropdown. **Expect:** form loads.
+3. Enter WEF date. Click Submit. **Expect:** confirmation popup 'Do you want to send request for time extension?'
+4. Click OK on popup. **Expect:** toast 'Your request submitted successfully.'
+5. Navigate to Customer Request screen. Verify Request Type = 'Stop Time Extension', Status = Pending.
+
+### SC003_TC_003 — Stop Time Extension: getAllPendingRequests API response verified (High)
+Screen: API / Postman
+Prerequisites: Stop Time Extension submitted.
+API: `{{Base_URL}}Financialprocess/getAllPendingRequests/?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373`
+Expected: type='Stop Time Extension', date=WEF date, end_date=same as date, credit_debit_amount='0', status='Pending', parent_name='Support Request', admission_type='Regular'
+
+1. Submit Stop Time Extension request. Note WEF date selected.
+2. Run `getAllPendingRequests` API.
+3. Verify response status=ok, type='Stop Time Extension'.
+4. Verify date = WEF date selected, end_date = same as date.
+5. Verify credit_debit_amount = '0' (no immediate charge on stop request).
+6. Verify status = 'Pending', parent_name = 'Support Request'.
+
+### SC003_TC_005 — Stop Time Extension: processTimeExtentionRequest API response (Critical)
+Screen: API / Postman
+Prerequisites: Stop Time Extension approved on Customer Request screen.
+API: `http://test-admissions.footprintseducation.in/api/childservices/processTimeExtentionRequest?child_id=<child_id>&ckey=3E529969372D`
+Expected: `{"status":"ok","message":"Time Extension request processed"}`
+
+1. Approve Stop Time Extension on Customer Request screen.
+2. Run `processTimeExtentionRequest` API.
+3. Verify response status = 'ok'.
+4. Verify response message = 'Time Extension request processed'.
+5. Navigate to Account Statement. Verify Time Extension addon REMOVED.
+
+### Existing building blocks to reuse
+- `pages/Support/Regular_ServiceRequests.java` — Start/Stop Time Extension forms already wired: `isStartTimeExtensionFormVisible()`, `setSTEFromDate()`, `setSTEToDate()`, `submitStartTimeExtension()`, `isStopTimeExtensionFormVisible()`, `setSTPFromDate()`, `submitStopTimeExtension()`.
+- `utils/APIs.java` — `getExtendedDaycarePendingToApproved(childId)` hits the same physical `getAllPendingRequests` endpoint with the same key/ckey — need an equivalent Time Extension method (or a shared generic one) plus a new method for `processTimeExtentionRequest` (different ckey: `3E529969372D`).
+- `pages/Support/RecentCustomerRequestsPage.java` — has the generic grid-reading pattern (`getEDColumnValue`-style, filtering by Request Type) to mirror for Time Extension rows; also has `clickApprove(requestId)` already for the Approve button.
+- `pages/Support/AccountStatementPage.java` — will need an Addons-section reader (not yet built) to verify 'Time Extension' addon appears/disappears, distinct from the existing Extended Daycare invoice-line-item reader.
+
+### Open items to confirm before automating
+- Confirm whether `getAllPendingRequests` actually needs `chid_id` or `child_id` for Time Extension (the Extended Daycare investigation found `child_id` was the real, correctly-scoping param — `chid_id` was silently ignored).
+- Concrete child IDs: Admission ID 46085 (submit tests) and 70800 (full-flow test) are given in the sheet — need to confirm these are currently in the right state (Active, Time Extension enabled at center, no conflicting pending request) before each run.
+- UI locator for the Addons section on Account Statement (to verify 'Time Extension' addon add/remove) — not yet explored.
+- Whether Time Extension is enabled at the relevant center for the given admission IDs (SC001_TC_001's config step is a prerequisite, not in our automated scope).

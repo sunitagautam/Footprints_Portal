@@ -1,55 +1,16 @@
-﻿"Invoice #","Invoice Series","Child #","Child Name","Center","Room","Program","Amount","Paid Amount","Status","Invoice Date","Payment Date","Admission Status","Due Date"
-"924996","PI/924996","342","Demo Ggn-pv","Palam Vihar","Toddlers A","Full Day","2.00","0.00","Payment Due","2026-06-29 12:52:11","","Active","2026-07-03"
-"924995","PI/924995","342","Demo Ggn-pv","Palam Vihar","Toddlers A","Full Day","2.00","0.00","Payment Due","2026-06-29 12:50:34","","Active","2026-07-03"
-"924992","PI/924992","70836","Traild Singh","DLF Phase 3","","Full Day","5,499.00","0.00","Payment Due","2026-06-29 11:03:15","","Joining - Class Approval","2026-07-30"
-"924993","PI/924993","70836","Traild Singh","DLF Phase 3","","Full Day","3,500.00","0.00","Payment Due","2026-06-29 11:03:15","","Joining - Class Approval","2026-07-30"
-"924994","PI/924994","70836","Traild Singh","DLF Phase 3","","Full Day","807.00","0.00","Payment Due","2026-06-29 11:03:15","","Joining - Class Approval","2026-07-30"
-"924991","PI/924991","70836","Traild Singh","DLF Phase 3","","Full Day","9,599.00","1.00","Payment Due","2026-06-29 11:03:14","","Joining - Class Approval","2026-07-30"
-"924988","PI/924988","70834","Agrim","DLF Phase 3","Pre Nursery C","Full Day","3,500.00","0.00","Payment Due","2026-06-26 18:18:01","","Active","2026-07-30"
-"924989","PI/924989","70834","Agrim","DLF Phase 3","Pre Nursery C","Full Day","16,000.00","0.00","Payment Due","2026-06-26 18:18:01","","Active","2026-07-30"
-"924990","PI/924990","70834","Agrim","DLF Phase 3","Pre Nursery C","Full Day","740.00","0.00","Payment Due","2026-06-26 18:18:01","","Active","2026-07-30"
-"924986","PI/924986","70834","Agrim","DLF Phase 3","Pre Nursery C","Full Day","9,599.00","1.00","Payment Due","2026-06-26 18:18:00","","Active","2026-07-30"
-"924987","PI/924987","70834","Agrim","DLF Phase 3","Pre Nursery C","Full Day","5,499.00","0.00","Payment Due","2026-06-26 18:18:00","","Active","2026-07-30"
-"924985","PI/924985","55863","Garvit Khandelwal","Sector 4, Malviya Nagar","Pre Nursery A","Half Day","650.00","0.00","Payment Due","2026-06-26 18:02:18","","Active","2026-06-30"
-"924984","PI/924984","70824","Test Contract","DLF Phase 3","","Half Day","1,599.00","0.00","Payment Due","2026-06-26 17:42:45","","Joining Pipeline","2026-07-27"
-"924980","PI/924980","70824","Test Contract","DLF Phase 3","","Half Day","9,599.00","0.00","Payment Due","2026-06-26 17:42:44","","Joining Pipeline","2026-07-27"
-"924981","PI/924981","70824","Test Contract","DLF Phase 3","","Half Day","4,000.00","0.00","Payment Due","2026-06-26 17:42:44","","Joining Pipeline","2026-07-27"
-"924982","PI/924982","70824","Test Contract","DLF Phase 3","","Half Day","3,500.00","0.00","Payment Due","2026-06-26 17:42:44","","Joining Pipeline","2026-07-27"
-"924983","PI/924983","70824","Test Contract","DLF Phase 3","","Half Day","16,000.00","0.00","Payment Due","2026-06-26 17:42:44","","Joining Pipeline","2026-07-27"
-"924973","PI/924973","70828","Abc","DLF Phase 3","Play Group C","Extended Preschool","16,000.00","0.00","Payment Due","2026-06-26 16:06:28","","Active","2026-07-30"
-"924974","PI/924974","70828","Abc","DLF Phase 3","Play Group C","Extended Preschool","600.00","0.00","Payment Due","2026-06-26 16:06:28","","Active","2026-07-30"
-"924970","PI/924970","70828","Abc","DLF Phase 3","Play Group C","Extended Preschool","9,599.00","1.00","Payment Due","2026-06-26 16:06:27","","Active","2026-07-30"
-"924971","PI/924971","70828","Abc","DLF Phase 3","Play Group C","Extended Preschool","5,499.00","0.00","Payment Due","2026-06-26 16:06:27","","Active","2026-07-30"
-"924972","PI/924972","70828","Abc","DLF Phase 3","Play Group C","Extended Preschool","3,500.00","0.00","Payment Due","2026-06-26 16:06:27","","Active","2026-07-30"
-"924851","PI/924851","70789","Abc","DLF Phase 3","Play Group C","Full Day","3,500.00","0.00","Payment Due","2026-06-24 11:11:33","","Joining Pipeline","2026-09-04"
-"924852","PI/924852","70789","Abc","DLF Phase 3","Play Group C","Full Day","21,076.00","0.00","Payment Due","2026-06-24 11:11:33","","Joining Pipeline","2026-09-04"
-"924849","PI/924849","70789","Abc","DLF Phase 3","Play Group C","Full Day","9,599.00","1.00","Payment Due","2026-06-24 11:11:32","","Joining Pipeline","2026-09-04"
-"924850","PI/924850","70789","Abc","DLF Phase 3","Play Group C","Full Day","5,499.00","0.00","Payment Due","2026-06-24 11:11:32","","Joining Pipeline","2026-09-04"
-"924681","PI/924681","70788","Joy","DLF Phase 3","","Full Day","16,000.00","0.00","Payment Due","2026-06-24 11:11:05","","Joining - Class Approval","2026-07-18"
-"924682","PI/924682","70788","Joy","DLF Phase 3","","Full Day","9,620.00","0.00","Payment Due","2026-06-24 11:11:05","","Joining - Class Approval","2026-07-18"
-"924678","PI/924678","70788","Joy","DLF Phase 3","","Full Day","9,599.00","1.00","Payment Due","2026-06-24 11:11:04","","Joining - Class Approval","2026-07-18"
-"924679","PI/924679","70788","Joy","DLF Phase 3","","Full Day","5,499.00","0.00","Payment Due","2026-06-24 11:11:04","","Joining - Class Approval","2026-07-18"
-"924680","PI/924680","70788","Joy","DLF Phase 3","","Full Day","3,500.00","0.00","Payment Due","2026-06-24 11:11:04","","Joining - Class Approval","2026-07-18"
-"924645","PI/924645","70773","Trail Testing","DLF Phase 3","","Half Day","7,741.00","0.00","Payment Due","2026-06-22 18:22:26","","Joining - Class Approval","2026-09-11"
-"923582","PI/923582","70772","Child Trialde","DLF Phase 3","","Half Day","799.00","0.00","Payment Due","2026-06-17 16:41:02","","Joining - Class Approval","2026-07-29"
-"923535","PI/923535","70790","Lveer Lsingh","DLF Phase 3","Play Group A","Full Day","9,599.00","1.00","Payment Due","2026-06-16 14:24:02","","Attrition","2026-07-19"
-"923517","PI/923517","70773","Trail Testing","DLF Phase 3","","Half Day","9,599.00","1.00","Payment Due","2026-06-11 13:40:57","","Joining - Class Approval","2026-09-11"
-"923518","PI/923518","70773","Trail Testing","DLF Phase 3","","Half Day","5,499.00","0.00","Payment Due","2026-06-11 13:40:57","","Joining - Class Approval","2026-09-11"
-"923519","PI/923519","70773","Trail Testing","DLF Phase 3","","Half Day","3,500.00","0.00","Payment Due","2026-06-11 13:40:57","","Joining - Class Approval","2026-09-11"
-"923520","PI/923520","70773","Trail Testing","DLF Phase 3","","Half Day","16,000.00","0.00","Payment Due","2026-06-11 13:40:57","","Joining - Class Approval","2026-09-11"
-"923512","PI/923512","70774","Trail Childinvoice","DLF Phase 3","","Full Day","9,599.00","1.00","Payment Due","2026-06-11 13:36:12","","Joining - Class Approval","2026-07-03"
-"923513","PI/923513","70774","Trail Childinvoice","DLF Phase 3","","Full Day","5,499.00","0.00","Payment Due","2026-06-11 13:36:12","","Joining - Class Approval","2026-07-03"
-"923514","PI/923514","70774","Trail Childinvoice","DLF Phase 3","","Full Day","3,500.00","0.00","Payment Due","2026-06-11 13:36:12","","Joining - Class Approval","2026-07-03"
-"923515","PI/923515","70774","Trail Childinvoice","DLF Phase 3","","Full Day","16,000.00","0.00","Payment Due","2026-06-11 13:36:12","","Joining - Class Approval","2026-07-03"
-"923516","PI/923516","70774","Trail Childinvoice","DLF Phase 3","","Full Day","3,700.00","0.00","Payment Due","2026-06-11 13:36:12","","Joining - Class Approval","2026-07-03"
-"923508","PI/923508","70772","Child Trialde","DLF Phase 3","","Half Day","5,499.00","0.00","Payment Due","2026-06-11 13:09:07","","Joining - Class Approval","2026-07-29"
-"923509","PI/923509","70772","Child Trialde","DLF Phase 3","","Half Day","3,500.00","0.00","Payment Due","2026-06-11 13:09:07","","Joining - Class Approval","2026-07-29"
-"923510","PI/923510","70772","Child Trialde","DLF Phase 3","","Half Day","16,000.00","0.00","Payment Due","2026-06-11 13:09:07","","Joining - Class Approval","2026-07-29"
-"923507","PI/923507","70772","Child Trialde","DLF Phase 3","","Half Day","9,599.00","1.00","Payment Due","2026-06-11 13:09:06","","Joining - Class Approval","2026-07-29"
-"921438","PI/921438","70377","Neel Zoravar","Kathrikadavu, Kaloor","","Half Day","5,499.00","0.00","Payment Due","2026-06-02 08:00:10","","Joining - Class Approval","2026-06-29"
-"921439","PI/921439","70377","Neel Zoravar","Kathrikadavu, Kaloor","","Half Day","3,500.00","0.00","Payment Due","2026-06-02 08:00:10","","Joining - Class Approval","2026-06-29"
-"921408","PI/921408","70282","Vihaan Arya Vakkapatla","Belathur - Whitefield","","Extended Preschool","3,500.00","0.00","Payment Due","2026-06-02 08:00:07","","Joining - Class Approval","2026-07-25"
-"921409","PI/921409","70282","Vihaan Arya Vakkapatla","Belathur - Whitefield","","Extended Preschool","16,000.00","0.00","Payment Due","2026-06-02 08:00:07","","Joining - Class Approval","2026-07-25"
-"921401","PI/921401","70243","Alay Ramya Pranav","Arekere","","Half Day","5,499.00","0.00","Payment Due","2026-06-02 08:00:06","","Joining - Class Approval","2026-07-13"
-"921402","PI/921402","70243","Alay Ramya Pranav","Arekere","","Half Day","3,500.00","0.00","Payment Due","2026-06-02 08:00:06","","Joining - Class Approval","2026-07-13"
-"921407","PI/921407","70282","Vihaan Arya Vakkapatla","Belathur - Whitefield","","Extended Preschool","5,499.00","0.00","Payment Due","2026-06-02 08:00:06","","Joining - Class Approval","2026-07-25"
+Child #,Status
+342,Payment Due
+70836,Payment Due
+70834,Payment Due
+55863,Payment Due
+70824,Payment Due
+70828,Payment Due
+70789,Payment Due
+70788,Payment Due
+70773,Payment Due
+70772,Payment Due
+70790,Payment Due
+70774,Payment Due
+70377,Payment Due
+70282,Payment Due
+70243,Payment Due

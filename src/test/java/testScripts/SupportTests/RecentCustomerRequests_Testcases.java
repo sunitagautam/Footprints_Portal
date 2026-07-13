@@ -30,7 +30,27 @@ public class RecentCustomerRequests_Testcases extends BaseTest {
             "WEF Date", "End Date", "Other Info",
             "Support Executive", "Created By"
     };
-
+    // Child Pause — Pending (has CANCEL + PROCESSING DETAILS)
+    // Confirmed from DOM: Paarth Agrawal, request_id=159673
+    private static final String PAUSE_PENDING_ADM_ID = "49149";  // update to actual child admId
+    private static final String PAUSE_PENDING_CHILD = "Paarth Agrawal";
+    private static final String PAUSE_PENDING_REQ_ID = "159673";
+    // Child Pause — Approved (has EARLY RESUME + EXTEND PAUSE)
+    // Confirmed from DOM: Saavi Agarwal, request_id=160536 (processing details)
+    private static final String PAUSE_APPROVED_ADM_ID = "65697";  // update to actual admId
+    private static final String PAUSE_APPROVED_CHILD = "Saavi Agarwal";
+    // Child Pause — Disabled buttons (old policy, pre-April 2026)
+    // Confirmed from DOM: Driti Jadhav — disabled btn-ladda class
+    private static final String PAUSE_OLD_POLICY_CHILD = "Driti Jadhav";
+    // Program Change — Pending (has CANCEL + PROCESSING DETAILS)
+    // Confirmed from DOM: Vedant Shrivastava, request_id=160577
+    private static final String PC_PENDING_ADM_ID = "66698";  // update to actual admId
+    private static final String PC_PENDING_CHILD = "Vedant Shrivastava";
+    private static final String PC_PENDING_REQ_ID = "160577";
+    // Early Resume date — must be before current end date of approved pause
+    private static final String EARLY_RESUME_DATE = "2026-06-20";
+    // Extend date — must be after current end date but within 30-day limit
+    private static final String EXTEND_PAUSE_DATE = "2026-07-15";
     RecentCustomerRequestsPage rcPage;
     Navigations navigations;
 
@@ -107,6 +127,10 @@ public class RecentCustomerRequests_Testcases extends BaseTest {
 
         Reporter.log("✅ TC002 PASSED — default search completed, entries: " + entries, true);
     }
+
+    // ═══════════════════════════════════════════════
+    // TEST DATA — Action button test IDs
+    // ═══════════════════════════════════════════════
 
     // ═══════════════════════════════════════════════════════════════════════
     // TC003 — Search by Admission ID returns matching results
@@ -361,5 +385,306 @@ public class RecentCustomerRequests_Testcases extends BaseTest {
                 "❌ Invalid Admission ID should return 0 rows. Got: " + rows);
 
         Reporter.log("✅ TC012 PASSED — invalid ID returns no data gracefully", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC013 — Pause Pending: CANCEL button visible
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 14,
+            description = "TC013 — Pending Pause: CANCEL button visible in table row")
+    public void tc013_pausePendingCancelButtonVisible() throws InterruptedException {
+        Reporter.log("▶ TC013 — CANCEL button visible for Pending Pause", true);
+
+        rcPage.enterAdmissionId(PAUSE_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isCancelPauseButtonVisible(),
+                "❌ CANCEL button (cancel_pause) not visible for Pending Pause");
+
+        String reqId = rcPage.getFirstCancelRequestId();
+        Reporter.log("   Cancel button found, request_id=" + reqId, true);
+        Assert.assertFalse(reqId.isEmpty(),
+                "❌ request_id attribute should not be empty on CANCEL button");
+
+        Reporter.log("✅ TC013 PASSED — CANCEL button visible for Pending Pause", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC014 — Pause Pending: PROCESSING DETAILS button visible
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 15,
+            description = "TC014 — Pending Pause: PROCESSING DETAILS button visible")
+    public void tc014_pausePendingProcessingDetailsVisible() throws InterruptedException {
+        Reporter.log("▶ TC014 — PROCESSING DETAILS button visible for Pending Pause", true);
+
+        rcPage.enterAdmissionId(PAUSE_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isProcessingDetailsVisible(),
+                "❌ PROCESSING DETAILS button not visible for Pending Pause");
+
+        String reqId = rcPage.getFirstProcessingDetailsRequestId();
+        Reporter.log("   Processing Details request_id=" + reqId, true);
+
+        Reporter.log("✅ TC014 PASSED — PROCESSING DETAILS visible", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC015 — Pause Pending: Cancel request flow
+    // Cancel → Confirm → verify CANCEL button gone
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 16,
+            description = "TC015 — Cancel a Pending Pause request via modal confirm")
+    public void tc015_cancelPendingPauseRequest() throws InterruptedException {
+        Reporter.log("▶ TC015 — Cancel Pending Pause (request_id=" + PAUSE_PENDING_REQ_ID + ")", true);
+
+        rcPage.enterAdmissionId(PAUSE_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isCancelPauseButtonVisible(),
+                "❌ CANCEL button not visible — pre-condition failed");
+
+        // Click CANCEL → modal opens
+        rcPage.clickCancelPauseByRequestId(PAUSE_PENDING_REQ_ID);
+        Reporter.log("   CANCEL clicked — modal should appear", true);
+
+        // Confirm cancellation
+        rcPage.confirmCancelRequest();
+        Reporter.log("   Confirmed cancellation", true);
+
+        // Re-submit to refresh table
+        rcPage.enterAdmissionId(PAUSE_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        // Verify CANCEL button is gone — request is now cancelled
+        Assert.assertTrue(rcPage.isCancelPauseButtonGone(),
+                "❌ CANCEL button still visible after cancellation");
+
+        Reporter.log("✅ TC015 PASSED — Pause request cancelled successfully", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC016 — Pause Pending: Cancel modal dismissed — no cancellation
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 17,
+            description = "TC016 — Dismiss Cancel modal: pause request NOT cancelled")
+    public void tc016_dismissCancelModal() throws InterruptedException {
+        Reporter.log("▶ TC016 — Dismiss Cancel modal", true);
+
+        rcPage.enterAdmissionId(PAUSE_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isCancelPauseButtonVisible(),
+                "❌ CANCEL button not visible — pre-condition failed");
+
+        // Click CANCEL → modal opens
+        rcPage.clickCancelPause();
+
+        // Dismiss modal (Close button)
+        rcPage.dismissCancelModal();
+        Reporter.log("   Modal dismissed", true);
+
+        // CANCEL button should still be present
+        Assert.assertTrue(rcPage.isCancelPauseButtonVisible(),
+                "❌ CANCEL button gone after dismiss — request should not be cancelled");
+
+        Reporter.log("✅ TC016 PASSED — Dismiss keeps request intact", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC017 — Program Change Pending: CANCEL button visible
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 18,
+            description = "TC017 — Pending Program Change: CANCEL button visible")
+    public void tc017_programChangePendingCancelVisible() throws InterruptedException {
+        Reporter.log("▶ TC017 — CANCEL button visible for Pending Program Change", true);
+
+        rcPage.enterAdmissionId(PC_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isCancelProgramChangeButtonVisible(),
+                "❌ CANCEL button (cancel_customer_request) not visible for Pending PC");
+
+        String reqId = rcPage.getFirstCancelRequestId();
+        Reporter.log("   Cancel button found, request_id=" + reqId, true);
+
+        Reporter.log("✅ TC017 PASSED — Program Change CANCEL button visible", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC018 — Program Change Pending: Cancel request flow
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 19,
+            description = "TC018 — Cancel a Pending Program Change request")
+    public void tc018_cancelPendingProgramChange() throws InterruptedException {
+        Reporter.log("▶ TC018 — Cancel Pending Program Change (request_id="
+                + PC_PENDING_REQ_ID + ")", true);
+
+        rcPage.enterAdmissionId(PC_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isCancelProgramChangeButtonVisible(),
+                "❌ CANCEL button not visible — pre-condition failed");
+
+        rcPage.clickCancelProgramChangeByRequestId(PC_PENDING_REQ_ID);
+        Reporter.log("   CANCEL clicked", true);
+
+        rcPage.confirmCancelRequest();
+        Reporter.log("   Confirmed cancellation", true);
+
+        // Re-submit to refresh
+        rcPage.enterAdmissionId(PC_PENDING_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isCancelProgramChangeButtonGone(),
+                "❌ CANCEL button still visible — cancellation may have failed");
+
+        Reporter.log("✅ TC018 PASSED — Program Change cancelled successfully", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC019 — Approved Pause: EARLY RESUME button enabled
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 20,
+            description = "TC019 — Approved Pause: EARLY RESUME button enabled (popdown_medium)")
+    public void tc019_approvedPauseEarlyResumeEnabled() throws InterruptedException {
+        Reporter.log("▶ TC019 — EARLY RESUME button enabled for Approved Pause", true);
+
+        rcPage.enterAdmissionId(PAUSE_APPROVED_ADM_ID);
+        rcPage.clickSubmit();
+
+        boolean enabled = rcPage.isEarlyResumeEnabled(PAUSE_APPROVED_CHILD);
+        Reporter.log("   EARLY RESUME enabled for " + PAUSE_APPROVED_CHILD + ": " + enabled, true);
+
+        Assert.assertTrue(enabled,
+                "❌ EARLY RESUME button should be enabled for Approved Pause. Child: "
+                        + PAUSE_APPROVED_CHILD);
+
+        Reporter.log("✅ TC019 PASSED — EARLY RESUME enabled", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC020 — Approved Pause: EXTEND PAUSE button enabled
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 21,
+            description = "TC020 — Approved Pause: EXTEND PAUSE button enabled")
+    public void tc020_approvedPauseExtendEnabled() throws InterruptedException {
+        Reporter.log("▶ TC020 — EXTEND PAUSE button enabled for Approved Pause", true);
+
+        rcPage.enterAdmissionId(PAUSE_APPROVED_ADM_ID);
+        rcPage.clickSubmit();
+
+        boolean enabled = rcPage.isExtendPauseEnabled(PAUSE_APPROVED_CHILD);
+        Reporter.log("   EXTEND PAUSE enabled for " + PAUSE_APPROVED_CHILD + ": " + enabled, true);
+
+        Assert.assertTrue(enabled,
+                "❌ EXTEND PAUSE button should be enabled for Approved Pause. Child: "
+                        + PAUSE_APPROVED_CHILD);
+
+        Reporter.log("✅ TC020 PASSED — EXTEND PAUSE enabled", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC021 — Old Policy Pause: EARLY RESUME + EXTEND PAUSE disabled
+    // Verifies SC007_TC001 — old-policy pauses show disabled buttons
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 22,
+            description = "TC021 — Old policy pause: EARLY RESUME and EXTEND PAUSE disabled")
+    public void tc021_oldPolicyPauseButtonsDisabled() throws InterruptedException {
+        Reporter.log("▶ TC021 — Old policy pause buttons disabled (SC007_TC001)", true);
+
+        // Submit default search to load all records
+        rcPage.clickSubmit();
+
+        boolean resumeDisabled = rcPage.isEarlyResumeDisabled(PAUSE_OLD_POLICY_CHILD);
+        boolean extendDisabled = rcPage.isExtendPauseDisabled(PAUSE_OLD_POLICY_CHILD);
+
+        Reporter.log("   EARLY RESUME disabled for " + PAUSE_OLD_POLICY_CHILD
+                + ": " + resumeDisabled, true);
+        Reporter.log("   EXTEND PAUSE disabled for " + PAUSE_OLD_POLICY_CHILD
+                + ": " + extendDisabled, true);
+
+        Assert.assertTrue(resumeDisabled,
+                "❌ EARLY RESUME should be DISABLED for old-policy pause. Child: "
+                        + PAUSE_OLD_POLICY_CHILD);
+        Assert.assertTrue(extendDisabled,
+                "❌ EXTEND PAUSE should be DISABLED for old-policy pause. Child: "
+                        + PAUSE_OLD_POLICY_CHILD);
+
+        Reporter.log("✅ TC021 PASSED — old-policy pause shows disabled buttons", true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC022 — Early Resume flow: click → set date → confirm
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 23,
+            description = "TC022 — Early Resume: set new end date and confirm")
+    public void tc022_earlyResumeFlow() throws InterruptedException {
+        Reporter.log("▶ TC022 — Early Resume flow for child: " + PAUSE_APPROVED_CHILD, true);
+        Reporter.log("   Resume date: " + EARLY_RESUME_DATE, true);
+
+        rcPage.enterAdmissionId(PAUSE_APPROVED_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isEarlyResumeEnabled(PAUSE_APPROVED_CHILD),
+                "❌ EARLY RESUME not enabled — pre-condition failed");
+
+        // Click EARLY RESUME → popdown opens
+        rcPage.clickEarlyResumeForChild(PAUSE_APPROVED_CHILD);
+        Reporter.log("   EARLY RESUME popdown opened", true);
+
+        // Set resume date in update_date_to input
+        rcPage.setExtendResumeDate(EARLY_RESUME_DATE);
+        Reporter.log("   Resume date set: " + EARLY_RESUME_DATE, true);
+
+        // Confirm
+        rcPage.confirmExtendResume();
+
+        String msg = rcPage.getActionResponseMessage();
+        Reporter.log("   Response: " + msg, true);
+
+        Assert.assertFalse(msg.toLowerCase().contains("error"),
+                "❌ Early Resume returned error: " + msg);
+
+        Reporter.log("✅ TC022 PASSED — Early Resume submitted", true);
+        Reporter.log("   ℹ Backend: verify pause end date updated to "
+                + EARLY_RESUME_DATE, true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TC023 — Extend Pause flow: click → set new end date → confirm
+    // ═══════════════════════════════════════════════════════════════════════
+    @Test(priority = 24,
+            description = "TC023 — Extend Pause: set new end date and confirm")
+    public void tc023_extendPauseFlow() throws InterruptedException {
+        Reporter.log("▶ TC023 — Extend Pause flow for child: " + PAUSE_APPROVED_CHILD, true);
+        Reporter.log("   New end date: " + EXTEND_PAUSE_DATE, true);
+
+        rcPage.enterAdmissionId(PAUSE_APPROVED_ADM_ID);
+        rcPage.clickSubmit();
+
+        Assert.assertTrue(rcPage.isExtendPauseEnabled(PAUSE_APPROVED_CHILD),
+                "❌ EXTEND PAUSE not enabled — pre-condition failed");
+
+        // Click EXTEND PAUSE → popdown opens
+        rcPage.clickExtendPauseForChild(PAUSE_APPROVED_CHILD);
+        Reporter.log("   EXTEND PAUSE popdown opened", true);
+
+        // Set new end date
+        rcPage.setExtendResumeDate(EXTEND_PAUSE_DATE);
+        Reporter.log("   New end date set: " + EXTEND_PAUSE_DATE, true);
+
+        // Confirm
+        rcPage.confirmExtendResume();
+
+        String msg = rcPage.getActionResponseMessage();
+        Reporter.log("   Response: " + msg, true);
+
+        Assert.assertFalse(msg.toLowerCase().contains("error"),
+                "❌ Extend Pause returned error: " + msg);
+
+        Reporter.log("✅ TC023 PASSED — Extend Pause submitted", true);
+        Reporter.log("   ℹ Backend: verify pause end date extended to "
+                + EXTEND_PAUSE_DATE, true);
     }
 }

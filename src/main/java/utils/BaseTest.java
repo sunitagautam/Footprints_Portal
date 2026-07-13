@@ -282,8 +282,8 @@ public class BaseTest {
                     System.currentTimeMillis() + ".png";
             FileUtils.copyFile(src, new File(path));
             Reporter.log("📸 Screenshot: " + path, true);
-        } catch (IOException e) {
-            System.out.println("❌ Screenshot failed: "
+        } catch (Exception e) {
+            System.out.println("⚠ Screenshot skipped: "
                     + e.getMessage());
         }
     }
