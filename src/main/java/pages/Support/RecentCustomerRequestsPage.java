@@ -4,6 +4,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -1191,6 +1192,264 @@ public class RecentCustomerRequestsPage {
                             "document.body.classList.remove('modal-open');");
             Thread.sleep(300);
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // WITHDRAW CHILD-SPECIFIC HELPERS (called from ServiceRequest_WithdrawChildTest)
+    // Filters by Admission ID via direct URL, then finds the row whose
+    // "Request Type" column is "Child Attrition" — confirmed live from the
+    // getAllPendingRequests API response (type/name both say "Child Attrition",
+    // not "Withdraw Child" — that's just the Service Request dropdown's label).
+    // Same single-request-type pattern as Extended Daycare. Approve/Reject use
+    // the generic clickApprove(requestId)/clickReject(requestId) (button.approve/
+    // button.reject keyed by request_id) already used by other service types —
+    // Withdraw Child has no request_type-specific button id like Time
+    // Extension does, so the row's request_id must be resolved first.
+    // ══════════════════════════════════════════════════════════════════════
+
+    private int findWithdrawChildRow() {
+        int rows = getRowCount();
+        for (int row = 1; row <= rows; row++) {
+            if ("Child Attrition".equalsIgnoreCase(getColumnValueForRow(row, "Request Type"))) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    public String getWithdrawColumnValue(String admId, String columnHeader)
+            throws InterruptedException {
+        navigateByChildId(admId);
+        int row = findWithdrawChildRow();
+        if (row == -1) return "";
+        return getColumnValueForRow(row, columnHeader);
+    }
+
+    public String getWithdrawRequestStatus(String admId) throws InterruptedException {
+        return getWithdrawColumnValue(admId, "Request Status");
+    }
+
+    public String getWithdrawApprovalStatus(String admId) throws InterruptedException {
+        return getWithdrawColumnValue(admId, "Approval Status");
+    }
+
+    /**
+     * Get request_id of the first APPROVE button currently visible — assumes
+     * navigateByChildId() has already scoped the grid to a single child, so
+     * "first" is unambiguous.
+     */
+    public String getFirstApproveRequestId() {
+        try {
+            return driver.findElement(By.cssSelector("button.approve"))
+                    .getAttribute("request_id");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Get request_id of the first REJECT button currently visible.
+     */
+    public String getFirstRejectRequestId() {
+        try {
+            return driver.findElement(By.cssSelector("button.reject"))
+                    .getAttribute("request_id");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Child Attrition (Withdraw Child) rows have no generic button.approve/
+     * button.reject pair — confirmed live: the actionable controls are
+     * RETAIN (id="retained_attrition", cancels/rejects — "retain the child" =
+     * don't withdraw them) and APPROVE (class="label btn btn-primary", no id/
+     * request_id attribute — must be located row-scoped by text, sharing the
+     * same <tr> as the RETAIN button for that request).
+     * <p>
+     * Always navigates to childId first — this must NOT rely on whatever page
+     * happens to already be loaded in the tab, since a prior test's leftover
+     * page state silently returns a stale request_id belonging to a DIFFERENT
+     * child (confirmed live: caused tc007 to act on tc001's request).
+     */
+    public String getFirstRetainAttritionRequestId(String childId) throws InterruptedException {
+        navigateByChildId(childId);
+        try {
+            return driver.findElement(By.id("retained_attrition"))
+                    .getAttribute("request_id");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public void clickRetainAttrition(String requestId) throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("#retained_attrition[request_id='" + requestId + "']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        Thread.sleep(800);
+        System.out.println("▶ RETAIN (Withdraw Child) clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Click APPROVE for a Child Attrition row, scoped to the same <tr> as its
+     * RETAIN button (request_id-matched) — opens the "Approve Attrition
+     * Request" modal. Confirmed live: neither a native WebElement.click() nor
+     * a JS-dispatched click() opens this modal; only a genuine Actions-based
+     * mouse click (moveToElement().click()) works.
+     */
+    public void clickApproveAttrition(String requestId) throws InterruptedException {
+        WebElement retainBtn = driver.findElement(By.cssSelector(
+                "#retained_attrition[request_id='" + requestId + "']"));
+        WebElement row = retainBtn.findElement(By.xpath("ancestor::tr"));
+        WebElement approveBtn = row.findElement(By.xpath(
+                ".//*[normalize-space(text())='APPROVE' or normalize-space(text())='Approve']"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", approveBtn);
+        Thread.sleep(500);
+        new Actions(driver).moveToElement(approveBtn).click().perform();
+        Thread.sleep(1000);
+        System.out.println("▶ APPROVE (Child Attrition) clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Click UPDATE REQUEST for a Child Attrition row, scoped to the same <tr>
+     * as its RETAIN button (request_id-matched) — opens the "Update Attrition
+     * Request" modal directly (no native confirm on this click, unlike
+     * RETAIN/APPROVE). Same Actions-based-click requirement as
+     * clickApproveAttrition — confirmed live (plain click() does not open it).
+     */
+    public void clickUpdateRequest(String requestId) throws InterruptedException {
+        WebElement retainBtn = driver.findElement(By.cssSelector(
+                "#retained_attrition[request_id='" + requestId + "']"));
+        WebElement row = retainBtn.findElement(By.xpath("ancestor::tr"));
+        WebElement updateBtn = row.findElement(By.xpath(
+                ".//*[normalize-space(text())='UPDATE REQUEST' or normalize-space(text())='Update Request']"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", updateBtn);
+        Thread.sleep(500);
+        new Actions(driver).moveToElement(updateBtn).click().perform();
+        Thread.sleep(1000);
+        System.out.println("▶ UPDATE REQUEST clicked, request_id=" + requestId);
+    }
+
+    /**
+     * Select year/month/day through the "Attrition From" calendar, exactly as
+     * a real user would. Confirmed live via diagnostic: the field
+     * (id="attrition_date") is NOT jQuery UI datepicker and NOT Pikaday — it
+     * is pickadate.js (class="picker__input", popup root id="<fieldId>_root"
+     * containing native <select class="picker__select--year/--month"> and
+     * <div class="picker__day" data-pick="<epoch>"> day cells). The original
+     * JS-injection approach (datepicker('setDate', ...)) looked correct in
+     * the DOM but silently broke the backend update — the record vanished
+     * entirely on submit. A manual click-through in the browser worked fine,
+     * so this drives the actual pickadate widget instead.
+     */
+    private void selectDateViaCalendar(WebElement dateField, int year, int month, int day) throws InterruptedException {
+        String fieldId = dateField.getAttribute("id");
+        dateField.click();
+        Thread.sleep(500);
+        WebElement root = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(fieldId + "_root")));
+
+        Select yearSelect = new Select(root.findElement(By.cssSelector(".picker__select--year")));
+        yearSelect.selectByValue(String.valueOf(year));
+        Thread.sleep(300);
+
+        Select monthSelect = new Select(root.findElement(By.cssSelector(".picker__select--month")));
+        monthSelect.selectByValue(String.valueOf(month - 1));
+        Thread.sleep(300);
+
+        List<WebElement> dayCells = root.findElements(By.cssSelector(
+                ".picker__day.picker__day--infocus:not(.picker__day--disabled)"));
+        boolean clicked = false;
+        for (WebElement cell : dayCells) {
+            if (cell.getText().trim().equals(String.valueOf(day))) {
+                cell.click();
+                clicked = true;
+                break;
+            }
+        }
+        if (!clicked) {
+            throw new IllegalStateException("Could not find selectable day " + day + " in the pickadate calendar for "
+                    + month + "/" + year);
+        }
+        Thread.sleep(500);
+    }
+
+    /**
+     * Fill the new WEF date ("Attrition From") + mandatory Comment and Submit
+     * the "Update Attrition Request" modal opened by clickUpdateRequest() —
+     * id="attrition_date" (jQuery UI datepicker) / id="update_reason"
+     * (textarea) / id="update_attrition" (Submit button).
+     *
+     * @param newDate ISO "yyyy-MM-dd" — parsed into year/month/day and
+     *                selected by clicking through the calendar widget (see
+     *                selectDateViaCalendar).
+     */
+    public String submitUpdateRequest(String newDate, String reason) throws InterruptedException {
+        WebElement dateField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("attrition_date")));
+        String[] parts = newDate.split("-");
+        selectDateViaCalendar(dateField, Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+
+        WebElement reasonField = driver.findElement(By.id("update_reason"));
+        reasonField.clear();
+        reasonField.sendKeys(reason);
+        Thread.sleep(300);
+
+        WebElement submitBtn = driver.findElement(By.id("update_attrition"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitBtn);
+        Thread.sleep(500);
+
+        // Update Request's Submit triggers a native confirm() — "Are you sure
+        // want to update this request?" — appears almost immediately. Any
+        // WebDriver command issued while it's open (even a read-only one)
+        // triggers Chrome's unhandledPromptBehavior=dismiss-and-notify, which
+        // auto-DISMISSES it (equivalent to clicking Cancel) before this code
+        // ever gets to accept it — confirmed live. Go straight to the alert
+        // check with nothing else in between.
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5)).until(ExpectedConditions.alertIsPresent());
+            String alertText = driver.switchTo().alert().getText();
+            System.out.println("   [Native confirm] " + alertText);
+            driver.switchTo().alert().accept();
+            Thread.sleep(1000);
+        } catch (Exception ignored) {
+            System.out.println("   (no native confirm dialog appeared)");
+        }
+
+        // Capture the actual success/error toast — never checked before, and
+        // the row vanishing from the grid after update suggests this may
+        // surface a server-side error we were previously ignoring.
+        String responseMessage = getActionResponseMessage();
+        System.out.println("   [Update Request response] " + responseMessage);
+        System.out.println("✅ Update Attrition Request submitted");
+        return responseMessage;
+    }
+
+    /**
+     * Fill the mandatory Comment field and Submit the "Approve Attrition
+     * Request" modal opened by clickApproveAttrition() — id="approve_text"
+     * (textarea) / id="approve_attrition" (Submit button).
+     */
+    public void submitApproveAttrition(String comment) throws InterruptedException {
+        WebElement commentField = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("approve_text")));
+        commentField.clear();
+        commentField.sendKeys(comment);
+        Thread.sleep(300);
+        WebElement submitBtn = driver.findElement(By.id("approve_attrition"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitBtn);
+        Thread.sleep(1000);
+
+        // Submit triggers a native confirm() — "Are you sure want to approve
+        // this request?" — confirmed live. Leaving it unhandled breaks every
+        // subsequent WebDriver call with UnhandledAlertException.
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5)).until(ExpectedConditions.alertIsPresent());
+            String alertText = driver.switchTo().alert().getText();
+            System.out.println("   [Native confirm] " + alertText);
+            driver.switchTo().alert().accept();
+            Thread.sleep(1000);
+        } catch (Exception ignored) {
+            System.out.println("   (no native confirm dialog appeared)");
+        }
+        System.out.println("✅ Approve Attrition Request submitted");
     }
 
     // ══════════════════════════════════════════════════════════════════════

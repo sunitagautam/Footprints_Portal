@@ -290,3 +290,104 @@ Expected: `{"status":"ok","message":"Time Extension request processed"}`
 - Concrete child IDs: Admission ID 46085 (submit tests) and 70800 (full-flow test) are given in the sheet — need to confirm these are currently in the right state (Active, Time Extension enabled at center, no conflicting pending request) before each run.
 - UI locator for the Addons section on Account Statement (to verify 'Time Extension' addon add/remove) — not yet explored.
 - Whether Time Extension is enabled at the relevant center for the given admission IDs (SC001_TC_001's config step is a prerequisite, not in our automated scope).
+
+## Requirements — Withdraw Child Service Request (`ServiceRequest_WithdrawChildTest.java`)
+
+Source: `TC_ServiceRequests_Withdraw.xlsx` (sheet `TC_Withdraw`). 7 test cases selected for automation (SC004_TC_001 deferred — see below).
+
+### SC001_TC_001 — Full flow via background jobs/APIs (High)
+Screen: Service Request → Withdraw Child
+Test Data: `Financialprocess/getAllPendingRequests/?key=F@@tpr!nt$ChargeBeeUpdate$&child_id=<id>` ; `parentapp/processChildApprovedRequest?child_id=<id>` (spec's own example URLs omit a ckey for both).
+
+1. Apply Withdraw Child request.
+2. **Back-dated:** Child Attrition Request auto-approved & attrition processed immediately — no manual approval needed.
+3. **Future/current-dated:** Needs approval from CD (Support) on Customer Request screen, then run `processChildApprovedRequest` API → approved as per WEF automatically.
+4. Automated as data-driven (`@DataProvider "withdrawDatePaths"`) — **future-dated only this round**; back-dated row commented out, deferred to next sprint per user decision.
+
+### SC001_TC_002/003/004/005 — Submit for each withdraw reason (Medium)
+Screen: Service Request → Withdraw Child
+Test Data: To Date (future, 30 days out); Reason: Transfer / Not Satisfied with Services / Moving to formal schooling / Others.
+
+1. Open URL → Support → Account Statement → enter Admission ID → Service Request.
+2. Select Service Type → Withdraw Child Request, verify default view.
+3. Fill To Date & reason.
+4. Click Submit → confirm popup ("Do you want to send Withdraw Child request?") → OK.
+5. Toast: "Your request submitted successfully."
+
+Automated as 4 separate `@Test` methods (`testWithdraw_Transfer`, `testWithdraw_NotSatisfied`, `testWithdraw_FormalSchool`, `testWithdraw_Others`) rather than one `@DataProvider` method — user's explicit choice, since child IDs for these come from TestNG `@Parameters`/XML (no code edit needed when a child gets consumed) rather than a hardcoded data array. Each also calls `verifyPendingStatus(childId)` (beyond the base spec) to confirm Pending status after submit.
+
+### SC001_TC_006 — Verify Pending status after submit (Medium)
+Screen: Service Request → Withdraw Child → Customer Request
+Prerequisites: Support staff/admin user. Background job: `getAllPendingRequests` API via Postman.
+
+1. Submit Withdraw Child request (reason: Not Satisfied with Service).
+2. Verify Request Status = "Pending" on Customer Request screen.
+
+### SC002_TC_002 — Support approves Withdraw Child request (High)
+Screen: Service Request → Withdraw Child → Customer Request
+
+1. Open Customer Request screen for the child.
+2. Run `getAllPendingRequests` → click Approve → request approved successfully.
+3. Run `processChildApprovedRequest` → approved as per WEF automatically.
+
+### SC002_TC_003 — Support rejects Withdraw Child request (High)
+Screen: Service Request → Withdraw Child → Customer Request
+
+1. Open Customer Request screen for the child.
+2. Click Cancel/Reject button → request rejected, not processed.
+
+### SC004_TC_001 — Access-right validation for 'Raise_Support_Request' (Medium) — **NOT automated this round**
+Needs a second user without the `Raise_Support_Request` right to compare against — no such row currently exists in `testData/input_UserRights.xlsx` (only `Program Change` has a differentiated-rights precedent, added specifically for that purpose). Deferred until that test-data gap is filled.
+
+### SC003_TC_001 — RETAIN as its own scenario (High) — `tc009_retainAdmission`
+Screen: Service Request → Withdraw Child → Customer Request
+Prerequisites: Withdraw Child request Pending, Approval Status not yet run through `processChildApprovedRequest`.
+
+1. Submit Withdraw Child request. Confirm Pending on grid.
+2. Click RETAIN on the Child Attrition row (row-scoped via `request_id`) → accept native confirm "You want to retain attrition request?".
+3. Verify Request Status = "Cancelled".
+
+### Update Attrition Request — WEF date change on a pending record — `tc010_updateAttritionRequest`
+Screen: Service Request → Withdraw Child → Customer Request
+Prerequisites: Withdraw Child request Pending, Approval Status = Pending (UPDATE REQUEST button only shows in that window — same window as RETAIN, before `processChildApprovedRequest` runs).
+Confirmed by user: **Update Request can be submitted multiple times on the same pending record before its WEF date** — it does not get consumed/one-shot the way Approve/Retain do, so the same child can be reused to re-test the update flow.
+
+1. Submit Withdraw Child request. Capture WEF Date before.
+2. Click UPDATE REQUEST on the Child Attrition row (row-scoped via `request_id`, same pattern as RETAIN/APPROVE — plain/JS click does not open the modal, requires `Actions.moveToElement().click()`).
+3. In the "Update Attrition Request" modal, pick a new (future, later than current WEF) date via the calendar and enter a mandatory Comment. Submit → accept native confirm "Are you sure want to update this request?".
+4. Refresh grid. Verify row still present (not deleted) and WEF Date changed to the new value.
+
+### Confirmed live (do not re-derive without evidence)
+- The grid's "Request Type" column for a Withdraw Child submission reads **"Child Attrition"**, not "Withdraw Child" — confirmed from the `getAllPendingRequests` response (`"type":"Child Attrition"`, `"name":"<child>-Child Attrition"`) and the grid itself. "Withdraw Child" is only the Service Request dropdown's label.
+- `withdraw_reason` dropdown options, exact text: `Transfer`, `Not Satisfied with Services`, `Moving to formal schooling` (lowercase "formal schooling"), `Others`.
+- The `reason_comment` field (`id="reason_comment"`) only renders in the DOM when reason = "Others" — for the other 3 reasons it's absent (not just hidden), so waiting on its visibility times out. Selecting "Others" without filling it submits with no popup/toast at all (silent client-side validation block).
+- `getAllPendingRequests` is a **stateful trigger, not a plain read** (same pattern as Center Shift/Extended Daycare/Time Extension) — calling it flips the grid straight from `Pending` to `Processing`. Any check for `Pending` status must happen *before* calling it, not after.
+- A Child Attrition row has **no generic `button.approve`/`button.reject` pair**. The actionable controls are:
+  - **RETAIN** (`id="retained_attrition"`, `request_id` attribute present) — cancels/rejects the pending attrition ("retain the child" = don't withdraw them). This is what SC002_TC_003's "click on cancel button" refers to.
+  - **APPROVE** (`class="label btn btn-primary"`, text "Approve" — **no** `id`/`request_id` attribute) — must be located row-scoped: find RETAIN's `request_id`, walk up to its `<tr>`, then find the "Approve"-text element within that same row.
+  - Clicking APPROVE only works via a genuine `Actions(driver).moveToElement(el).click().perform()` — neither `WebElement.click()` nor a JS-dispatched `.click()` opens the modal (confirmed by repeated live testing).
+- Clicking APPROVE opens an "Approve Attrition Request(#childId)" modal: pre-filled "Approved By", and a **mandatory** Comment field (`id="approve_text"`, textarea) — Submit button is `id="approve_attrition"`. Submitting it triggers a **native confirm()**: "Are you sure want to approve this request?" — must be accepted or every subsequent WebDriver call throws `UnhandledAlertException`.
+- `processChildApprovedRequest` only processes a request **as of its WEF date** — calling it for a genuinely future-dated request (e.g. 30 days out) returns HTTP 200 with body `null`, a **silent no-op**, not an error. To observe the terminal `Approved` state within a single test run, WEF must be set to **today**, not a real future date. This applies to both the "future-dated" data-provider row and `tc007`.
+- Manual Approve (click APPROVE → fill comment → Submit → accept native confirm) is **mandatory** before `processChildApprovedRequest` does anything — confirmed directly by the user, and matches the spec's own wording ("need to take approval from CD as well then run the API").
+- `processChildApprovedRequest` ckey `9414D96600C5` (reused from Center Shift's `processOldChildAttrition`) is **confirmed correct** by the user for this use too — the earlier "null" response was caused by the WEF-date timing above, not a wrong ckey.
+- `getWithdrawChildPendingRequests` reuses ckey `B47C56483AAE7373` (same physical `Financialprocess/getAllPendingRequests/` endpoint as Center Shift/Extended Daycare/Time Extension) — spec's example omits a ckey but this is confirmed working via live responses.
+- Helper methods that read/act on a specific child's row (`getFirstRetainAttritionRequestId`, `clickApproveAttrition`) must **navigate to that child first**, never rely on whatever page happens to already be loaded in the shared tab — confirmed live that stale tab state from a previous test silently returns/acts on a DIFFERENT child's `request_id`.
+- **UPDATE REQUEST** (row-scoped, same pattern as RETAIN/APPROVE — no `id`/`request_id`, must walk up from RETAIN's `<tr>`) opens an "Update Attrition Request(#childId)" modal: date field `id="attrition_date"` + mandatory Comment `id="update_reason"` (textarea) + Submit `id="update_attrition"`. Submit triggers a native confirm() "Are you sure want to update this request?" — same dismiss-on-any-WebDriver-call hazard as elsewhere, must go straight to the alert check.
+- The `attrition_date` field is **pickadate.js** (`class="picker__input"`, popup root `id="<fieldId>_root"`), **not** jQuery UI datepicker and **not** Pikaday, despite both being used elsewhere in this app (confirmed live via DOM inspection — `.picker__select--year`/`.picker__select--month` native `<select>` elements plus `.picker__day[data-pick=<epoch>]` day cells). Setting the value via JS injection (`datepicker('setDate', ...)`) rendered the correct-looking value in the DOM but **silently deleted the record on submit** instead of updating it — the internal pickadate state never got set, so the backend received a broken payload. Fixed by driving the real widget: `Select` on the year/month dropdowns (fires native `change`), then a genuine `.click()` on the matching `.picker__day--infocus:not(.picker__day--disabled)` cell — mirroring exactly what a manual user does. This is what actually resolved the "row vanishes after Update Request" bug, not the earlier confirm-handling or refresh-timing theories.
+- Confirmed by user: Update Request can be run **multiple times on the same pending record before its WEF date** — unlike Approve/Retain it isn't a one-shot/terminal action, so the same child ID can be reused across repeated update attempts without needing a fresh child each time.
+
+### Existing/added building blocks
+- `pages/Support/Regular_ServiceRequests.java` — Withdraw Child form already wired: `isWithdrawFormVisible()`, `setWithdrawToDate()`, `selectWithdrawReason()`, `enterWithdrawComment()`, `submitWithdraw()`.
+- `utils/APIs.java` — added `getWithdrawChildPendingRequests(childId)` and `processWithdrawChildRequest(childId)`.
+- `pages/Support/RecentCustomerRequestsPage.java` — added `findWithdrawChildRow()` (filters grid by Request Type = "Child Attrition"), `getWithdrawColumnValue/RequestStatus/ApprovalStatus(admId)`, `getFirstRetainAttritionRequestId(childId)` / `clickRetainAttrition(requestId)` (reject/cancel), `clickApproveAttrition(requestId)` / `submitApproveAttrition(comment)` (approve modal, Actions-click + native-confirm handling).
+- `WithdrawChildtestng.xml` — new suite file; 4 reason-variant child IDs supplied via `<parameter>` tags (TestNG `@Parameters` injected into instance fields via `@BeforeClass`), the other 4 scenarios via hardcoded constants in the test class.
+
+### Current status (as of 2026-07-14): ALL 8 TEST CASES PASSING — FULL SUITE VALIDATED TOGETHER
+`mvn test -Dsurefire.suiteXmlFiles=WithdrawChildtestng.xml` run with 8 simultaneously-fresh child IDs: **8/8 passed, 0 failures.** This is a genuine combined-suite run, not 8 individual passes stitched together. The full Approve flow (click APPROVE row-scoped → fill+submit modal → accept native confirm → `processChildApprovedRequest`) and the RETAIN/reject flow are both confirmed working end-to-end in the same session.
+
+Additional confirmed-live detail: after RETAIN is clicked, `Request Status` reads **"Cancelled"** (not just "not Approved") — `tc008`'s assertion (`assertNotEquals(..., "Approved")`) already covers this correctly.
+
+The Withdraw Child automation (8 test cases from `TC_ServiceRequests_Withdraw.xlsx`) is functionally complete. Remaining work, not started:
+- **SC004_TC_001** (access-right validation) — needs a differentiated-rights row for Withdraw Child in `testData/input_UserRights.xlsx`, same pattern as `Program Change`.
+- **Back-dated path for `tc001`** — coded but commented out, never run live (banked ID `69755` for next sprint).
+- **43 further test cases in the same sheet, not yet scoped**: SC002_TC_001 (email — no infra to test), SC002_TC_004/005 (agent distribution/availability — backend routing, not really UI-testable), SC003_TC_001-004 (Retain-as-its-own-scenario + Re-join flow — good next candidate, reuses existing RETAIN code), SC004_TC_002-009 + SC005/SC006 (32 cases — future-date validation edge cases, invoice voiding, refund calculation; deep financial/data-integrity checks likely needing new page objects and backend verification, not yet scoped for feasibility).

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="Withdraw Child - Test Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <!--
+        10 Withdraw Child tests — run in priority order (1 → 7 groups).
+
+        PRE-CONDITION:
+          Every *_CHILD_ID constant in ServiceRequest_WithdrawChildTest.java (for
+          tc001/tc006/tc007/tc008/tc009/tc010) needs a real, unused child ID
+          before running. The four reason-variant tests (Transfer/Not Satisfied/
+          Formal School/Others) instead take their child IDs from the <parameter>
+          tags below — replace each value with a real, unused child ID before
+          running. Withdrawal is one-way (child status -> Attrition), so each
+          scenario needs its OWN child. Tests skip gracefully if left as TODO.
+
+        FLOW:
+          tc001              (x1, data-driven) -> full flow: submit -> getAllPendingRequests
+                              -> Approve -> processChildApprovedRequest -> Approved
+                              (SC001_TC_001, future-dated only for now)
+          testWithdraw_*      (x4) -> submit for each reason, verify success toast + Pending
+                              (SC001_TC_002/003/004/005)
+          tc006               -> submit -> verify Pending status on grid       (SC001_TC_006)
+          tc007               -> Approve -> processChildApprovedRequest -> Approved (SC002_TC_002)
+          tc008               -> Reject (RETAIN) -> request not processed     (SC002_TC_003)
+          tc009               -> RETAIN as its own scenario -> Cancelled      (SC003_TC_001)
+          tc010               -> UPDATE REQUEST -> change WEF date + reason, verify grid updates
+    -->
+
+    <test name="Withdraw Child - All Tests">
+        <parameter name="childId_Transfer" value="68787"/>
+        <parameter name="childId_NotSatisfied" value="68809"/>
+        <parameter name="childId_FormalSchool" value="68823"/>
+        <parameter name="childId_Others" value="68840"/>
+        <classes>
+            <class name="testScripts.SupportTests.ServiceRequest_WithdrawChildTest">
+                <methods>
+                    <include name="tc001_fullFlowByDatePath"/>
+                    <include name="testWithdraw_Transfer"/>
+                    <include name="testWithdraw_NotSatisfied"/>
+                    <include name="testWithdraw_FormalSchool"/>
+                    <include name="testWithdraw_Others"/>
+                    <include name="tc006_pendingStatusVerify"/>
+                    <include name="tc007_supportApprove"/>
+                    <include name="tc008_supportReject"/>
+                    <include name="tc009_retainAdmission"/>
+                    <include name="tc010_updateAttritionRequest"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>

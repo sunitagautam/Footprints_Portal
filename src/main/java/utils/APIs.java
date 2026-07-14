@@ -1,6 +1,5 @@
 package utils;
 
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 import static io.restassured.RestAssured.given;
@@ -21,13 +20,18 @@ import static io.restassured.RestAssured.given;
  * <p>
  * EXTENDED DAYCARE
  * getExtendedDaycarePendingToApproved(childId)     — GET Financialprocess/getAllPendingRequests/ (Pending → Approved)
- *                                                     NOTE: not actually scoped by chid_id — approves whatever
- *                                                     Extended Daycare request is currently pending system-wide.
+ * NOTE: not actually scoped by chid_id — approves whatever
+ * Extended Daycare request is currently pending system-wide.
  * runExtendedDaycareCronJob()                      — GET parentapp/extendedDaycareCronJob (End Date → Completed)
  * <p>
  * TIME EXTENSION
  * getTimeExtensionPendingRequests(childId)         — GET Financialprocess/getAllPendingRequests/ (chid_id scopes correctly here)
  * processTimeExtensionRequest(childId)             — GET childservices/processTimeExtentionRequest (child_id, after Approve)
+ * <p>
+ * WITHDRAW CHILD
+ * getWithdrawChildPendingRequests(childId)         — GET Financialprocess/getAllPendingRequests/ (child_id)
+ * processWithdrawChildRequest(childId)             — GET parentapp/processChildApprovedRequest (child_id, after Approve;
+ * future/current-dated only — back-dated auto-approves)
  * <p>
  * HELPERS
  * convertSingleQuotesToDouble(json)                — {'k':'v'} → {"k":"v"}
@@ -89,6 +93,15 @@ public class APIs {
 
     private static final String TE_PROCESS_REQUEST =
             "childservices/processTimeExtentionRequest";
+
+    // ═══════════════════════════════════════════════
+    // WITHDRAW CHILD ENDPOINTS
+    // ═══════════════════════════════════════════════
+    // Same physical endpoint as CS_PENDING_TO_PROCESSING/ED_APPROVE_REQUEST/
+    // TE_PENDING_REQUESTS — the test spec's own example URL confirms "child_id"
+    // (not "chid_id") is the correct scoping param here.
+    private static final String WD_PENDING_REQUESTS =
+            "Financialprocess/getAllPendingRequests/";
 
     // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
@@ -408,6 +421,68 @@ public class APIs {
     }
 
     // ═══════════════════════════════════════════════
+    // WITHDRAW CHILD — getAllPendingRequests
+    //
+    // URL : {{Base_URL}}Financialprocess/getAllPendingRequests/
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&child_id=<child_id>&ckey=B47C56483AAE7373
+    // Use : Same physical endpoint as Center Shift/Extended Daycare/Time
+    //       Extension. Spec's own example omits a ckey — reusing the ckey
+    //       already confirmed working on this endpoint (B47C56483AAE7373);
+    //       verify against a live response before trusting it further.
+    // ═══════════════════════════════════════════════
+    public static Response getWithdrawChildPendingRequests(String childId) {
+        String endpoint = WD_PENDING_REQUESTS
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&child_id=" + childId
+                + "&ckey=B47C56483AAE7373";
+        System.out.println("▶ Withdraw Child: getAllPendingRequests");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ getAllPendingRequests — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // WITHDRAW CHILD — Process Approved Request
+    //
+    // URL : {{Base_URL}}parentapp/processChildApprovedRequest?child_id=<child_id>&ckey=9414D96600C5
+    // Use : Run after clicking Approve on the Customer Request screen (future/
+    //       current-dated withdrawals only — back-dated ones auto-approve).
+    //       Spec's own example omits a ckey — reusing the only ckey already
+    //       confirmed working against this endpoint (processOldChildAttrition's
+    //       9414D96600C5, from Center Shift's attrition step); verify against a
+    //       live response before trusting it further.
+    // ═══════════════════════════════════════════════
+    public static Response processWithdrawChildRequest(String childId) {
+        String endpoint = CS_ATTRITION_PROCESS
+                + "?child_id=" + childId
+                + "&ckey=9414D96600C5";
+        System.out.println("▶ Withdraw Child: Process Approved Request");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Process Approved Request — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
     // HELPER — Convert single quotes to double quotes
     // UPI JSON comes as {'key':'value'} from the app.
     // Must be {"key":"value"} for a valid JSON POST body.
@@ -426,9 +501,9 @@ public class APIs {
         if (raw == null || raw.isEmpty()) return raw;
         return raw
                 .replace("&quot;", "\"")
-                .replace("&#39;",  "'")
-                .replace("&amp;",  "&")
-                .replace("&lt;",   "<")
-                .replace("&gt;",   ">");
+                .replace("&#39;", "'")
+                .replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">");
     }
 }
