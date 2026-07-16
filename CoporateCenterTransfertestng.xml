@@ -5,13 +5,9 @@
 
     <parameter name="browser" value="chrome"/>
     <test verbose="2" preserve-order="true"
-          name="Corporate Service Request Tests">
+          name="Corporate Center Transfer Tests">
         <classes>
-            <class name="testScripts.SupportTests.Corporate_ServiceRequestTestcases">
-                <methods>
-                    <include name="tc001_tieupProgramChange"/>
-                </methods>
-            </class>
+            <class name="testScripts.SupportTests.CoporateCenterTransfer_Testcases"/>
         </classes>
     </test>
 </suite>

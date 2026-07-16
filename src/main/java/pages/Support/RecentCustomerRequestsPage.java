@@ -1233,6 +1233,34 @@ public class RecentCustomerRequestsPage {
         return getWithdrawColumnValue(admId, "Approval Status");
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // GENERIC REQUEST-TYPE ROW LOOKUP (Corporate Transfer / Corporate Center
+    // Transfer, and any future feature) — same single-request-type-row
+    // pattern as the ED/TE/Withdraw Child helpers above, generalised so new
+    // features don't need their own near-duplicate private finder method.
+    // Corporate Center Transfer rows use Request Type = "Center Shift" per
+    // its own spec (same request type as the pre-existing regular Center
+    // Shift feature) — only the underlying admission differs.
+    // ══════════════════════════════════════════════════════════════════════
+
+    private int findRowByRequestType(String requestType) {
+        int rows = getRowCount();
+        for (int row = 1; row <= rows; row++) {
+            if (requestType.equalsIgnoreCase(getColumnValueForRow(row, "Request Type"))) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    public String getColumnValueByRequestType(String admId, String requestType, String columnHeader)
+            throws InterruptedException {
+        navigateByChildId(admId);
+        int row = findRowByRequestType(requestType);
+        if (row == -1) return "";
+        return getColumnValueForRow(row, columnHeader);
+    }
+
     /**
      * Get request_id of the first APPROVE button currently visible — assumes
      * navigateByChildId() has already scoped the grid to a single child, so

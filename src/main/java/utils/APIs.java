@@ -33,6 +33,16 @@ import static io.restassured.RestAssured.given;
  * processWithdrawChildRequest(childId)             — GET parentapp/processChildApprovedRequest (child_id, after Approve;
  * future/current-dated only — back-dated auto-approves)
  * <p>
+ * CORPORATE TRANSFER
+ * processCorporateMigrationRequests()              — GET migrationprocess/process_corporate_migration_requests/
+ * (month-end cron, no child_id param — processes all approved/processing requests)
+ * <p>
+ * CORPORATE CENTER TRANSFER
+ * getCorporateCenterTransferPendingRequests(childId) — GET Financialprocess/getAllPendingRequests/ (child_id)
+ * processCorporateCenterMigrationRequest(childId)  — GET migrationprocess/process_corporate_center_migration_requests (child_id, no ckey per spec)
+ * processCorporateCenterTransferApprovedRequest(childId) — GET parentapp/processChildApprovedRequest (child_id, after Approve;
+ * Service-Request/Center-Shift path only)
+ * <p>
  * HELPERS
  * convertSingleQuotesToDouble(json)                — {'k':'v'} → {"k":"v"}
  * decodeHtmlEntities(raw)                          — &quot;/&amp;/&#39;/&lt;/&gt; → literal chars
@@ -102,6 +112,27 @@ public class APIs {
     // (not "chid_id") is the correct scoping param here.
     private static final String WD_PENDING_REQUESTS =
             "Financialprocess/getAllPendingRequests/";
+
+    // ═══════════════════════════════════════════════
+    // CORPORATE TRANSFER ENDPOINTS
+    // ═══════════════════════════════════════════════
+    // Month-end cron — spec's own example URL has no child_id param at all;
+    // processes all approved/processing Corporate Transfer requests globally.
+    private static final String CT_MIGRATION_CRON =
+            "migrationprocess/process_corporate_migration_requests/";
+
+    // ═══════════════════════════════════════════════
+    // CORPORATE CENTER TRANSFER ENDPOINTS
+    // ═══════════════════════════════════════════════
+    // Same physical endpoint as CS_PENDING_TO_PROCESSING/ED_APPROVE_REQUEST/
+    // TE_PENDING_REQUESTS/WD_PENDING_REQUESTS — uses "child_id" per this
+    // feature's own spec examples.
+    private static final String CCT_PENDING_REQUESTS =
+            "Financialprocess/getAllPendingRequests/";
+
+    // Spec's own example URL has no ckey param for this one.
+    private static final String CCT_MIGRATION_REQUEST =
+            "migrationprocess/process_corporate_center_migration_requests";
 
     // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
@@ -467,6 +498,152 @@ public class APIs {
                 + "?child_id=" + childId
                 + "&ckey=9414D96600C5";
         System.out.println("▶ Withdraw Child: Process Approved Request");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Process Approved Request — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // CORPORATE TRANSFER — Month-end migration cron
+    //
+    // URL : {{Base_URL}}migrationprocess/process_corporate_migration_requests/
+    // Use : Run at month end to process all approved Corporate Transfer
+    //       requests — marks old admission Attrition (reason=Transfer) and
+    //       creates new admission at the new center/TieUp/program.
+    //       No child_id param per spec's own example — global cron.
+    // ═══════════════════════════════════════════════
+    public static Response processCorporateMigrationRequests() {
+        System.out.println("▶ Corporate Transfer: Month-end Migration Cron");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + CT_MIGRATION_CRON);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(CT_MIGRATION_CRON)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Migration Cron — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    /**
+     * Scoped/simulated variant — accepts child_id + date so a specific
+     * request's month-end can be forced/verified without waiting for the
+     * real calendar month to arrive (confirmed working param pair).
+     *
+     * URL : {{Base_URL}}migrationprocess/process_corporate_migration_requests?child_id=<child_id>&date=<yyyy-MM-dd>
+     */
+    public static Response processCorporateMigrationRequests(String childId, String date) {
+        String endpoint = CT_MIGRATION_CRON + "?child_id=" + childId + "&date=" + date;
+        System.out.println("▶ Corporate Transfer: Month-end Migration Cron (scoped)");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Migration Cron (scoped) — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // CORPORATE CENTER TRANSFER — getAllPendingRequests
+    //
+    // URL : {{Base_URL}}Financialprocess/getAllPendingRequests/
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&child_id=<child_id>&ckey=B47C56483AAE7373
+    // Use : Same physical endpoint as Center Shift/Extended Daycare/Time
+    //       Extension/Withdraw Child. Uses "child_id" per this feature's
+    //       own spec examples.
+    // ═══════════════════════════════════════════════
+    public static Response getCorporateCenterTransferPendingRequests(String childId) {
+        String endpoint = CCT_PENDING_REQUESTS
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&child_id=" + childId
+                + "&ckey=B47C56483AAE7373";
+        System.out.println("▶ Corporate Center Transfer: getAllPendingRequests");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ getAllPendingRequests — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // CORPORATE CENTER TRANSFER — Process Migration Request (button-flow approval)
+    //
+    // URL : {{Base_URL}}migrationprocess/process_corporate_center_migration_requests?child_id=<child_id>&ckey=10998DF5FF67
+    // Use : Run after Approve on Recent Customer Requests, for requests
+    //       submitted via the "CORPORATE CENTER TRANSFER" button.
+    //       User-confirmed ckey=10998DF5FF67 (spec's own example omitted it).
+    //       Confirmed live: without a "date" param matching the request's own
+    //       WEF date, this returns "No Request to Process..." — user-confirmed
+    //       "date is as per request WEF date". Also confirmed live: passing
+    //       child_id does NOT actually scope the call — it processes ALL
+    //       matching requests for that date system-wide (same pattern as
+    //       Extended Daycare's cron), so treat childId here as documentation
+    //       of intent, not a real scope guarantee.
+    // ═══════════════════════════════════════════════
+    public static Response processCorporateCenterMigrationRequest(String childId, String wefDate) {
+        String endpoint = CCT_MIGRATION_REQUEST
+                + "?child_id=" + childId
+                + "&date=" + wefDate
+                + "&ckey=10998DF5FF67";
+        System.out.println("▶ Corporate Center Transfer: Process Migration Request");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Process Migration Request — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // CORPORATE CENTER TRANSFER — Process Approved Request (Service-Request/Center-Shift flow)
+    //
+    // URL : {{Base_URL}}parentapp/processChildApprovedRequest?child_id=<child_id>&ckey=9414D96600C5
+    // Use : Run after Approve, for requests submitted via SERVICE REQUEST →
+    //       Center Shift (Transfer Applicable=Yes children). Same physical
+    //       endpoint/ckey as Center Shift's processOldChildAttrition and
+    //       Withdraw Child's processWithdrawChildRequest.
+    // ═══════════════════════════════════════════════
+    public static Response processCorporateCenterTransferApprovedRequest(String childId) {
+        String endpoint = CS_ATTRITION_PROCESS
+                + "?child_id=" + childId
+                + "&ckey=9414D96600C5";
+        System.out.println("▶ Corporate Center Transfer: Process Approved Request");
         System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
 
         Response response = given()

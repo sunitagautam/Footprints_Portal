@@ -163,10 +163,23 @@ public class Corporate_ServiceRequests {
     // ══════════════════════════════════════════════════════════════════════
 
     /**
-     * Corporate Transfer link — span text
+     * Corporate Transfer link — href contains pop_corporate_transfer
+     * Confirmed live: distinct from Corporate Center Transfer below —
+     * both links appear together on the same Account Statement page.
      */
-    @FindBy(xpath = "//a//span[text()='Corporate Transfer']")
+    @FindBy(xpath = "//a[contains(@href,'pop_corporate_transfer')]")
     WebElement corporateTransfer_link;
+
+    /**
+     * Corporate Center Transfer link — href contains pop_center_transfer
+     * Confirmed live (child 71962, Transfer Applicable=No): opens a form
+     * (id="frm-center-transfer") reusing the SAME field ids as the Corporate
+     * Transfer modal — applicable_month (labeled "New Center Joining Date"),
+     * new_center ("Shift To"), new_program_name ("Program To"), add_request
+     * (Submit) — just without the Offer field.
+     */
+    @FindBy(xpath = "//a[contains(@href,'pop_center_transfer')]")
+    WebElement centerTransferLink;
 
     /**
      * Joining month dropdown
@@ -538,6 +551,192 @@ public class Corporate_ServiceRequests {
         } catch (Exception e) {
             System.out.println("⚠ Transfer message not visible: " + e.getMessage());
         }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CORPORATE TRANSFER — submit only (split from doCorporateTransfer so
+    // submit/approve can be exercised independently across test cases)
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Submit-only step of Corporate Transfer — click link, fill fields,
+     * submit, accept the JS confirm() alert. Does NOT approve.
+     * Pre-condition: generateAccountStatement(childId) already called.
+     *
+     * @return response/toast text visible right after submit (may be empty
+     * if the app relies solely on the native alert with no follow-up toast)
+     */
+    public String submitCorporateTransfer(String joiningMonth, String offerName,
+                                          String centerName, String programName)
+            throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(corporateTransfer_link));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", corporateTransfer_link);
+        System.out.println("▶ CORPORATE TRANSFER link clicked");
+        Thread.sleep(800);
+
+        wait.until(ExpectedConditions.visibilityOf(joining_month));
+        new Select(joining_month).selectByVisibleText(joiningMonth);
+        System.out.println("✅ Joining month: " + joiningMonth);
+
+        if (offerName != null && !offerName.isEmpty()) {
+            new Select(new_offerID).selectByVisibleText(offerName);
+            System.out.println("✅ Offer: " + offerName);
+        } else {
+            System.out.println("✅ Offer (first available): " + selectFirstAvailable(new_offerID));
+        }
+
+        if (centerName != null && !centerName.isEmpty()) {
+            new Select(newCenter).selectByVisibleText(centerName);
+            System.out.println("✅ Center: " + centerName);
+        } else {
+            System.out.println("✅ Center (first available): " + selectFirstAvailable(newCenter));
+        }
+        Thread.sleep(400);
+
+        if (programName != null && !programName.isEmpty()) {
+            new Select(newProgram).selectByVisibleText(programName);
+            System.out.println("✅ Program: " + programName);
+        } else {
+            System.out.println("✅ Program (first available): " + selectFirstAvailable(newProgram));
+        }
+
+        wait.until(ExpectedConditions.elementToBeClickable(submit_Btn));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submit_Btn);
+        System.out.println("▶ Submit clicked");
+        Thread.sleep(1000);
+
+        String alertText = "";
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.alertIsPresent());
+            Alert alert = driver.switchTo().alert();
+            alertText = alert.getText();
+            System.out.println("▶ Confirm popup: " + alertText);
+            alert.accept();
+            System.out.println("✅ Alert accepted — request submitted");
+            Thread.sleep(1500);
+        } catch (Exception e) {
+            System.out.println("⚠ No confirm alert after submit: " + e.getMessage());
+        }
+
+        String toast = getTieupToastMessage();
+        System.out.println("   Toast/response after submit: " + toast);
+        return !toast.isEmpty() ? toast : alertText;
+    }
+
+    /**
+     * Select the first non-placeholder option ("-- Select --" etc.) in a
+     * dropdown — used when the exact live option list for a given child is
+     * unknown ahead of time.
+     */
+    private String selectFirstAvailable(WebElement selectElement) {
+        Select sel = new Select(selectElement);
+        for (WebElement opt : sel.getOptions()) {
+            String text = opt.getText().trim();
+            if (!text.isEmpty() && !text.startsWith("--") && !text.equalsIgnoreCase("Select")) {
+                sel.selectByVisibleText(text);
+                return text;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Approve-only step of Corporate Transfer via "Approve Corporate
+     * Transfer" link + fee-breakup modal.
+     * Pre-condition: a Pending Corporate Transfer request already exists
+     * for the currently-loaded child (submitCorporateTransfer already ran).
+     *
+     * @return response/toast text visible after approval
+     */
+    public String approveCorporateTransfer(String feeComment) throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(approve_ctransfer_Btn));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", approve_ctransfer_Btn);
+        System.out.println("▶ Approve Corporate Transfer clicked");
+        Thread.sleep(1000);
+
+        wait.until(ExpectedConditions.visibilityOf(modal_CorporateTransferRequest));
+        wait.until(ExpectedConditions.visibilityOf(feebreakup_comment));
+        feebreakup_comment.clear();
+        feebreakup_comment.sendKeys(feeComment);
+        System.out.println("✅ Fee comment: " + feeComment);
+
+        wait.until(ExpectedConditions.elementToBeClickable(approve_Btn));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", approve_Btn);
+        System.out.println("▶ Approve clicked");
+        Thread.sleep(1500);
+
+        String toast = getTieupToastMessage();
+        System.out.println("   Toast/response after approve: " + toast);
+        return toast;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CORPORATE CENTER TRANSFER — button flow (Transfer Applicable=No)
+    // Confirmed live (child 71962): form id="frm-center-transfer" reuses
+    // joining_month/newCenter/newProgram/submit_Btn field ids.
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Submit the Corporate Center Transfer button-flow form.
+     * Pre-condition: generateAccountStatement(childId) already called.
+     *
+     * @param applicableMonth visible text e.g. "Aug 2026"
+     * @param centerName      visible text of the "Shift To" center dropdown
+     * @param programName     visible text of "Program To" — pass null/empty
+     *                        to leave as "-- Select --" if not required
+     * @return response/toast text visible right after submit
+     */
+    public String submitCorporateCenterTransfer(String applicableMonth, String centerName,
+                                                String programName)
+            throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(centerTransferLink));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", centerTransferLink);
+        System.out.println("▶ CORPORATE CENTER TRANSFER link clicked");
+        Thread.sleep(1200);
+
+        wait.until(ExpectedConditions.visibilityOf(joining_month));
+        new Select(joining_month).selectByVisibleText(applicableMonth);
+        System.out.println("✅ Applicable Month: " + applicableMonth);
+        Thread.sleep(300);
+
+        if (centerName != null && !centerName.isEmpty()) {
+            new Select(newCenter).selectByVisibleText(centerName);
+            System.out.println("✅ Shift To: " + centerName);
+        } else {
+            System.out.println("✅ Shift To (first available): " + selectFirstAvailable(newCenter));
+        }
+        Thread.sleep(300);
+
+        if (programName != null && !programName.isEmpty()) {
+            new Select(newProgram).selectByVisibleText(programName);
+            System.out.println("✅ Program To: " + programName);
+        } else {
+            System.out.println("✅ Program To (first available): " + selectFirstAvailable(newProgram));
+        }
+
+        wait.until(ExpectedConditions.elementToBeClickable(submit_Btn));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submit_Btn);
+        System.out.println("▶ Submit clicked");
+        Thread.sleep(1000);
+
+        String alertText = "";
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.alertIsPresent());
+            Alert alert = driver.switchTo().alert();
+            alertText = alert.getText();
+            System.out.println("▶ Confirm popup: " + alertText);
+            alert.accept();
+            System.out.println("✅ Alert accepted — request submitted");
+            Thread.sleep(1500);
+        } catch (Exception e) {
+            System.out.println("⚠ No confirm alert after submit: " + e.getMessage());
+        }
+
+        String toast = getTieupToastMessage();
+        System.out.println("   Toast/response after submit: " + toast);
+        return !toast.isEmpty() ? toast : alertText;
     }
 
     /**
