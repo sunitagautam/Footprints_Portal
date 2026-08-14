@@ -58,10 +58,14 @@ public class Navigations {
     @FindBy(xpath = "//a[contains(.,'Invoices')]")
     private WebElement invoicesLink;
 
-    // ✅ EXACT XPath from browser inspector
-    @FindBy(xpath = "//*[@id='navbar-second-toggle']" +
-            "//ul//li[7]//div//div[1]//div//div[2]" +
-            "//ul//li[1]//a[@href='onetime_charges']")
+    // ✅ There are TWO distinct href='onetime_charges' anchors in
+    //    the DOM: "Apply OneTime Charges" (a Billing-section
+    //    shortcut) and the actual top-level nav item, plain
+    //    "OneTime Charges" — confirmed live. Matching by href alone
+    //    (with or without the #navbar-second-toggle scope) grabbed
+    //    the wrong/non-clickable one. Matching on the exact visible
+    //    text disambiguates regardless of menu position.
+    @FindBy(xpath = "//a[@href='onetime_charges' and normalize-space(text())='OneTime Charges']")
     private WebElement oneTimeChargesLink;
 
     // ═══════════════════════════════════════════════

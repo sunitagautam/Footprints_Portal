@@ -1287,6 +1287,39 @@ public class RecentCustomerRequestsPage {
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // TRANSPORT (Start Transport 1/2 Way) — APPROVE HELPERS
+    // Confirmed live: unlike the generic button.approve[request_id=...] pattern
+    // (which DOES work for Stop Transport / "Delete One/Two Way Transport"
+    // rows), the Approve control for "Add One/Two Way Transport" rows is a
+    // plain <a> link, not a button, with request_id/request_type/child_id
+    // encoded in its own href rather than as separate HTML attributes:
+    //   <a href="process_child_transport?request_id=166259&request_type=
+    //     Add One Way Transport&child_id=73041&center_id=210&assign_route=1
+    //     &show_addon=1" class="btn btn-primary btn-xs label">Approve</a>
+    // Clicking it navigates the current tab straight to that URL (the Approve
+    // Transport form) — no request_id needs to be resolved separately first.
+    // ══════════════════════════════════════════════════════════════════════
+
+    public boolean isTransportApproveLinkVisible() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10)).until(d ->
+                    !d.findElements(By.cssSelector("a[href*='process_child_transport']")).isEmpty());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void clickTransportApprove() throws InterruptedException {
+        WebElement link = wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("a[href*='process_child_transport']")));
+        String href = link.getAttribute("href");
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", link);
+        Thread.sleep(1000);
+        System.out.println("▶ APPROVE (Transport) clicked, href=" + href);
+    }
+
     /**
      * Child Attrition (Withdraw Child) rows have no generic button.approve/
      * button.reject pair — confirmed live: the actionable controls are

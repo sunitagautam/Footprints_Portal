@@ -431,3 +431,176 @@ All three can appear together on the same child's Account Statement page — do 
 - A fresh Transfer Applicable=No child for Corporate Center Transfer's button-flow (SC002_TC_001) — `71046` was the last confirmed-fresh one at time of writing; check its state before reusing.
 - SC009_TC_001's assertion is currently informational-pass when the migration API returns "No Request to Process" (expected until the real calendar date/WEF date align, or a matching `date` param is supplied) — user indicated they'll do a full sanity check by shifting the server date themselves; tighten the assertion back to a hard requirement at that point if desired.
 - 40+ further test cases across both new sheets not yet scoped (email notifications, CD-role dashboards, financial/prorated-invoice/discount-continuity checks, access-right differentials for `Tieup_SPOC_Access`/`Invite_Corporate_Payable_Admission` — no "without access" user exists yet in `testData/input_UserRights.xlsx`).
+
+## Requirements — One Time Charges: Block Invoicing on Attrition Child Records
+
+Screen: `https://test-franchise.footprintseducation.in/onetime_charges`. Per user's stated motto ("automate each feature or screen in one place"), all scenarios below live as new `@Test` methods directly in the existing `testScripts.SupportTests.OneTimeCharges_Testcases` class (priorities 6-8, after the existing 22), with supporting methods appended (never edited) to `pages.Support.OneTimeChargesPage` — no separate test class or suite XML was created for this.
+
+### Context (bug being fixed)
+Currently, Center Head or anyone with One Time Charges access (`Apply_Onetime_Charge` right) can raise an invoice against an **attrition child record** (a child already withdrawn/left the school). This has caused real incidents where an invoice meant for a child's new/current record was mistakenly raised on their old attritted record instead.
+
+### Acceptance criteria
+1. **Do not allow** raising a one-time-charge invoice against an attrition child record by default.
+2. **Add an exception**, the same way one already exists for the Support team — via an access right, so that whoever is granted that right can still raise the invoice, provided they enter a **mandatory comment/reason**.
+3. **Show a warning message on screen** if someone without the exception right attempts to raise an invoice for an attrition child.
+
+### Confirmed live, test data
+- `attrition_child_invoice_allow = 1` (month) on the test server — confirmed by user.
+- **Jaydeep Kar** (`Apply_Onetime_Charge` right, plain-text `charge_child_id` input + `btn_child_details` Fetch flow — the same UI as the original 22 tests) → exception-case, attrition child **60006** (`EXCEPTION_ATTRITION_CHILD_ID`, superseding the earlier 71750 which was past the eligibility window — user supplied 60006 specifically to exercise the checkbox path). `testExceptionUserCanRaiseChargeOnAttritionChild` (priority 6): **confirmed live, full positive path.** Warning shown is the same flat *"Cannot raise invoice charges for an Attrition child."* text Nidhi sees (message text does NOT distinguish eligibility — only checkbox visibility does). Exact live DOM for the exception block:
+  ```html
+  <div class="row" id="div-attrition-exception" style="margin-bottom: 15px;">
+    <div class="checkbox">
+      <label class="text-danger">
+        <input type="checkbox" id="chk-attrition-exception" name="is_exception" value="1">
+        Exception Attrition Invoice
+      </label>
+    </div>
+  </div>
+  ```
+  No dedicated reason field exists — `enterExceptionReasonIfPresent()` correctly finds nothing and the test falls back to the existing `enterChargeComments()`, which IS the mandatory reason field for the exception flow. Full flow (tick checkbox → comment → charge type/amount → submit → confirm → success) completes end-to-end. Test still branches on live checkbox state (visible → full positive flow; hidden → assert block warning instead) so it self-adapts if child 60006 ever ages out of the eligibility window too.
+- **Nidhi Chaturvedi** (Center Head/CD, no dedicated OneTime Charges row needed in `input_UserRights.xlsx` — her existing `Program Change` row is enough to `switchUser()`) → blocked-case, attrition child **48737**. `testCenterHeadIsBlockedOnAttritionChild` (priority 8): **PASSES**. Confirmed live: for her role, `charge_child_id` is NOT a text input — it's a searchable `<select>` (select2) listing all children, no separate Fetch button exists at all. Setting its value + firing a `change` event via JS (`enterChildIdRobust()`) is what actually triggers the block. Her message is the flat, non-date-qualified **"Cannot raise invoice charges for an Attrition child."** (distinct from Jaydeep's month-specific message), and the exception checkbox never appears for her — consistent with her having no exception right at all (vs. Jaydeep's apparent date-conditional eligibility). Message is captured and printed to console per request.
+- `testActiveChildFlowStillWorks` (priority 7, active child **68192**, still as Jaydeep): **PASSES** — confirms the pre-existing active-child flow is unaffected by all the above additions.
+
+### Shared-infrastructure fix (affects all screens, not just this one)
+`Navigations.oneTimeChargesLink`'s original locator was an absolute positional XPath (`li[7]/div[2]/li[1]`) that assumed one fixed menu shape. It broke for Nidhi (her role renders a differently-shaped nav). Fixed, with user confirmation, to match by the link's own text instead of position: `//a[@href='onetime_charges' and normalize-space(text())='OneTime Charges']`. Note there are **two** distinct `href="onetime_charges"` anchors in the DOM — an "Apply OneTime Charges" Billing-shortcut and the real top-level nav item, plain "OneTime Charges" — a bare `//a[@href='onetime_charges']` matches the wrong one and breaks navigation for every user, so the exact-text qualifier is required.
+
+### New OneTimeChargesPage methods (additive only, existing methods untouched)
+`getAttritionWarningMessage()` / `isAttritionWarningVisible()`, `dumpVisibleModalsAndAlerts()` / `dumpModalHtml()` (diagnostics), `findExceptionCheckbox()` (private) / `isExceptionCheckboxVisible()` / `checkExceptionCheckbox()` (targets `#div-attrition-exception input[type='checkbox']`), `enterExceptionReasonIfPresent()`, `isSubmitFormEnabled()`, `printPageSourceSnippetContaining()`, `enterChildIdRobust()` (JS-based, for roles like Nidhi's where the field is a disabled/readonly select rather than a plain text input), `dumpChildIdAndFetchButtonState()`, `clickFetchChildDetailsForced()`.
+
+### Status: all 3 new scenarios PASS (confirmed together in one live run)
+`testExceptionUserCanRaiseChargeOnAttritionChild`, `testActiveChildFlowStillWorks`, `testCenterHeadIsBlockedOnAttritionChild` — 3/3 passing with the exact child IDs supplied (71750, 68192, 48737), no fresher child needed per user instruction.
+
+### Open items
+- The checkbox+reason+success branch of `testExceptionUserCanRaiseChargeOnAttritionChild` is written but not yet exercised live (child 71750 takes the hard-blocked branch instead) — will self-exercise automatically if a future child ID falls inside the exception's eligibility window.
+- The exact access-right name and where it's actually assigned (not required for testing so far — behavior was verified empirically rather than by right name).
+
+## Requirements — Transport Service Request (`ServiceRequest_Transport1WayTest.java` / `ServiceRequest_Transport2WayTest.java`)
+
+Source: `TC_Transport.xlsx` (sheet `TC_Transport`). 20 test cases in the full sheet (SC001–SC012, covering full E2E flow, submit, dropdown checks, 1-Way/2-Way approve forms, cancellation, invoicing, credit/debit on plan switch, recurring billing, and stop-transport flows). **6 selected for automation this round**, split by flow into two test classes per user's explicit request:
+- `ServiceRequest_Transport1WayTest.java` — SC001_TC_001, SC002_TC_001, SC002_TC_002, SC011_TC_001, SC011_TC_002
+- `ServiceRequest_Transport2WayTest.java` — SC005_TC_001
+
+### SC001_TC_001 — Full Flow: Submit → getAllPendingRequests API → Approve Transport form → processChildApprovedRequest API → Approved (High)
+Screen: Account Statement → Service Request → Recent Customer Requests → `process_child_transport`
+APIs:
+- `getAllPendingRequests`: `{{Base_URL}}Financialprocess/getAllPendingRequests/?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373`
+- `processChildApprovedRequest`: `https://test-admissions.footprintseducation.in/api/parentapp/processChildApprovedRequest?child_id=<child_id>&ckey=9414D96600C5`
+- Approve Transport URL (landed on after clicking Approve): `https://test-franchise.footprintseducation.in/process_child_transport?request_id=<id>&request_type=Add%20One%20Way%20Transport&child_id=<child_id>&assign_route=1&show_addon=1`
+
+1. Login as Jaydeep Kar → Account Statement → enter child ID → Generate → SERVICE REQUEST. **Expect:** popup opens.
+2. Select 'Transport One Way' (Start Transport 1 Way form). Fill From date. Submit → confirm popup → OK. **Expect:** toast 'Transport request submitted successfully.'
+3. Run `getAllPendingRequests` API. **Expect:** status=ok, type=Transport, status Pending → Processing.
+4. Navigate to Recent Customer Requests. Find Transport row, status=Processing. Click Approve. **Expect:** Approve Transport form opens (`process_child_transport`).
+5. Fill Approve Transport form: Transport Type (Pick-up/Drop/Both), Route, Trip, Location (map, draggable bus icon). Submit. **Expect:** approved.
+6. Run `processChildApprovedRequest` API. **Expect:** status=ok, Transport addon added to child.
+7. Navigate to Recent Customer Requests. Verify Request Status = Approved.
+
+### SC002_TC_001 — Start Transport 1 Way: Submit → Pending (High)
+Screen: Account Statement → Service Request
+Test Data: Service dropdown 'Transport One Way' (= Start Transport 1 Way) | From date: 2024-09-18 (use a real future date at run time)
+
+1. Login as Jaydeep Kar → Account Statement → enter child/Admission ID → Generate → SERVICE REQUEST. **Expect:** popup opens with Services dropdown.
+2. Click dropdown, verify 'Transport One Way' listed. Select it. Verify default view: Service dropdown, From date, Submit icon, Close icon.
+3. Select 'Start Transport 1 Way'. Verify same default view fields visible.
+4. Fill From date. Click Submit. **Expect:** confirmation popup 'Do you want to send Transport request?'
+5. Click Cancel on popup. **Expect:** request NOT submitted, popup dismissed.
+6. Click Submit again → OK. **Expect:** toast 'Transport request submitted successfully.'
+7. Navigate to Recent Customer Requests. Verify Request Type = 'Start Transport 1 Way', Status = Pending.
+
+### SC002_TC_002 — Service Request dropdown: Transport One Way / Transport Two Way options present (High)
+Screen: Account Statement → Service Request
+Prerequisites: Jaydeep Kar has Account Statement access (`manage_user_rights`). Active child with transport-enabled center.
+
+1. Login as Jaydeep Kar → Account Statement → enter child ID → Generate → SERVICE REQUEST. **Expect:** popup opens with Services dropdown.
+2. Click dropdown. Verify 'Transport One Way' option listed.
+3. Verify 'Transport Two Way' option listed.
+4. Verify other transport options listed (e.g. Stop Transport).
+5. Select 'Transport One Way'. Verify From date field appears as mandatory.
+
+### SC005_TC_001 — Start Transport 2 Way: Submit → Pending (High)
+Screen: Account Statement → Service Request
+Test Data: Service dropdown 'Start Transport 2 Way' | From date: 2024-09-18 (use a real future date at run time) | Child ID: 24309
+
+1. Navigate to Account Statement. Enter Admission ID 24309. Click SERVICE REQUEST. **Expect:** popup opens.
+2. Select 'Start Transport 2 Way'. Verify default view: Service dropdown, From date, Submit icon, Close icon.
+3. Fill From date. Click Submit → OK. **Expect:** toast 'Transport request submitted successfully.'
+4. Navigate to Recent Customer Requests. Verify Request Type = 'Start Transport 2 Way', Status = Pending.
+
+### SC011_TC_001 — Stop Transport 1 Way: Submit → Pending (High)
+Screen: Account Statement → Service Request
+Test Data: Child 66730 (Advik Dhingra, ACTIVE) — active Addon: 'One Way Transport - 1750 (₹1750.00)'. Dropdown option (exact, confirmed live): 'Stop Transport 1 Way'. Form fields: Services dropdown + From date (mandatory, calendar icon) + Submit button only — no Route/Trip/Location (those are Approve-form-only fields).
+
+1. Login as Jaydeep Kar → `account_statement?child_id=66730`. **Expect:** loads, child ACTIVE.
+2. Verify Addons section shows 'One Way Transport - 1750 (₹ 1750.00)' active.
+3. Click SERVICE REQUEST (spanner icon). **Expect:** popup opens, header shows 'Advik Dhingra #66730 ACTIVE'.
+4. Click Services dropdown. Verify 'Stop Transport 1 Way' listed (note: 'Start Transport 1 Way' NOT listed — child already has 1 Way active).
+5. Select 'Stop Transport 1 Way'. Verify form shows ONLY Services dropdown + From date + Submit.
+6. Click From date calendar icon, select a future date.
+7. Click Submit → confirm popup → OK. **Expect:** toast 'Transport request submitted successfully.'
+8. Navigate to Recent Customer Requests. Verify Request Type = 'Stop Transport 1 Way', Status = Pending.
+
+### SC011_TC_002 — Stop Transport 1 Way: Full flow → addon removed (High)
+Screen: Recent Customer Requests → Account Statement
+Prerequisites: Stop Transport 1 Way in Pending status (SC011_TC_001 submitted). Child 66730 (Advik Dhingra).
+APIs: same `getAllPendingRequests` / `processChildApprovedRequest` endpoints as SC001_TC_001 (`chid_id=66730` / `child_id=66730`).
+
+1. Run `getAllPendingRequests` API. **Expect:** status=ok, Stop Transport 1 Way → Processing.
+2. Navigate to Recent Customer Requests. Verify Request Type = 'Stop Transport 1 Way', Status = Processing. Click Approve. **Expect:** approval confirmed.
+3. Run `processChildApprovedRequest` API. **Expect:** status=ok.
+4. Navigate to Recent Customer Requests. Verify Request Status = Approved.
+5. Navigate to `account_statement?child_id=66730`. Scroll to Addons section.
+6. Verify Addons section: 'One Way Transport - 1750' is NO LONGER listed — addon fully removed.
+
+### Existing building blocks to reuse (confirmed from code, no new work needed)
+- `pages/Support/Regular_ServiceRequests.java` — **all 4 Transport forms already wired** (built in an earlier session, ahead of this automation round): `isStartTransport1WayFormVisible()`/`setT1FromDate()`/`submitStartTransport1Way()`, `isStartTransport2WayFormVisible()`/`setT2FromDate()`/`submitStartTransport2Way()`, `isStopTransport1WayFormVisible()`/`setST1FromDate()`/`submitStopTransport1Way()`, `isStopTransport2WayFormVisible()`/`setST2FromDate()`/`submitStopTransport2Way()`.
+- `pages/Support/RecentCustomerRequestsPage.java` — generic helpers already sufficient, no new methods needed: `getColumnValueByRequestType(admId, requestType, columnHeader)` (reads Transport rows by Request Type = "Start Transport 1 Way" / "Start Transport 2 Way" / "Stop Transport 1 Way"), `getFirstApproveRequestId()` + `clickApprove(requestId)` (generic `button.approve[request_id=...]` pattern).
+- `pages/Support/AccountStatementPage.java` — `getAddonsText()` already reads the Addons section (`<div class="col-md-12"><b>Addons :</b> ...</div>`, "Not Available" when absent) — reused directly via `.contains("One Way Transport")` rather than adding a Transport-specific wrapper.
+- `utils/APIs.java` — `processChildApprovedRequest`'s physical endpoint (`parentapp/processChildApprovedRequest`, ckey `9414D96600C5`) is already generic (`CS_ATTRITION_PROCESS`, reused across Center Shift/Withdraw Child/Corporate Center Transfer) — added a thin `processTransportApprovedRequest(childId)` wrapper for naming consistency with other features rather than a new endpoint.
+
+### Confirmed live (2026-08-13) — do not re-derive without evidence
+- The Recent Customer Requests grid's **"Request Type" column shows the backend action name, not the Services dropdown's UI label** — same pattern as Withdraw Child showing "Child Attrition" instead of "Withdraw Child". Confirmed via live duplicate-request error text and a direct grid dump for children 72101 and 66730:
+  - Services dropdown "Start Transport 1 Way" submission → grid Request Type = **"Add One Way Transport"**
+  - Services dropdown "Stop Transport 1 Way" submission → grid Request Type = **"Delete One Way Transport"**
+  - (2-way equivalents — "Add Two Way Transport"/"Delete Two Way Transport" — extrapolated from this naming pattern, NOT yet independently confirmed live.)
+- The Services dropdown option text itself — `"Start Transport 1 Way"` / `"Stop Transport 1 Way"` — IS correct as passed to `selectServiceType()`; both confirmed live (selection succeeded and revealed the expected form each time).
+- `getAllPendingRequests` param **`chid_id` (not `child_id`) is confirmed correct for Transport** — user-supplied a live-working example (`chid_id=72101`), unlike Extended Daycare/Withdraw Child where `chid_id` was silently wrong. Do not "fix" this to `child_id` without new evidence.
+- `processChildApprovedRequest` ckey `9414D96600C5` confirmed working for Transport (user-supplied live example, `child_id=72428`).
+- Duplicate-request submissions are rejected client-side with `"Invalid Request: Request to '<Add/Delete One/Two Way Transport>' is already pending with us - requested by <name> on <date>, it will be processed soon."` — tests treat this as an acceptable pre-existing-Pending state (not a hard failure) when resubmitting against a child that already has one pending, mirroring the idempotency pattern used in Corporate Transfer's cancel test.
+- Child **72428** (originally supplied for the full E2E flow, SC001_TC_001) has **no Transport option in its Services dropdown at all** — confirmed live (dropdown only listed Center Shift/Child Pause/Extended Daycare/Program Change/Start Time Extension/Withdraw Child, 0 existing grid rows) — it is not Transport-enabled at its center. A different, Transport-enabled, unused child ID is needed for SC001_TC_001.
+- Child **24309** (spec's own child for SC005_TC_001, Start Transport 2 Way) is now in **ATTRITION** status — confirmed live: the whole Services dropdown renders `disabled`, and the panel header shows "Sanidhya Rajan #24309 ATTRITION — You can't access services of attrition child." A different, ACTIVE, 2-way-transport-enabled child ID is needed for SC005_TC_001.
+- `processTransportApprovedRequest` (processChildApprovedRequest) has the **same future-dated-WEF silent no-op behavior confirmed for Withdraw Child**: calling it for a request whose WEF/From date is not today returns HTTP 200 with a `null` body and leaves the grid status stuck at "Processing" rather than "Approved". Confirmed live for child 66730's Stop Transport 1 Way request (WEF was 2026-08-20 from an earlier test run using a +7-day future date — the process call no-op'd, status stayed "Processing"). `tc004_stopSubmitPending` was changed to submit with WEF=today (`LocalDate.now()`) instead of a future date so `tc005_stopFullFlow` can observe the terminal Approved state within the same run — but this fix could not be verified live yet because child 66730 already has that stale future-dated Pending request blocking a fresh same-day resubmission (duplicate-request check blocks ANY second "Delete One Way Transport" submission regardless of date, not just same-date ones).
+- Confirmed live: the generic `button.approve[request_id=...]` pattern (already used by other service types) **does work for "Delete One/Two Way Transport" (Stop) rows** — `clickApprove(166255)` succeeded and the grid moved from "Processing" (post-`getAllPendingRequests`) toward the Approve action, before getting stuck at "Processing" for the unrelated future-dated-WEF reason above.
+- Confirmed live (user-supplied element): **"Add One/Two Way Transport" (Start) rows use a plain `<a>` link, NOT the generic button.approve** — `<a href="process_child_transport?request_id=166259&request_type=Add One Way Transport&child_id=73041&center_id=210&assign_route=1&show_addon=1" class="btn btn-primary btn-xs label">Approve</a>`. Clicking it navigates the current tab straight to the Approve Transport form. Added `RecentCustomerRequestsPage.isTransportApproveLinkVisible()`/`clickTransportApprove()` (matches `a[href*='process_child_transport']`) for this; `tc001_fullFlow` now uses these instead of the generic `getFirstApproveRequestId()`/`clickApprove()`, which found nothing for this row type (confirmed live — that was the exact prior failure).
+- Confirmed live (user): clicking Approve does navigate to `process_child_transport?request_id=<id>&request_type=Add%20One%20Way%20Transport&child_id=<id>&center_id=<id>&assign_route=1&show_addon=1`, matching the spec's own URL pattern exactly (plus an extra `center_id` param not mentioned in the spec).
+
+### 2-Way Transport (`ServiceRequest_Transport2WayTest.java`) — ALL 3 tests CONFIRMED PASSING (2026-08-14)
+Running as **Nidhi Chaturvedi** (see "Transport role / acting user" section below), a full clean run with fresh children passed 3/3: `tc001_submitPending` (SC005_TC_001, child 72089) — Start Transport 2 Way → Pending; `tc002_stopSubmitPending` (SC012_TC_001, child 50875, "Two Way Transport - 2000" addon) → Pending; `tc003_stopFullFlow` (SC012_TC_002) → submit → getAllPendingRequests → generic `button.approve` click → `processChildApprovedRequest` → Approved → addon removed ("Not Available"). This also confirms "Add Two Way Transport"/"Delete Two Way Transport" as the real grid Request Type strings (previously just extrapolated from the 1-Way naming) — the ONE prior failure using this text was a cross-type conflict (child already had an unrelated One Way request pending), not a wrong string.
+- **Fixed bug**: this class shares a single browser tab (unlike the 1-Way class's two-tab design) — any step that navigates to Recent Customer Requests (grid checks via `getColumnValueByRequestType`) leaves the driver there, and `AccountStatementPage.generateAccountStatement()` doesn't navigate itself (assumes it's already on Account Statement). Both `@BeforeMethod` and the end of `tc003` now call `navigations.goToAccountStatement()` explicitly before any Account Statement interaction — omitting this caused `NoSuchElementException` on `#frm_child_id` twice before the fix.
+- **Cross-type conflict discovered**: a child with ANY existing pending/processing transport request (of either direction) blocks a NEW submission of the other direction too — e.g. child 72089's pre-existing "Add One Way Transport" blocked a "Start Transport 2 Way" submission with the same generic "already pending" error, even though no Two Way request had ever been created. `tc001_submitPending`'s idempotency check was tightened to only treat "already pending" as an acceptable duplicate when the error text itself mentions "two way" — otherwise it now fails loudly with a message pointing at the real cause (different child needed), instead of silently misreading it as a same-type dup.
+
+### Transport role / acting user — switched from Jaydeep Kar to Nidhi Chaturvedi (2026-08-14)
+Per explicit request, added a new row to `testData/input_UserRights.xlsx` (`UserRights` sheet): `Nidhi Chaturvedi | Transport | Raise_Support_Request` (RightTitle is descriptive only — `getUserForScreen()` matches on ScreenName, column B, exact case-insensitive string match, not RightTitle). Both `ServiceRequest_Transport1WayTest.java` and `ServiceRequest_Transport2WayTest.java` now call `getUserForScreen("Transport")` instead of `getUserForScreen("Account Statement")`, switching the acting user for ALL 8 Transport tests (both classes) from Jaydeep Kar to Nidhi Chaturvedi. Confirmed live: Nidhi logs in as "Centers Head" role and has full, identical access to submit/approve Transport requests via Account Statement → Service Request — no UI differences observed vs. Jaydeep for any step exercised so far (Start/Stop submit, Approve Transport form, generic button.approve). Every child ID used under Jaydeep in earlier sessions is unaffected by this switch (user identity doesn't change which children exist/their state) but IS now stale from repeated Jaydeep-era test runs — fresh children were re-supplied for the 2-Way class's first clean run under Nidhi (72089, 50875) with full success; the 1-Way class has not yet been re-run end-to-end under Nidhi.
+
+### Approve Transport form (`process_child_transport`) — CONFIRMED live end-to-end, INCLUDING by the automated test itself
+Child 73041: user walked the real form manually, then re-ran `processChildApprovedRequest`, which actually processed it — Account Statement showed `Addons: One Way Transport - 300 (₹300.00)` and a generated invoice (`PI/967621`). Child 72114: `tc001_fullFlow` then reproduced the entire chain **unattended** (submit → getAllPendingRequests → Approve link → fill form → Approve → native confirm → processChildApprovedRequest → Approved) — confirmed PASSING. This is NOT the spec's own "Transport Type / Route / Trip / Location map" description — there is no separate Trip field. Confirmed real field sequence, implemented in `ApproveTransportPage.java`:
+1. `#transport_type` (select) — options `--Choose--`/`Pick-Up`/`Drop` (exact text, note the hyphen+capital-U)
+2. `#addon` (select) — pricing plan, e.g. "One Way Transport - 300"
+3. `#pickup_route_id` (select, shown for Pick-Up; `#drop_route_id` assumed analogous for Drop, unconfirmed — user has only explained the Pick-Up path so far) — options inside `<optgroup label="Active">`
+4. `#ptid` (readonly input, `pickatime.js` widget) — Pickup Time
+5. `#map_canvas_route_autocomplete` (Google Places autocomplete) — type an address, click the `.pac-item` suggestion, double-click the map's bus-icon marker (`img[usemap^='#gmimap']`), then click `#send_map_sms` ("Set Pickup/Drop Location") — confirmed live result: "Pickup Location: ORYON BUSINESS INDIA, PTV LTD, Bhangel, Sector - 106, Noida..." populated correctly from address "Amrapali Zodia sector 120 Noida". Renders asynchronously after Route selection — can take several seconds, so a generous wait is used rather than a fixed sleep.
+6. `#transport_date` (WEF Date) — a `pickadate.js` widget (`class="picker__input"`), same widget family that silently corrupted data via raw JS injection for Withdraw Child's `attrition_date` — so this is driven via `Regular_ServiceRequests`' proven `openCalendarFor()`/`clickCalendarDay()` real-widget-click helpers, defaulting to today's date
+7. `#approve_transport` (button, `class="approve btn btn-primary"`, `request_id`/`request_type` as plain attributes) — clicking it triggers a **native `confirm()`**: "Changes will be applicable today onwards, sure want to update status of transport request?" — must be accepted or every subsequent WebDriver call throws `UnhandledAlertException` (confirmed live via user screenshot)
+
+### Confirmed live — submit-form date quirks
+- The **Start Transport 1 Way submit form** (Service Request popup, "From date") rejects `today` as a "past date" — `"Cannot make request in past date"` — unlike most other features' submit forms. A genuine future date is required here (`futureDate()`, +7 days).
+- This submit-form date is **independent** of the Approve Transport form's own separate `#transport_date` (WEF Date) field — the latter is what actually gates `processChildApprovedRequest`, and gets set to today regardless of whatever future date was used at submit time.
+- The test server's clock was reset mid-session by the user after a date-mismatch caused every future-dated submission to be rejected as "past" (the server's clock had drifted ahead of the local automation machine's clock) — if this recurs, check the server date before assuming a code regression.
+
+### Open items to confirm before/while automating
+- ~~Whether #drop_route_id really exists~~ — resolved via user's full-page element dump: it exists (`id="drop_route_id"`, same "Select Route" + `<optgroup>` structure as pickup). The Drop path's other fields are also now confirmed from that same dump, though not yet exercised live end-to-end: `#dtid` (Drop Time — NOT "drop_ptid", class `dropatime-format`), `#dropRouteinfo_name`/`#dropRouteinfo_lat`/`#dropRouteinfo_long` (Drop location, mirroring `pickupRouteinfo_*`), `#drop_point` (mirroring `pickup_point`). `ApproveTransportPage.selectRoute()` already picks between `pickup_route_id`/`drop_route_id` by transport type value — Drop-path Time/Location methods (`setPickupTime`/`enterLocationAddress` are currently Pickup-only-named) would need Drop-specific variants (or parameterizing) before Drop can be automated.
+- The dump's two `icon-pin-alt` elements are the manual trigger for the location picker — confirmed live: `<a data-toggle="modal" href="#" data-href="location_picker?pop=yes&child_id=<id>&route_type=pickup&hd_inp=pickupRouteinfo&CH_TASK_MODE=true" class="open_modal_window" data-target="#select_route_modal">` wrapping the pin icon + the readonly `pickupRouteinfo_name` field. Clicking it AJAX-loads `location_picker?...` into a Bootstrap modal (`#select_route_modal`) containing the map/autocomplete. `ApproveTransportPage` never clicks this — yet `tc001_fullFlow` still found and used `#map_canvas_route_autocomplete` successfully — so selecting the Route dropdown (`#pickup_route_id`) itself must auto-trigger the same modal/map programmatically (likely a JS onchange handler), making an explicit pin click redundant for the Pickup path. Worth keeping in mind for Drop-path automation later: the analogous `data-href="location_picker?...&route_type=drop&hd_inp=dropRouteinfo..."` trigger presumably exists for `#drop_route_id` too, unconfirmed.
+- Confirmed by user: for **Two Way Transport**, the Approve form's URL/screen requires filling **both** Pick-Up and Drop sections (matches the spec's SC006_TC_001) — not yet relevant to this round's automated scope (SC005_TC_001 is submit-only, no approve step), but will be needed if 2-way approve is automated later.
+- Whether the **Stop Transport submit form** also rejects today's date the same way Start's does — unconfirmed; matters for `tc004_stopSubmitPending`/`tc005_stopFullFlow`, which currently submit with today's date specifically so `tc005` can observe the terminal Approved state (see Stop Transport notes above) — if Stop's submit form also rejects today, that design needs revisiting.
+- A fresh, unused, Transport-enabled child ID with **no existing pending Transport request** for **SC002_TC_002** (`DROPDOWN_CHECK_CHILD_ID`, currently a TODO placeholder) — needed so both "Start Transport 1 Way" and "Start Transport 2 Way" are still offered in the dropdown.
+- A fresh, ACTIVE (not Attrition), 2-way-transport-enabled child ID for **SC005_TC_001** — 24309 (the spec's own example) is now Attrition and cannot be used.
+- Either a fresh child with an active "One Way Transport" addon (to re-verify SC011_TC_002's full approve flow cleanly), or waiting until 2026-08-20 for child 66730's existing stale Pending request to reach its own WEF date, to confirm the `tc004`-now-submits-with-today's-date fix actually lets `tc005_stopFullFlow` reach "Approved".

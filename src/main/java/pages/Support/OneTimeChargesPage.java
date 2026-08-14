@@ -152,6 +152,32 @@ public class OneTimeChargesPage {
     }
 
     // ═══════════════════════════════════════════════
+    // ENTER CHILD ID — JS fallback for readonly/disabled
+    // field
+    // ✅ New (additive only) — confirmed live that
+    //    charge_child_id can be readonly/disabled for
+    //    some users (e.g. Nidhi Chaturvedi), where plain
+    //    .clear()/.sendKeys() above throws
+    //    InvalidElementStateException. Mirrors the same
+    //    JS readonly-bypass pattern already used by
+    //    enterChargeAmount()/enterChargeComments().
+    // ═══════════════════════════════════════════════
+    public void enterChildIdRobust(String childId) throws InterruptedException {
+        wait.until(ExpectedConditions.visibilityOf(childIdInput));
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].removeAttribute('readonly');" +
+                        "arguments[0].removeAttribute('disabled');" +
+                        "arguments[0].value = arguments[1];",
+                childIdInput, childId);
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].dispatchEvent(new Event('input'));" +
+                        "arguments[0].dispatchEvent(new Event('change'));",
+                childIdInput);
+        System.out.println("✅ Child ID entered (JS): " + childId);
+        Thread.sleep(300);
+    }
+
+    // ═══════════════════════════════════════════════
     // CLICK FETCH CHILD DETAILS
     // ✅ Loads Child Name after entering Child ID
     // ═══════════════════════════════════════════════
@@ -473,5 +499,298 @@ public class OneTimeChargesPage {
         }
     }
 
+    // ═══════════════════════════════════════════════
+    // ATTRITION CHILD — WARNING MESSAGE
+    // ✅ New (additive only) — used by attrition-invoice
+    //    enhancement tests. Does not touch any existing
+    //    method above.
+    // ✅ Fires as soon as the attrition child is fetched
+    //    on the Apply Charge modal.
+    // ═══════════════════════════════════════════════
+    public String getAttritionWarningMessage() {
+        // ✅ Confirmed live: the actual banner is
+        //    "<div class="alert alert-info alert-styled-left">
+        //     Cannot raise invoice charges for this child as
+        //     attrition date is beyond 1 months</div>" —
+        //    class is alert-info (not warning/danger), and the
+        //    text lives on a descendant/text node, so XPath
+        //    must use "." (string-value) not "text()".
+        By[] candidates = {
+                By.cssSelector(".alert-info.alert-styled-left"),
+                By.cssSelector(".alert-warning"),
+                By.cssSelector(".alert-danger"),
+                By.cssSelector(".alert-info"),
+                By.xpath("//*[contains(translate(.," +
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz')," +
+                        "'cannot raise invoice charges')]"),
+                By.xpath("//*[contains(translate(.," +
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz')," +
+                        "'attrition')]"),
+                By.xpath("//*[contains(@class,'text-danger') " +
+                        "and contains(translate(.," +
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz')," +
+                        "'attrition')]")
+        };
+        for (By by : candidates) {
+            try {
+                WebElement el = new WebDriverWait(driver,
+                        Duration.ofSeconds(IAutoConstant.SHORT_WAIT))
+                        .until(ExpectedConditions
+                                .visibilityOfElementLocated(by));
+                String msg = el.getText().trim();
+                if (!msg.isEmpty()) {
+                    System.out.println("⚠ Attrition warning message: "
+                            + msg);
+                    return msg;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        System.out.println("▶ No attrition warning message found");
+        return "";
+    }
 
+    public boolean isAttritionWarningVisible() {
+        return !getAttritionWarningMessage().isEmpty();
+    }
+
+    // ═══════════════════════════════════════════════
+    // DEBUG — DUMP MODAL HTML
+    // ✅ New (additive only) — for locating live
+    //    selectors on the Apply Charge modal.
+    // ═══════════════════════════════════════════════
+    public String dumpModalHtml() {
+        try {
+            WebElement modal = driver.findElement(By.cssSelector(
+                    ".modal.show, .modal.in, " +
+                            ".modal[style*='display: block'], .modal-content"));
+            String html = (String) ((JavascriptExecutor) driver)
+                    .executeScript("return arguments[0].outerHTML;",
+                            modal);
+            System.out.println("▶ MODAL HTML DUMP:\n" + html);
+            return html;
+        } catch (Exception e) {
+            System.out.println("⚠ Could not dump modal HTML: "
+                    + e.getMessage());
+            return "";
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // DEBUG — DUMP ALL VISIBLE MODALS/ALERTS
+    // ✅ New (additive only) — dumpModalHtml() above can
+    //    grab the wrong stacked .modal-content (several
+    //    exist in the DOM, most hidden). This scans every
+    //    element and keeps only ones actually rendered on
+    //    screen (offsetParent !== null), which is more
+    //    reliable for locating a dynamically-injected
+    //    warning/checkbox after Fetch Child Details.
+    // ═══════════════════════════════════════════════
+    public String dumpVisibleModalsAndAlerts() {
+        try {
+            String html = (String) ((JavascriptExecutor) driver).executeScript(
+                    "var sel = '.modal, .modal-content, .alert, .toast, " +
+                            "[class*=\"alert\"], [id*=\"warning\"], " +
+                            "[class*=\"exception\"], [id*=\"exception\"]';" +
+                            "var els = document.querySelectorAll(sel);" +
+                            "var out = [];" +
+                            "els.forEach(function(el){" +
+                            "  if (el.offsetParent !== null) {" +
+                            "    out.push(el.outerHTML);" +
+                            "  }" +
+                            "});" +
+                            "return out.join('\\n----------\\n');");
+            System.out.println("▶ VISIBLE MODALS/ALERTS DUMP:\n" + html);
+            return html == null ? "" : html;
+        } catch (Exception e) {
+            System.out.println("⚠ Could not dump visible modals/alerts: "
+                    + e.getMessage());
+            return "";
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // EXCEPTION CASE CHECKBOX — attrition-invoice
+    // exception flow
+    // ✅ New (additive only)
+    // ═══════════════════════════════════════════════
+    private WebElement findExceptionCheckbox() {
+        // ✅ Confirmed live: the exception block sits in
+        //    <div id="div-attrition-exception" style="display:none">
+        //    — hidden unless the app decides to reveal it (attrition
+        //    age within some eligible window + user has the right).
+        By[] candidates = {
+                By.cssSelector("#div-attrition-exception input[type='checkbox']"),
+                By.id("exception_case"),
+                By.id("is_exception"),
+                By.id("exception_checkbox"),
+                By.xpath("//input[@type='checkbox' and " +
+                        "contains(translate(@id," +
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz'),'exception')]"),
+                By.xpath("//label[contains(translate(.," +
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz'),'exception')]" +
+                        "//input[@type='checkbox']"),
+                By.xpath("//*[contains(translate(text()," +
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz'),'exception')]" +
+                        "/preceding::input[@type='checkbox'][1]")
+        };
+        for (By by : candidates) {
+            try {
+                WebElement el = driver.findElement(by);
+                if (el.isDisplayed()) {
+                    System.out.println(
+                            "✅ Exception checkbox found via: " + by);
+                    return el;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    public boolean isExceptionCheckboxVisible() {
+        return findExceptionCheckbox() != null;
+    }
+
+    public void checkExceptionCheckbox() {
+        WebElement cb = findExceptionCheckbox();
+        if (cb == null) {
+            throw new RuntimeException(
+                    "❌ Exception checkbox not found on modal");
+        }
+        try {
+            cb.click();
+        } catch (Exception e) {
+            ((JavascriptExecutor) driver)
+                    .executeScript("arguments[0].click();", cb);
+        }
+        System.out.println("✅ Exception checkbox ticked");
+    }
+
+    // ═══════════════════════════════════════════════
+    // EXCEPTION REASON — mandatory comment/reason field
+    // that unlocks after ticking the exception checkbox
+    // ✅ New (additive only) — falls back to the existing
+    //    Comment field (enterChargeComments) if no
+    //    dedicated exception-reason field is found.
+    // ═══════════════════════════════════════════════
+    public boolean enterExceptionReasonIfPresent(String reason) {
+        By[] candidates = {
+                By.id("exception_reason"),
+                By.id("exception_comment"),
+                By.id("attrition_reason"),
+                By.xpath("//textarea[contains(translate(@id," +
+                        "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz'),'exception')]")
+        };
+        for (By by : candidates) {
+            try {
+                WebElement el = driver.findElement(by);
+                if (el.isDisplayed()) {
+                    ((JavascriptExecutor) driver).executeScript(
+                            "arguments[0].removeAttribute('readonly');" +
+                                    "arguments[0].removeAttribute('disabled');" +
+                                    "arguments[0].value = arguments[1];",
+                            el, reason);
+                    ((JavascriptExecutor) driver).executeScript(
+                            "arguments[0].dispatchEvent(new Event('input'));" +
+                                    "arguments[0].dispatchEvent(new Event('change'));",
+                            el);
+                    System.out.println(
+                            "✅ Exception reason entered via: " + by);
+                    return true;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        System.out.println(
+                "▶ No dedicated exception-reason field found");
+        return false;
+    }
+
+    // ═══════════════════════════════════════════════
+    // DEBUG — DUMP CHILD-ID INPUT + FETCH BUTTON STATE
+    // ✅ New (additive only)
+    // ═══════════════════════════════════════════════
+    public void dumpChildIdAndFetchButtonState() {
+        try {
+            String info = (String) ((JavascriptExecutor) driver).executeScript(
+                    "var ci = document.getElementById('charge_child_id');" +
+                            "var fb = document.getElementById('btn_child_details');" +
+                            "function d(el){ return el ? el.outerHTML + ' | disabled=' + el.disabled + " +
+                            "' | readOnly=' + el.readOnly + ' | offsetParent=' + (el.offsetParent !== null) : 'NOT FOUND'; }" +
+                            "return 'childIdInput: ' + d(ci) + '\\n\\nfetchBtn: ' + d(fb);");
+            System.out.println("▶ CHILD ID / FETCH BUTTON STATE:\n" + info);
+        } catch (Exception e) {
+            System.out.println("⚠ dumpChildIdAndFetchButtonState: " + e.getMessage());
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // CLICK FETCH CHILD DETAILS — JS-only, no pre-wait
+    // ✅ New (additive only) — for sessions where the
+    //    button is disabled/not "clickable" per Selenium's
+    //    definition but a JS click still triggers the
+    //    underlying handler.
+    // ═══════════════════════════════════════════════
+    public void clickFetchChildDetailsForced() throws InterruptedException {
+        try {
+            WebElement btn = driver.findElement(By.id("btn_child_details"));
+            ((JavascriptExecutor) driver).executeScript(
+                    "arguments[0].removeAttribute('disabled');" +
+                            "arguments[0].click();", btn);
+            System.out.println("▶ Fetch Child Details (forced) clicked");
+        } catch (Exception e) {
+            System.out.println("⚠ clickFetchChildDetailsForced: " + e.getMessage());
+        }
+        Thread.sleep(1500);
+    }
+
+    // ═══════════════════════════════════════════════
+    // IS SUBMIT FORM BUTTON ENABLED
+    // ✅ New (additive only) — used for the blocked
+    //    (no-exception) negative case.
+    // ═══════════════════════════════════════════════
+    public boolean isSubmitFormEnabled() {
+        try {
+            return submitFormBtn.isDisplayed()
+                    && submitFormBtn.isEnabled();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // DEBUG — PRINT PAGE-SOURCE SNIPPET CONTAINING A
+    // KEYWORD (case-insensitive)
+    // ✅ New (additive only) — catches text injected
+    //    anywhere on the page, not only inside a
+    //    specific modal container.
+    // ═══════════════════════════════════════════════
+    public void printPageSourceSnippetContaining(String keyword) {
+        try {
+            String src = driver.getPageSource();
+            String lowerSrc = src.toLowerCase();
+            String lowerKeyword = keyword.toLowerCase();
+            int idx = lowerSrc.indexOf(lowerKeyword);
+            if (idx == -1) {
+                System.out.println("▶ Keyword '" + keyword
+                        + "' not found anywhere in page source");
+                return;
+            }
+            int start = Math.max(0, idx - 200);
+            int end = Math.min(src.length(), idx + 200);
+            System.out.println("▶ Page source snippet around '" + keyword
+                    + "':\n" + src.substring(start, end));
+        } catch (Exception e) {
+            System.out.println("⚠ printPageSourceSnippetContaining: "
+                    + e.getMessage());
+        }
+    }
 }

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="Transport Service Request - Test Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <!--
+        8 Transport tests across two classes, split by flow (1-Way vs 2-Way)
+        per explicit request. SC012 (Stop Transport 2 Way) was added to the
+        2-Way class per a follow-up request, beyond the original 6 selected
+        test cases.
+
+        PRE-CONDITION:
+          ServiceRequest_Transport1WayTest.DROPDOWN_CHECK_CHILD_ID (67336),
+          SUBMIT_PENDING_CHILD_ID (72101), STOP_1WAY_CHILD_ID (46110), and
+          FULL_FLOW_CHILD_ID are real child IDs (each gets consumed/advanced
+          past Pending after a passing run — replace with a fresh child for
+          a clean rerun). ServiceRequest_Transport2WayTest.START_2WAY_CHILD_ID
+          (72089) replaces the spec's own 24309, confirmed Attrition.
+          STOP_2WAY_CHILD_ID (66914) is given directly in the spec.
+
+        FLOW:
+          1-Way:
+            tc001_fullFlow             submit -> getAllPendingRequests -> Approve Transport form
+                                        -> processChildApprovedRequest -> Approved      (SC001_TC_001)
+            tc002_submitPending         submit -> Cancel no-op -> submit -> OK -> Pending (SC002_TC_001)
+            tc003_dropdownVerification  Services dropdown lists Transport One/Two Way    (SC002_TC_002)
+            tc004_stopSubmitPending     Submit Stop Transport 1 Way -> Pending           (SC011_TC_001)
+            tc005_stopFullFlow          Stop 1 Way full flow -> addon removed            (SC011_TC_002)
+          2-Way:
+            tc001_submitPending         Submit Start Transport 2 Way -> Pending          (SC005_TC_001)
+            tc002_stopSubmitPending     Submit Stop Transport 2 Way -> Pending           (SC012_TC_001)
+            tc003_stopFullFlow          Stop 2 Way full flow -> addon removed            (SC012_TC_002)
+    -->
+
+    <test name="Transport 1 Way - Tests">
+        <classes>
+            <class name="testScripts.SupportTests.ServiceRequest_Transport1WayTest">
+                <methods>
+                    <include name="tc001_fullFlow"/>
+                    <include name="tc002_submitPending"/>
+                    <include name="tc003_dropdownVerification"/>
+                    <include name="tc004_stopSubmitPending"/>
+                    <include name="tc005_stopFullFlow"/>
+                    <include name="tc006_attritionChildBlocked"/>
+                    <include name="tc007_duplicateCrossTypeBlocked"/>
+                    <include name="tc008_pastDateRejected"/>
+                    <include name="tc009_accessRightBlocksSubmit"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="Transport 2 Way - Tests">
+        <classes>
+            <class name="testScripts.SupportTests.ServiceRequest_Transport2WayTest">
+                <methods>
+                    <include name="tc001_submitPending"/>
+                    <include name="tc002_stopSubmitPending"/>
+                    <include name="tc003_stopFullFlow"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>

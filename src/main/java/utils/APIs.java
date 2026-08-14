@@ -43,6 +43,11 @@ import static io.restassured.RestAssured.given;
  * processCorporateCenterTransferApprovedRequest(childId) — GET parentapp/processChildApprovedRequest (child_id, after Approve;
  * Service-Request/Center-Shift path only)
  * <p>
+ * TRANSPORT
+ * getTransportPendingRequests(childId)             — GET Financialprocess/getAllPendingRequests/ (chid_id per spec's own
+ * example — UNVERIFIED live, may need child_id instead per the Extended Daycare/Withdraw Child precedent)
+ * processTransportApprovedRequest(childId)         — GET parentapp/processChildApprovedRequest (child_id, after Approve)
+ * <p>
  * HELPERS
  * convertSingleQuotesToDouble(json)                — {'k':'v'} → {"k":"v"}
  * decodeHtmlEntities(raw)                          — &quot;/&amp;/&#39;/&lt;/&gt; → literal chars
@@ -133,6 +138,17 @@ public class APIs {
     // Spec's own example URL has no ckey param for this one.
     private static final String CCT_MIGRATION_REQUEST =
             "migrationprocess/process_corporate_center_migration_requests";
+
+    // ═══════════════════════════════════════════════
+    // TRANSPORT ENDPOINTS
+    // ═══════════════════════════════════════════════
+    // Same physical endpoint as CS_PENDING_TO_PROCESSING/ED_APPROVE_REQUEST/
+    // TE_PENDING_REQUESTS/WD_PENDING_REQUESTS/CCT_PENDING_REQUESTS. Spec's own
+    // example URLs consistently use "chid_id" — UNVERIFIED live; "chid_id" was
+    // silently ignored for Extended Daycare/Withdraw Child (real param was
+    // child_id there), so this may need the same fix once confirmed live.
+    private static final String TR_PENDING_REQUESTS =
+            "Financialprocess/getAllPendingRequests/";
 
     // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
@@ -644,6 +660,66 @@ public class APIs {
                 + "?child_id=" + childId
                 + "&ckey=9414D96600C5";
         System.out.println("▶ Corporate Center Transfer: Process Approved Request");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Process Approved Request — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // TRANSPORT — getAllPendingRequests
+    //
+    // URL : {{Base_URL}}Financialprocess/getAllPendingRequests/
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373
+    // Use : Same physical endpoint as Center Shift/Extended Daycare/Time
+    //       Extension/Withdraw Child/Corporate Center Transfer. Uses "chid_id"
+    //       per this feature's own spec examples — NOT yet confirmed live;
+    //       verify against a real response before trusting it further.
+    // ═══════════════════════════════════════════════
+    public static Response getTransportPendingRequests(String childId) {
+        String endpoint = TR_PENDING_REQUESTS
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&chid_id=" + childId
+                + "&ckey=B47C56483AAE7373";
+        System.out.println("▶ Transport: getAllPendingRequests");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ getAllPendingRequests — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // TRANSPORT — Process Approved Request
+    //
+    // URL : {{Base_URL}}parentapp/processChildApprovedRequest?child_id=<child_id>&ckey=9414D96600C5
+    // Use : Run after Approving on Recent Customer Requests / the Approve
+    //       Transport form. Same physical endpoint/ckey as Center Shift's
+    //       processOldChildAttrition, Withdraw Child's processWithdrawChildRequest,
+    //       and Corporate Center Transfer's processCorporateCenterTransferApprovedRequest.
+    // ═══════════════════════════════════════════════
+    public static Response processTransportApprovedRequest(String childId) {
+        String endpoint = CS_ATTRITION_PROCESS
+                + "?child_id=" + childId
+                + "&ckey=9414D96600C5";
+        System.out.println("▶ Transport: Process Approved Request");
         System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
 
         Response response = given()

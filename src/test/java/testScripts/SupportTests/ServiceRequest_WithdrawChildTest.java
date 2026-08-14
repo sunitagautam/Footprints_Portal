@@ -4,13 +4,7 @@ import io.restassured.response.Response;
 import org.openqa.selenium.JavascriptExecutor;
 import org.testng.Assert;
 import org.testng.Reporter;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Optional;
-import org.testng.annotations.Parameters;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 import pages.Navigations;
 import pages.Settings.UserRightsPage;
 import pages.Support.AccountStatementPage;
@@ -28,9 +22,9 @@ import java.time.LocalDate;
  * <p>
  * Priority / Execution Order:
  * 1  tc001_fullFlowByDatePath     SC001_TC_001         Submit → getAllPendingRequests → Approve →
- *                                                      processChildApprovedRequest → Approved.
- *                                                      Data-driven by date path — future-dated only
- *                                                      for now; back-dated added next sprint.
+ * processChildApprovedRequest → Approved.
+ * Data-driven by date path — future-dated only
+ * for now; back-dated added next sprint.
  * 2  testWithdraw_Transfer        SC001_TC_002         Submit, reason=Transfer, verify Pending.
  * 2  testWithdraw_NotSatisfied    SC001_TC_003         Submit, reason=Not Satisfied with Services.
  * 2  testWithdraw_FormalSchool    SC001_TC_004         Submit, reason=Moving to formal schooling.
@@ -68,14 +62,14 @@ import java.time.LocalDate;
 public class ServiceRequest_WithdrawChildTest extends BaseTest {
 
     // ── TEST DATA — replace every TODO_* below with a real, unused child ID ──
-    private static final String FUTURE_DATED_CHILD_ID = "68676";
+    private static final String FUTURE_DATED_CHILD_ID = "72405";
     // private static final String BACK_DATED_CHILD_ID = "69755"; // banked — next sprint
 
-    private static final String PENDING_STATUS_CHILD_ID = "68710";
-    private static final String APPROVE_CHILD_ID = "68733";
-    private static final String REJECT_CHILD_ID = "68743";
-    private static final String RETAIN_CHILD_ID = "69714";
-    private static final String UPDATE_REQUEST_CHILD_ID = "69819";
+    private static final String PENDING_STATUS_CHILD_ID = "72350";
+    private static final String APPROVE_CHILD_ID = "72319";
+    private static final String REJECT_CHILD_ID = "72291";
+    private static final String RETAIN_CHILD_ID = "72281";
+    private static final String UPDATE_REQUEST_CHILD_ID = "72255";
 
     // Reason-variant child IDs (SC001_TC_002-005) — supplied via TestNG
     // <parameter> in WithdrawChildtestng.xml, not hardcoded, since these are
@@ -101,9 +95,9 @@ public class ServiceRequest_WithdrawChildTest extends BaseTest {
     @Parameters({"childId_Transfer", "childId_NotSatisfied", "childId_FormalSchool", "childId_Others"})
     @BeforeClass(alwaysRun = true)
     public void setUp(@Optional("TODO_REASON_TRANSFER") String childId_Transfer,
-                       @Optional("TODO_REASON_NOT_SATISFIED") String childId_NotSatisfied,
-                       @Optional("TODO_REASON_FORMAL_SCHOOL") String childId_FormalSchool,
-                       @Optional("TODO_REASON_OTHERS") String childId_Others) throws Exception {
+                      @Optional("TODO_REASON_NOT_SATISFIED") String childId_NotSatisfied,
+                      @Optional("TODO_REASON_FORMAL_SCHOOL") String childId_FormalSchool,
+                      @Optional("TODO_REASON_OTHERS") String childId_Others) throws Exception {
         this.childId_Transfer = childId_Transfer;
         this.childId_NotSatisfied = childId_NotSatisfied;
         this.childId_FormalSchool = childId_FormalSchool;
@@ -544,17 +538,19 @@ public class ServiceRequest_WithdrawChildTest extends BaseTest {
         System.out.println("   [Update Request response] " + updateResponse);
         Reporter.log("   Update Request response: " + updateResponse, true);
 
-        // Give the backend time to finish processing, then hard-refresh (not
-        // just re-navigate) in case the grid simply isn't re-rendering the
-        // AJAX result rather than the record actually being gone.
+        // Give the backend time to finish processing, then do a full
+        // navigateByChildId() re-navigation (driver.get(), not
+        // driver.navigate().refresh()) — confirmed live that a plain browser
+        // refresh can leave the grid on a stale AJAX-rendered view even
+        // though the WEF date genuinely updated server-side; only a fresh
+        // navigation to the child-scoped URL reliably reflects it.
         Thread.sleep(3000);
         switchToCustomerRequestTab();
-        driver.navigate().refresh();
-        Thread.sleep(2000);
+        recentRequestsPage.navigateByChildId(UPDATE_REQUEST_CHILD_ID);
         int rowCount = recentRequestsPage.getRowCount();
-        System.out.println("   [Row count after update + refresh] " + rowCount);
-        Reporter.log("   Row count after update + refresh: " + rowCount, true);
-        Assert.assertTrue(rowCount > 0, "❌ Child Attrition row disappeared from the grid after Update Request (even after refresh). Response was: " + updateResponse);
+        System.out.println("   [Row count after update + re-navigation] " + rowCount);
+        Reporter.log("   Row count after update + re-navigation: " + rowCount, true);
+        Assert.assertTrue(rowCount > 0, "❌ Child Attrition row disappeared from the grid after Update Request (even after re-navigation). Response was: " + updateResponse);
 
         String wefDateAfter = recentRequestsPage.getWithdrawColumnValue(UPDATE_REQUEST_CHILD_ID, "WEF Date");
         System.out.println("   [WEF Date after] " + wefDateAfter);

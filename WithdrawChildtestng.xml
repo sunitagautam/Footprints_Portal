@@ -31,10 +31,10 @@
     -->
 
     <test name="Withdraw Child - All Tests">
-        <parameter name="childId_Transfer" value="68787"/>
-        <parameter name="childId_NotSatisfied" value="68809"/>
-        <parameter name="childId_FormalSchool" value="68823"/>
-        <parameter name="childId_Others" value="68840"/>
+        <parameter name="childId_Transfer" value="72404"/>
+        <parameter name="childId_NotSatisfied" value="72367"/>
+        <parameter name="childId_FormalSchool" value="72365"/>
+        <parameter name="childId_Others" value="72363"/>
         <classes>
             <class name="testScripts.SupportTests.ServiceRequest_WithdrawChildTest">
                 <methods>

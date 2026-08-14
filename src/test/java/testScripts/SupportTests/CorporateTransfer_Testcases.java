@@ -47,14 +47,14 @@ public class CorporateTransfer_Testcases extends BaseTest {
     // Cancel child: SEPARATE, untouched Pending request (SC008_TC_001) —
     // cancel/approve are alternate branches so they cannot share a child.
     // ═══════════════════════════════════════════════
-    private static final String CT_CHAIN_CHILD_ID = "64676";
-    private static final String CT_CANCEL_CHILD_ID = "64719";
-    private static final String CT_JOINING_MONTH = "Aug 2026";
+    private static final String CT_CHAIN_CHILD_ID = "72893";
+    private static final String CT_CANCEL_CHILD_ID = "73040";
+    private static final String CT_JOINING_MONTH = "Sep 2026";
 
     // 1st of CT_JOINING_MONTH — user-confirmed the migration API accepts an
     // explicit date param to simulate/force month-end processing for a
     // specific child without waiting for the real calendar month to arrive.
-    private static final String CT_MIGRATION_DATE = "2026-08-01";
+    private static final String CT_MIGRATION_DATE = "2026-09-02";
     private static final String CT_FEE_COMMENT = "8499";
 
     // ═══════════════════════════════════════════════

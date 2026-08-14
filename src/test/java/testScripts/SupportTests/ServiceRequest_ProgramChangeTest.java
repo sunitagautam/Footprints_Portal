@@ -20,7 +20,7 @@ public class ServiceRequest_ProgramChangeTest extends BaseTest {
     // TEST DATA — Child IDs
     // ═══════════════════════════════════════════════
     private static final String REGULAR_CHILD_ID = "69073"; // Active, Regular, V1
-    private static final String CORPORATE_CHILD_ID = "68908"; // Corporate Tie-up (SC013)
+    private static final String CORPORATE_CHILD_ID = "72750"; // Corporate Tie-up (SC013)
     private static final String PAUSED_CHILD_ID = "65564"; // TODO: confirm paused child
     private static final String INACTIVE_CHILD_ID = "67348"; // TODO: confirm inactive child
 
@@ -67,9 +67,8 @@ public class ServiceRequest_ProgramChangeTest extends BaseTest {
         accountStatementPage = new AccountStatementPage(driver);
         serviceRequestPage = new Regular_ServiceRequests(driver);
 
-        // Start with Nidhi — she covers SC001 and SC002 (priorities 1–5).
-        // Jaydeep takes over from SC003_TC001 (priority 6) onward.
-        String nidhiUser = getUserForScreen("Program Change");
+        // TEMP: forced to Jaydeep for a one-off SC013 run — revert to nidhiUser after.
+        String nidhiUser = USER_EXCEPTION;
         Assert.assertFalse(nidhiUser.isEmpty(),
                 "❌ No user found for 'Program Change' in Excel");
 

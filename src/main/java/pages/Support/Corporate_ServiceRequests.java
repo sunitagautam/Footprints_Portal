@@ -687,6 +687,16 @@ public class Corporate_ServiceRequests {
      *                        to leave as "-- Select --" if not required
      * @return response/toast text visible right after submit
      */
+    // ✅ Set by submitCorporateCenterTransfer() — the actual Applicable
+    // Month visible text used (whether passed explicitly or resolved via
+    // "first available"), so callers can derive the request's WEF date
+    // (1st of this month) for the migration API's required "date" param.
+    private String lastSelectedApplicableMonth;
+
+    public String getLastSelectedApplicableMonth() {
+        return lastSelectedApplicableMonth;
+    }
+
     public String submitCorporateCenterTransfer(String applicableMonth, String centerName,
                                                 String programName)
             throws InterruptedException {
@@ -696,8 +706,14 @@ public class Corporate_ServiceRequests {
         Thread.sleep(1200);
 
         wait.until(ExpectedConditions.visibilityOf(joining_month));
-        new Select(joining_month).selectByVisibleText(applicableMonth);
-        System.out.println("✅ Applicable Month: " + applicableMonth);
+        if (applicableMonth != null && !applicableMonth.isEmpty()) {
+            new Select(joining_month).selectByVisibleText(applicableMonth);
+            lastSelectedApplicableMonth = applicableMonth;
+            System.out.println("✅ Applicable Month: " + applicableMonth);
+        } else {
+            lastSelectedApplicableMonth = selectFirstAvailable(joining_month);
+            System.out.println("✅ Applicable Month (first available): " + lastSelectedApplicableMonth);
+        }
         Thread.sleep(300);
 
         if (centerName != null && !centerName.isEmpty()) {

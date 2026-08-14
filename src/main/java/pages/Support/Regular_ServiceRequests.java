@@ -482,18 +482,24 @@ public class Regular_ServiceRequests {
     }
 
     public String getResponseMessage() {
+        // Polls both the AJAX-response and inline-message locators together
+        // via driver.findElements() on every tick, rather than two sequential
+        // fixed-length waits on cached @FindBy proxies — confirmed live that
+        // the sequential version occasionally returned empty (e.g. the
+        // "already requested" duplicate-error toast) even though the message
+        // was genuinely rendered, likely a proxy-staleness/timing race.
         try {
-            WebElement el = new WebDriverWait(driver, Duration.ofSeconds(10))
-                    .until(ExpectedConditions.visibilityOf(alert_ajaxResponse));
-            return el.getText().trim();
+            return new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(d -> {
+                        for (WebElement el : d.findElements(By.cssSelector(".alert-ajax-response,.alert-message"))) {
+                            if (el.isDisplayed() && !el.getText().trim().isEmpty()) {
+                                return el.getText().trim();
+                            }
+                        }
+                        return null;
+                    });
         } catch (Exception e) {
-            try {
-                WebElement el = new WebDriverWait(driver, Duration.ofSeconds(5))
-                        .until(ExpectedConditions.visibilityOf(alert_message));
-                return el.getText().trim();
-            } catch (Exception e2) {
-                return "";
-            }
+            return "";
         }
     }
 

@@ -33,8 +33,8 @@ public class TieupProgramChange_Testcases extends BaseTest {
     //   Add modal  → processingDate → saved toast
     //   Approve modal → wefDate + fee fields → approved toast
     // ═══════════════════════════════════════════════
-    private static final String TIEUP_PC_CHILD_ID = "71962";
-    private static final String TIEUP_PROGRAM_NAME = "Half Day";
+    private static final String TIEUP_PC_CHILD_ID = "73462";
+    private static final String TIEUP_PROGRAM_NAME = "Extended Preschool (09:00 AM to 03:30 PM)";
     private static final String TIEUP_PROCESSING_DATE = "2026-07-23"; // ISO YYYY-MM-DD
     private static final String TIEUP_WEF_DATE = "2026-07-23"; // same as processing
     private static final String TIEUP_FEE_BREAKUP = "8000";
