@@ -6,19 +6,26 @@
     <parameter name="browser" value="chrome"/>
 
     <!--
-        8 Transport tests across two classes, split by flow (1-Way vs 2-Way)
+        14 Transport tests across two classes, split by flow (1-Way vs 2-Way)
         per explicit request. SC012 (Stop Transport 2 Way) was added to the
         2-Way class per a follow-up request, beyond the original 6 selected
-        test cases.
+        test cases. SC013-SC018 are 6 GAP scenarios (discovered live during
+        automation, not in the original spec) added to TC_Transport14Aug.xlsx
+        after a coverage-review request — 4 in the 1-Way class (SC013-SC016),
+        2 mirrored in the 2-Way class (SC017-SC018; SC013/SC016's mechanisms
+        are generic to the whole Service Request panel, not direction-specific,
+        so were not duplicated per explicit user decision).
 
         PRE-CONDITION:
           ServiceRequest_Transport1WayTest.DROPDOWN_CHECK_CHILD_ID (67336),
           SUBMIT_PENDING_CHILD_ID (72101), STOP_1WAY_CHILD_ID (46110), and
           FULL_FLOW_CHILD_ID are real child IDs (each gets consumed/advanced
           past Pending after a passing run — replace with a fresh child for
-          a clean rerun). ServiceRequest_Transport2WayTest.START_2WAY_CHILD_ID
-          (72089) replaces the spec's own 24309, confirmed Attrition.
-          STOP_2WAY_CHILD_ID (66914) is given directly in the spec.
+          a clean rerun). ATTRITION_CHILD_ID (24309) and NO_RIGHT_USER
+          (Varsha Jha) are static/reusable, not consumed. ServiceRequest_
+          Transport2WayTest.START_2WAY_CHILD_ID (72089) replaces the spec's
+          own 24309, confirmed Attrition. STOP_2WAY_CHILD_ID (66914) is
+          given directly in the spec.
 
         FLOW:
           1-Way:
@@ -28,10 +35,16 @@
             tc003_dropdownVerification  Services dropdown lists Transport One/Two Way    (SC002_TC_002)
             tc004_stopSubmitPending     Submit Stop Transport 1 Way -> Pending           (SC011_TC_001)
             tc005_stopFullFlow          Stop 1 Way full flow -> addon removed            (SC011_TC_002)
+            tc006_attritionChildBlocked Attrition child: Services dropdown blocked       (SC013_TC_001, GAP)
+            tc007_duplicateCrossTypeBlocked Duplicate + cross-type (1way/2way) blocked    (SC014_TC_001, GAP)
+            tc008_pastDateRejected      Past date rejected; today/future accepted        (SC015_TC_001, GAP)
+            tc009_accessRightBlocksSubmit Access-right check (BLOCKED — see CLAUDE.md)   (SC016_TC_001, GAP)
           2-Way:
             tc001_submitPending         Submit Start Transport 2 Way -> Pending          (SC005_TC_001)
             tc002_stopSubmitPending     Submit Stop Transport 2 Way -> Pending           (SC012_TC_001)
             tc003_stopFullFlow          Stop 2 Way full flow -> addon removed            (SC012_TC_002)
+            tc004_duplicateCrossTypeBlocked Duplicate + cross-type (2way/1way) blocked    (SC017_TC_001, GAP)
+            tc005_pastDateRejected      Past date rejected; today/future accepted        (SC018_TC_001, GAP)
     -->
 
     <test name="Transport 1 Way - Tests">
@@ -59,6 +72,8 @@
                     <include name="tc001_submitPending"/>
                     <include name="tc002_stopSubmitPending"/>
                     <include name="tc003_stopFullFlow"/>
+                    <include name="tc004_duplicateCrossTypeBlocked"/>
+                    <include name="tc005_pastDateRejected"/>
                 </methods>
             </class>
         </classes>

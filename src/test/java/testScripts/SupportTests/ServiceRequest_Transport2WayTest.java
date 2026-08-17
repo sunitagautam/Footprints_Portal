@@ -18,13 +18,21 @@ import utils.BaseTest;
 import java.time.LocalDate;
 
 /**
- * Transport Service Request — 2 Way — 3 Test Suite
- * Source: TC_Transport.xlsx (sheet TC_Transport).
+ * Transport Service Request — 2 Way — 5 Test Suite
+ * Source: TC_Transport.xlsx (sheet TC_Transport), plus 2 gap scenarios (SC017–SC018)
+ * added to TC_Transport14Aug.xlsx, mirroring 2 of the 4 gap scenarios already added
+ * to ServiceRequest_Transport1WayTest (the other 2 — Attrition-block and access-right
+ * — test mechanisms generic to the whole Service Request panel, not direction-specific,
+ * so were not duplicated here per explicit user decision).
  * <p>
  * 1  tc001_submitPending   SC005_TC_001   Submit Start Transport 2 Way (child 24309) → Pending.
  * 2  tc002_stopSubmitPending SC012_TC_001 Submit Stop Transport 2 Way (child 66914) → Pending.
  * 3  tc003_stopFullFlow    SC012_TC_002   Stop Transport 2 Way full flow: submit → getAllPendingRequests
  * → Approve → processChildApprovedRequest → Approved → addon removed.
+ * 4  tc004_duplicateCrossTypeBlocked SC017_TC_001 (GAP) Duplicate Two Way request blocked, incl.
+ * cross-type conflict — a pending Two Way request also blocks a new One Way submit on the same child.
+ * 5  tc005_pastDateRejected SC018_TC_001 (GAP) Start Transport 2 Way submit form rejects a genuinely
+ * past date ("Cannot make request in past date"); today/future dates succeed.
  * <p>
  * SC012 (Stop Transport 2 Way) was NOT in the originally-selected 6 test cases for this round —
  * added per explicit follow-up request, mirroring the 1-Way class's tc004/tc005 pattern exactly
@@ -293,5 +301,203 @@ public class ServiceRequest_Transport2WayTest extends BaseTest {
                 "❌ 'Two Way Transport' addon should be removed. Got: " + addonsAfter);
 
         Reporter.log("✅ TC003 PASSED — Stop Transport 2 Way approved, addon removed", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC004 — SC017_TC_001 (GAP) : Duplicate/overlapping Transport request
+    //          blocked, incl. cross-type Two Way vs One Way conflict
+    // ════════════════════════════════════════════════════════════════════
+    // Mirrors ServiceRequest_Transport1WayTest.tc007_duplicateCrossTypeBlocked
+    // from the OTHER direction — submits Two Way first, confirms a duplicate
+    // Two Way submit is blocked, AND a cross-type One Way submit on the SAME
+    // child is also blocked while the Two Way request is pending.
+    @Test(priority = 4, description = "SC017_TC_001 (GAP) — Duplicate/overlapping Transport request blocked, incl. cross-type Two Way vs One Way conflict")
+    public void tc004_duplicateCrossTypeBlocked() throws InterruptedException {
+        Reporter.log("▶ TC004 SC017_TC_001 | child=" + START_2WAY_CHILD_ID, true);
+
+        // Setup: submit Start Transport 2 Way — either creates a fresh
+        // pending request or confirms one already exists from tc001 (both
+        // are an acceptable pre-existing-pending state for this scenario).
+        accountStatementPage.generateAccountStatement(START_2WAY_CHILD_ID);
+        serviceRequestPage.clickServiceRequestLink();
+        Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+        serviceRequestPage.selectServiceType("Start Transport 2 Way");
+        Assert.assertTrue(serviceRequestPage.isStartTransport2WayFormVisible(), "❌ Start Transport 2 Way form not visible");
+        serviceRequestPage.setT2FromDate(futureDate());
+        Thread.sleep(300);
+        serviceRequestPage.submitStartTransport2Way();
+        Thread.sleep(800);
+        String setupPopup = serviceRequestPage.getAlertText();
+        if (!setupPopup.isEmpty()) {
+            serviceRequestPage.acceptAlert();
+            Thread.sleep(1500);
+        }
+        String setupResponse = serviceRequestPage.getResponseMessage();
+        System.out.println("   [Setup submit] " + setupResponse);
+        boolean setupOk = setupResponse.toLowerCase().contains("success")
+                || setupResponse.toLowerCase().contains("already pending");
+        Assert.assertTrue(setupOk, "❌ Expected success or already-pending during setup. Got: " + setupResponse);
+        serviceRequestPage.closeModalByJs();
+        Thread.sleep(400);
+
+        // Baseline: count Transport rows right after setup, BEFORE the
+        // blocked duplicate/cross-type attempts below. Child 72089 has
+        // accumulated Transport history across earlier test sessions (a
+        // stale "Add One Way Transport" row alongside the current Two Way
+        // one) — asserting a hardcoded "exactly 1 row" is wrong for a
+        // long-lived, reused test child. The real proof that the blocked
+        // attempts created nothing new is that the count doesn't GROW.
+        recentRequestsPage.navigateByChildId(START_2WAY_CHILD_ID);
+        int baselineRowCount = recentRequestsPage.getRowCount();
+        int baselineTransportRows = 0;
+        for (int r = 1; r <= baselineRowCount; r++) {
+            String type = recentRequestsPage.getColumnValueForRow(r, "Request Type");
+            if (type != null && type.toLowerCase().contains("transport")) baselineTransportRows++;
+        }
+        System.out.println("   [Baseline transport row count] " + baselineTransportRows);
+
+        // navigateByChildId() above left the driver on Recent Customer
+        // Requests — generateAccountStatement() doesn't navigate itself, so
+        // an explicit re-navigation is required before continuing (same
+        // pattern already used at the end of tc003_stopFullFlow).
+        navigations.goToAccountStatement();
+
+        // Step: attempt a SAME-type (Two Way) duplicate submit
+        accountStatementPage.generateAccountStatement(START_2WAY_CHILD_ID);
+        serviceRequestPage.clickServiceRequestLink();
+        Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+        serviceRequestPage.selectServiceType("Start Transport 2 Way");
+        Assert.assertTrue(serviceRequestPage.isStartTransport2WayFormVisible(), "❌ Start Transport 2 Way form not visible");
+        serviceRequestPage.setT2FromDate(futureDate());
+        Thread.sleep(300);
+        serviceRequestPage.submitStartTransport2Way();
+        Thread.sleep(800);
+        String dupPopup = serviceRequestPage.getAlertText();
+        if (!dupPopup.isEmpty()) {
+            serviceRequestPage.acceptAlert();
+            Thread.sleep(1500);
+        }
+        String duplicateSameType = serviceRequestPage.getResponseMessage();
+        System.out.println("   [Same-type duplicate] " + duplicateSameType);
+        Reporter.log("   Same-type duplicate response: " + duplicateSameType, true);
+        Assert.assertTrue(duplicateSameType.toLowerCase().contains("already pending"),
+                "❌ Expected 'already pending' block for same-type (Two Way) duplicate. Got: " + duplicateSameType);
+        serviceRequestPage.closeModalByJs();
+        Thread.sleep(400);
+
+        // Step: attempt the OPPOSITE direction (Start Transport 1 Way) for the SAME child
+        accountStatementPage.generateAccountStatement(START_2WAY_CHILD_ID);
+        serviceRequestPage.clickServiceRequestLink();
+        Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+        serviceRequestPage.selectServiceType("Start Transport 1 Way");
+        Assert.assertTrue(serviceRequestPage.isStartTransport1WayFormVisible(), "❌ Start Transport 1 Way form not visible");
+        serviceRequestPage.setT1FromDate(futureDate());
+        Thread.sleep(300);
+        serviceRequestPage.submitStartTransport1Way();
+        Thread.sleep(800);
+        String crossPopup = serviceRequestPage.getAlertText();
+        if (!crossPopup.isEmpty()) {
+            serviceRequestPage.acceptAlert();
+            Thread.sleep(1500);
+        }
+        String crossTypeResponse = serviceRequestPage.getResponseMessage();
+        System.out.println("   [Cross-type (1 Way) attempt] " + crossTypeResponse);
+        Reporter.log("   Cross-type (1 Way) attempt response: " + crossTypeResponse, true);
+        Assert.assertTrue(crossTypeResponse.toLowerCase().contains("already pending"),
+                "❌ Expected 'already pending' block for cross-type (1 Way) attempt while a 2 Way request is pending. Got: " + crossTypeResponse);
+
+        // Step: verify the Transport row count did NOT grow beyond the
+        // baseline captured right after setup — proves the blocked
+        // duplicate/cross-type attempts created nothing new, regardless of
+        // how much pre-existing Transport history this child already has.
+        recentRequestsPage.navigateByChildId(START_2WAY_CHILD_ID);
+        int rowCount = recentRequestsPage.getRowCount();
+        int transportRows = 0;
+        for (int r = 1; r <= rowCount; r++) {
+            String type = recentRequestsPage.getColumnValueForRow(r, "Request Type");
+            if (type != null && type.toLowerCase().contains("transport")) transportRows++;
+        }
+        System.out.println("   [Transport row count] " + transportRows + " (baseline was " + baselineTransportRows + ")");
+        Reporter.log("   Transport row count: " + transportRows + " (baseline was " + baselineTransportRows + ")", true);
+        Assert.assertEquals(transportRows, baselineTransportRows,
+                "❌ Expected Transport row count unchanged from baseline (" + baselineTransportRows
+                        + "), found " + transportRows + " — a blocked attempt may have created a duplicate row");
+
+        Reporter.log("✅ TC004 PASSED — Duplicate + cross-type Transport requests blocked (2 Way side)", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC005 — SC018_TC_001 (GAP) : Start Transport 2 Way submit form
+    //          rejects a genuinely PAST date; today/future succeed
+    // ════════════════════════════════════════════════════════════════════
+    // Mirrors ServiceRequest_Transport1WayTest.tc008_pastDateRejected for
+    // the Two Way form — confirms the same past-date validation applies
+    // here too, and that today/future dates are accepted.
+    @Test(priority = 5, description = "SC018_TC_001 (GAP) — Start Transport 2 Way submit form rejects a genuinely past date; today/future succeed")
+    public void tc005_pastDateRejected() throws InterruptedException {
+        Reporter.log("▶ TC005 SC018_TC_001 | child=" + START_2WAY_CHILD_ID, true);
+
+        accountStatementPage.generateAccountStatement(START_2WAY_CHILD_ID);
+        serviceRequestPage.clickServiceRequestLink();
+        Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+        serviceRequestPage.selectServiceType("Start Transport 2 Way");
+        Assert.assertTrue(serviceRequestPage.isStartTransport2WayFormVisible(), "❌ Start Transport 2 Way form not visible");
+
+        // Step: a genuinely past date (yesterday) must be rejected. Any
+        // confirm popup must be ACCEPTED (not dismissed) so the real
+        // validation actually runs — see the 1-Way class's tc008 for the
+        // earlier bug where blind-dismissing cancelled the submission
+        // instead of reading the real validation message.
+        serviceRequestPage.setT2FromDate(LocalDate.now().minusDays(1).toString());
+        Thread.sleep(300);
+        serviceRequestPage.submitStartTransport2Way();
+        Thread.sleep(800);
+        String yesterdayPopup = serviceRequestPage.getAlertText();
+        if (!yesterdayPopup.isEmpty()) {
+            serviceRequestPage.acceptAlert();
+            Thread.sleep(1500);
+        }
+        String yesterdayResponse = serviceRequestPage.getResponseMessage();
+        System.out.println("   [Yesterday] " + yesterdayResponse);
+        Reporter.log("   Yesterday response: " + yesterdayResponse, true);
+        Assert.assertTrue(yesterdayResponse.toLowerCase().contains("past date"),
+                "❌ Expected 'Cannot make request in past date' for a genuinely past date. Got: " + yesterdayResponse);
+
+        // Step: today's date must succeed (not be rejected) — confirmed
+        // for the 1 Way form; verifying the same holds for 2 Way.
+        serviceRequestPage.setT2FromDate(LocalDate.now().toString());
+        Thread.sleep(300);
+        serviceRequestPage.submitStartTransport2Way();
+        Thread.sleep(800);
+        String todayPopup = serviceRequestPage.getAlertText();
+        if (!todayPopup.isEmpty()) {
+            serviceRequestPage.acceptAlert();
+            Thread.sleep(1500);
+        }
+        String todayResponse = serviceRequestPage.getResponseMessage();
+        System.out.println("   [Today's date] " + todayResponse);
+        Reporter.log("   Today's date response: " + todayResponse, true);
+        boolean todayAlreadyPending = todayResponse.toLowerCase().contains("already pending");
+        Assert.assertTrue(todayResponse.toLowerCase().contains("success") || todayAlreadyPending,
+                "❌ Expected success (or already-pending) for today's date. Got: " + todayResponse);
+
+        // Step: a genuine future date must also succeed
+        serviceRequestPage.setT2FromDate(futureDate());
+        Thread.sleep(300);
+        serviceRequestPage.submitStartTransport2Way();
+        Thread.sleep(800);
+        String popup = serviceRequestPage.getAlertText();
+        if (!popup.isEmpty()) {
+            serviceRequestPage.acceptAlert();
+            Thread.sleep(1500);
+        }
+        String futureResponse = serviceRequestPage.getResponseMessage();
+        System.out.println("   [Future date] " + futureResponse);
+        Reporter.log("   Future date response: " + futureResponse, true);
+        boolean alreadyPending = futureResponse.toLowerCase().contains("already pending");
+        Assert.assertTrue(futureResponse.toLowerCase().contains("success") || alreadyPending,
+                "❌ Expected success (or already-pending) for a genuine future date. Got: " + futureResponse);
+
+        Reporter.log("✅ TC005 PASSED — Genuinely past date rejected; today and future dates accepted (2 Way form)", true);
     }
 }
