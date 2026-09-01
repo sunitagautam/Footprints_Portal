@@ -63,16 +63,16 @@ public class ServiceRequest_ExtendedDaycareTest extends BaseTest {
     // End 2026-07-30) sitting active, which blocks fresh submissions for tc001-tc003/tc005-tc007.
     // Swapped to a clean child; #68671 is now reused as ED_FUTURE_CHILD_ID below since its
     // existing Approved/future-End-Date booking is exactly what tc008 needs.
-    private static final String ED_CHILD_ID = "67786"; // Active Regular child, no pending/approved ED request
+    private static final String ED_CHILD_ID = "69426"; // Active Regular child, no pending/approved ED request
     private static final String ED_START_DATE = LocalDate.now().toString();
     private static final String ED_END_DATE = LocalDate.now().plusDays(15).toString(); // 15 days after start — same-day (0-day) ranges may be silently rejected client-side
 
-    private static final String ED_INACTIVE_CHILD_ID = "65793"; // reused from ServiceRequest_ProgramChangeTest — TODO: confirm inactive child
+    private static final String ED_INACTIVE_CHILD_ID = "70242"; // reused from ServiceRequest_ProgramChangeTest — TODO: confirm inactive child
 
-    private static final String ED_FUTURE_CHILD_ID = "68671"; // already has an Approved ED request with a future End Date (2026-07-30)
+    private static final String ED_FUTURE_CHILD_ID = "70258"; // already has an Approved ED request with a future End Date (2026-07-30)
     private static final String ED_FUTURE_END_DATE = LocalDate.now().plusDays(15).toString();
 
-    private static final String ED_HALFDAY_FEE_CHILD_ID = "66975"; // half-day fee read dynamically from the account (varies by center)
+    private static final String ED_HALFDAY_FEE_CHILD_ID = "70602"; // half-day fee read dynamically from the account (varies by center)
 
     // ── PAGE OBJECTS ─────────────────────────────────────────────────────
     private Regular_ServiceRequests serviceRequestPage;

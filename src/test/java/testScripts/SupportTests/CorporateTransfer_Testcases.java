@@ -47,8 +47,8 @@ public class CorporateTransfer_Testcases extends BaseTest {
     // Cancel child: SEPARATE, untouched Pending request (SC008_TC_001) —
     // cancel/approve are alternate branches so they cannot share a child.
     // ═══════════════════════════════════════════════
-    private static final String CT_CHAIN_CHILD_ID = "72893";
-    private static final String CT_CANCEL_CHILD_ID = "73040";
+    private static final String CT_CHAIN_CHILD_ID = "73410";
+    private static final String CT_CANCEL_CHILD_ID = "73326";
     private static final String CT_JOINING_MONTH = "Sep 2026";
 
     // 1st of CT_JOINING_MONTH — user-confirmed the migration API accepts an
