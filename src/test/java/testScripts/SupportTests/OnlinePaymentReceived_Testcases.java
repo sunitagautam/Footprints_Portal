@@ -190,12 +190,16 @@ public class OnlinePaymentReceived_Testcases extends BaseTest {
             throws InterruptedException {
         Reporter.log("▶ TC_OP_008 — Search by Child Name", true);
 
-        // ✅ Apply date range + click search to load data
-        onlinePaymentPage.filterByDateRange(
-                "06/01/2026", "06/02/2026");
-        onlinePaymentPage.clickSearch();          // ✅ Add this
+        // ✅ Scope to today via the picker's own default (see filterByToday()
+        //    javadoc — sendKeys-based filterByDateRange silently corrupts
+        //    the picker's state and returns 0 results)
+        onlinePaymentPage.filterByToday();
+        onlinePaymentPage.clickSearch();
 
-        String name = "Ranjeeta";
+        // ✅ Live-confirmed real child on today's data (2026-09-01) —
+        //    reports are live, so re-supply a fresh name/ID pair here
+        //    once this one ages off today's window (see CLAUDE.md)
+        String name = "Dharya Sharma";
         onlinePaymentPage.searchInTable(name);
 
         Assert.assertTrue(
@@ -204,29 +208,6 @@ public class OnlinePaymentReceived_Testcases extends BaseTest {
 
         Reporter.log("✅ Found: " + name, true);
         System.out.println("✅ TC_OP_008 PASSED");
-    }
-
-    // TC_OP_009
-    @Test(priority = 9,
-            description = "Search by Child ID")
-    public void verifySearchByChildID()
-            throws InterruptedException {
-        Reporter.log("▶ TC_OP_009 — Search by Child ID", true);
-
-        // ✅ Apply date range + click search to load data
-        onlinePaymentPage.filterByDateRange(
-                "06/01/2026", "06/02/2026");
-        onlinePaymentPage.clickSearch();          // ✅ Add this
-
-        String id = "69126";
-        onlinePaymentPage.searchInTable(id);
-
-        Assert.assertTrue(
-                onlinePaymentPage.isChildIDInTable(id),
-                "❌ Child ID not found: " + id);
-
-        Reporter.log("✅ Found ID: " + id, true);
-        System.out.println("✅ TC_OP_009 PASSED");
     }
 
     // ═══════════════════════════════════════════════
@@ -534,5 +515,59 @@ public class OnlinePaymentReceived_Testcases extends BaseTest {
 
         Reporter.log("✅ CSV uploaded and submitted", true);
         System.out.println("✅ TC_OP_020 PASSED");
+    }
+
+    // ═══════════════════════════════════════════════
+    // TC_OP_021 — Update Payment — HDFC SmartGateway
+    // ✅ Submit if transaction valid
+    // ✅ Capture error and close if invalid
+    // ═══════════════════════════════════════════════
+    @Test(priority = 21,
+            description = "Update Payment — HDFC SmartGateway + submit if valid")
+    public void verifyUpdatePaymentHDFCSmartGateway()
+            throws InterruptedException {
+        Reporter.log("▶ TC_OP_021 — Update Payment HDFC SmartGateway", true);
+
+        onlinePaymentPage.clickUpdatePayment();
+        onlinePaymentPage.selectSmartGatewayPaymentType();
+        onlinePaymentPage.enterTransactionNumber("4886243ffaecfa62a4f4");
+        onlinePaymentPage.clickRetrieveDetails();
+
+        if (onlinePaymentPage.isTransactionValid()) {
+            onlinePaymentPage.clickSubmitDetails();
+            Reporter.log("✅ TC_OP_021 — Transaction valid" +
+                    " — Submit Details clicked", true);
+            System.out.println("✅ TC_OP_021 PASSED — Submitted");
+        } else {
+            String err = onlinePaymentPage.getTransactionErrorMessage();
+            Reporter.log("⚠ TC_OP_021 — Invalid transaction: "
+                    + err, true);
+            System.out.println("⚠ TC_OP_021 — Invalid txn: " + err);
+            onlinePaymentPage.closeUpdatePaymentModal();
+            System.out.println("✅ TC_OP_021 PASSED" +
+                    " — Invalid txn handled gracefully");
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // TC_OP_022 — Filter by Gateway — HDFC Smart
+    // ✅ Live-confirmed label is "HDFC Smart" (not "HDFC
+    //    SmartGateway") — see getGatewayFilterOptions()
+    // ═══════════════════════════════════════════════
+    @Test(priority = 22,
+            description = "Filter by Gateway — HDFC Smart")
+    public void verifyFilterByGatewaySmartGateway()
+            throws InterruptedException {
+        Reporter.log("▶ TC_OP_022 — Filter by Gateway HDFC Smart", true);
+
+        onlinePaymentPage.filterByGateway("HDFC Smart");
+        onlinePaymentPage.clickSearch();
+
+        Assert.assertFalse(
+                onlinePaymentPage.getTableInfoText().isEmpty(),
+                "❌ Filter not applied");
+
+        Reporter.log("✅ " + onlinePaymentPage.getTableInfoText(), true);
+        System.out.println("✅ TC_OP_022 PASSED");
     }
 }

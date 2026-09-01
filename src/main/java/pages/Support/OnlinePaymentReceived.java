@@ -105,6 +105,9 @@ public class OnlinePaymentReceived {
     @FindBy(id = "icici")
     private WebElement radioICICI;
 
+    @FindBy(id = "smartgateway")
+    private WebElement radioSmartGateway;
+
     @FindBy(id = "transaction_id")
     private WebElement transactionNumberInput;
 
@@ -296,6 +299,31 @@ public class OnlinePaymentReceived {
     }
 
     // ═══════════════════════════════════════════════
+    // FILTER BY TODAY
+    // ✅ Opens the date-range picker and clicks Apply
+    //    WITHOUT touching the start/end text inputs —
+    //    the picker already defaults to today→today
+    //    (confirmed live via its "active start-date
+    //    active end-date" class on today's cell).
+    // ✅ sendKeys into daterangepicker_start/_end (as
+    //    filterByDateRange does) corrupts the picker's
+    //    internal state and silently returns 0 results —
+    //    same class of bug as the pickadate.js issue
+    //    documented elsewhere in this codebase. Kept as
+    //    a separate method rather than editing
+    //    filterByDateRange.
+    // ═══════════════════════════════════════════════
+    public void filterByToday() throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(dateRangeInput));
+        dateRangeInput.click();
+        Thread.sleep(500);
+        wait.until(ExpectedConditions.elementToBeClickable(dateApplyBtn));
+        dateApplyBtn.click();
+        System.out.println("✅ Date range: today (picker default)");
+        Thread.sleep(1000);
+    }
+
+    // ═══════════════════════════════════════════════
     // CLICK SEARCH BUTTON
     // ═══════════════════════════════════════════════
     public void clickSearch() throws InterruptedException {
@@ -383,6 +411,17 @@ public class OnlinePaymentReceived {
                 throw new IllegalArgumentException(
                         "❌ Invalid payment type: " + type);
         }
+    }
+
+    // ═══════════════════════════════════════════════
+    // SELECT SMARTGATEWAY (HDFC SmartGateway) PAYMENT TYPE
+    // ✅ Additive — kept separate from selectPaymentType()
+    //    rather than adding a case to its existing switch
+    // ═══════════════════════════════════════════════
+    public void selectSmartGatewayPaymentType() {
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", radioSmartGateway);
+        System.out.println("✅ Payment type: HDFC SmartGateway");
     }
 
     // ═══════════════════════════════════════════════
@@ -652,6 +691,45 @@ public class OnlinePaymentReceived {
             System.out.println("❌ Child ID not found: " + childID);
             return false;
         }
+    }
+
+    // ═══════════════════════════════════════════════
+    // GET GATEWAY FILTER OPTION TEXTS (diagnostic)
+    // ✅ Lists the real label text of every option in the
+    //    "Filter by Gateway" multiselect, e.g. to confirm
+    //    the exact HDFC SmartGateway label live
+    // ═══════════════════════════════════════════════
+    public List<String> getGatewayFilterOptions() throws InterruptedException {
+        WebElement toggleBtn = driver.findElement(By.xpath(
+                "//select[@name='filter_gateway[]']" +
+                        "/following-sibling::div//button" +
+                        "[contains(@class,'multiselect')]"));
+        toggleBtn.click();
+        Thread.sleep(300);
+
+        List<WebElement> options = driver.findElements(By.xpath(
+                "//ul[contains(@class,'multiselect-container')]//label"));
+        List<String> texts = new java.util.ArrayList<>();
+        for (WebElement o : options) {
+            texts.add(o.getText().trim());
+        }
+        System.out.println("▶ Gateway filter options: " + texts);
+
+        toggleBtn.click();
+        Thread.sleep(300);
+        return texts;
+    }
+
+    // ═══════════════════════════════════════════════
+    // DUMP VISIBLE ROWS (diagnostic)
+    // ═══════════════════════════════════════════════
+    public List<String> dumpVisibleRows() {
+        List<String> rows = new java.util.ArrayList<>();
+        for (WebElement row : tableRows) {
+            rows.add(row.getText().replace("\n", " | "));
+        }
+        System.out.println("▶ Visible rows: " + rows);
+        return rows;
     }
 
     // ═══════════════════════════════════════════════
