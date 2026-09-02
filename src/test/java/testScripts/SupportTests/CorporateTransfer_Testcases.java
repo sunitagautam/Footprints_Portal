@@ -49,12 +49,12 @@ public class CorporateTransfer_Testcases extends BaseTest {
     // ═══════════════════════════════════════════════
     private static final String CT_CHAIN_CHILD_ID = "73410";
     private static final String CT_CANCEL_CHILD_ID = "73326";
-    private static final String CT_JOINING_MONTH = "Sep 2026";
+    private static final String CT_JOINING_MONTH = "Oct 2026";
 
     // 1st of CT_JOINING_MONTH — user-confirmed the migration API accepts an
     // explicit date param to simulate/force month-end processing for a
     // specific child without waiting for the real calendar month to arrive.
-    private static final String CT_MIGRATION_DATE = "2026-09-02";
+    private static final String CT_MIGRATION_DATE = "2026-10-01";
     private static final String CT_FEE_COMMENT = "8499";
 
     // ═══════════════════════════════════════════════
