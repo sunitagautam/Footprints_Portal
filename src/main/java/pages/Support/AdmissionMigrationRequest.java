@@ -263,6 +263,26 @@ public class AdmissionMigrationRequest {
     }
 
     /**
+     * Used for the Corporate→Regular Add modal, where Center has no single
+     * pre-filled option but a full list to choose from (confirmed live on
+     * children 66969/66970 — unlike the usual single-preselected-option
+     * Center dropdown seen elsewhere).
+     */
+    public String selectFirstAvailableCenter() {
+        wait.until(ExpectedConditions.visibilityOf(centerDropdown));
+        Select sel = new Select(centerDropdown);
+        for (WebElement opt : sel.getOptions()) {
+            String text = opt.getText().trim();
+            if (!text.isEmpty() && !text.equalsIgnoreCase("Select")) {
+                sel.selectByVisibleText(text);
+                System.out.println("✅ Center (first available): " + text);
+                return text;
+            }
+        }
+        return "";
+    }
+
+    /**
      * Program options populate dynamically (via JS onchange) only after
      * Corporate Tie Up is selected — confirmed live, dropdown starts with
      * only a "Please Select" placeholder. Selects the first real option
