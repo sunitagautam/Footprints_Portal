@@ -48,6 +48,11 @@ import static io.restassured.RestAssured.given;
  * example — UNVERIFIED live, may need child_id instead per the Extended Daycare/Withdraw Child precedent)
  * processTransportApprovedRequest(childId)         — GET parentapp/processChildApprovedRequest (child_id, after Approve)
  * <p>
+ * ADMISSION MIGRATION (Regular↔Corporate)
+ * processAdmissionMigrationRequests(childId, date) — GET migrationprocess/process_admission_migration_requests
+ * (month-end cron, same endpoint/ckey for both directions)
+ * processAdmissionPipeline(newChildId)             — GET admissionpipeline/processAdmissionPipeline (run against new child)
+ * <p>
  * HELPERS
  * convertSingleQuotesToDouble(json)                — {'k':'v'} → {"k":"v"}
  * decodeHtmlEntities(raw)                          — &quot;/&amp;/&#39;/&lt;/&gt; → literal chars
@@ -149,6 +154,20 @@ public class APIs {
     // child_id there), so this may need the same fix once confirmed live.
     private static final String TR_PENDING_REQUESTS =
             "Financialprocess/getAllPendingRequests/";
+
+    // ═══════════════════════════════════════════════
+    // ADMISSION MIGRATION ENDPOINTS (Regular↔Corporate)
+    // ═══════════════════════════════════════════════
+    // Month-end migration cron — per spec's own example, takes child_id +
+    // date (1st of the request's applicable month) + ckey. Used for BOTH
+    // directions (Regular→Corporate and Corporate→Regular) — same endpoint.
+    private static final String AM_MIGRATION_PROCESS =
+            "migrationprocess/process_admission_migration_requests";
+
+    // Companion API run against the NEW child id after the migration cron
+    // creates it — per spec's own example.
+    private static final String AM_PIPELINE_PROCESS =
+            "admissionpipeline/processAdmissionPipeline";
 
     // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
@@ -731,6 +750,66 @@ public class APIs {
                 .response();
 
         System.out.println("✅ Process Approved Request — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // ADMISSION MIGRATION — Month-end migration cron (Regular↔Corporate)
+    //
+    // URL : {{Base_URL}}migrationprocess/process_admission_migration_requests?child_id=<child_id>&date=<yyyy-MM-dd>&ckey=EF0E0A75C6C2
+    // Use : Run after Approve on the Account Statement page, for either
+    //       direction (Regular→Corporate or Corporate→Regular) — same
+    //       endpoint/ckey per the spec's own examples for both. date =
+    //       1st of the month the request is applicable for (month-end
+    //       processing). Response per spec:
+    //       {"status":"ok","0":["Request Processed successfully with new child id <id>"]}
+    // ═══════════════════════════════════════════════
+    public static Response processAdmissionMigrationRequests(String childId, String date) {
+        String endpoint = AM_MIGRATION_PROCESS
+                + "?child_id=" + childId
+                + "&date=" + date
+                + "&ckey=EF0E0A75C6C2";
+        System.out.println("▶ Admission Migration: Month-end Migration Cron");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Migration Cron — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // ADMISSION MIGRATION — Process Admission Pipeline (new child, post-migration)
+    //
+    // URL : {{Base_URL}}admissionpipeline/processAdmissionPipeline?ckey=EF7061CCE0C7&child_id=<new_child_id>&show=error
+    // Use : Run against the NEW child id returned by processAdmissionMigrationRequests
+    //       — per spec, confirms the new admission's Tie-Up/pipeline data.
+    // ═══════════════════════════════════════════════
+    public static Response processAdmissionPipeline(String newChildId) {
+        String endpoint = AM_PIPELINE_PROCESS
+                + "?ckey=EF7061CCE0C7"
+                + "&child_id=" + newChildId
+                + "&show=error";
+        System.out.println("▶ Admission Migration: Process Admission Pipeline");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ Process Admission Pipeline — Status: " + response.getStatusCode());
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }
