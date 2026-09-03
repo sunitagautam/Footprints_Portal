@@ -244,36 +244,30 @@ public class Corporate_ServiceRequests {
     // ══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ══════════════════════════════════════════════════════════════════════
-
-    public Corporate_ServiceRequests(WebDriver driver) {
-        this.driver = driver;
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(20));
-        PageFactory.initElements(driver, this);
-    }
+    /**
+     * Submit the Corporate Center Transfer button-flow form.
+     * Pre-condition: generateAccountStatement(childId) already called.
+     *
+     * @param applicableMonth visible text e.g. "Aug 2026"
+     * @param centerName      visible text of the "Shift To" center dropdown
+     * @param programName     visible text of "Program To" — pass null/empty
+     * to leave as "-- Select --" if not required
+     * @return response/toast text visible right after submit
+     */
+    // ✅ Set by submitCorporateCenterTransfer() — the actual Applicable
+    // Month visible text used (whether passed explicitly or resolved via
+    // "first available"), so callers can derive the request's WEF date
+    // (1st of this month) for the migration API's required "date" param.
+    private String lastSelectedApplicableMonth;
 
     // ══════════════════════════════════════════════════════════════════════
     // ACCOUNT STATEMENT — shared actions
     // ══════════════════════════════════════════════════════════════════════
 
-    /**
-     * Enter Admission ID and click Generate to load account statement.
-     * Call this at the start of EACH test with the correct childId.
-     *
-     * @param childId e.g. "50947" or "68984"
-     */
-    public void generateAccountStatement(String childId)
-            throws InterruptedException {
-        wait.until(ExpectedConditions.visibilityOf(admissionIdInput));
-        admissionIdInput.clear();
-        admissionIdInput.sendKeys(childId);
-        System.out.println("✅ Admission ID entered: " + childId);
-        Thread.sleep(300);
-
-        wait.until(ExpectedConditions.elementToBeClickable(generateBtn));
-        ((JavascriptExecutor) driver)
-                .executeScript("arguments[0].click();", generateBtn);
-        System.out.println("▶ Generate clicked for child: " + childId);
-        Thread.sleep(2500);
+    public Corporate_ServiceRequests(WebDriver driver) {
+        this.driver = driver;
+        this.wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        PageFactory.initElements(driver, this);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -297,6 +291,28 @@ public class Corporate_ServiceRequests {
      * @param parentMonthly    e.g. "3000"
      * @param corporateMonthly e.g. "5000"
      */
+
+    /**
+     * Enter Admission ID and click Generate to load account statement.
+     * Call this at the start of EACH test with the correct childId.
+     *
+     * @param childId e.g. "50947" or "68984"
+     */
+    public void generateAccountStatement(String childId)
+            throws InterruptedException {
+        wait.until(ExpectedConditions.visibilityOf(admissionIdInput));
+        admissionIdInput.clear();
+        admissionIdInput.sendKeys(childId);
+        System.out.println("✅ Admission ID entered: " + childId);
+        Thread.sleep(300);
+
+        wait.until(ExpectedConditions.elementToBeClickable(generateBtn));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", generateBtn);
+        System.out.println("▶ Generate clicked for child: " + childId);
+        Thread.sleep(2500);
+    }
+
     /**
      * Full Tieup Program Change flow — confirmed from PDF (Jun 16 2026):
      * <p>
@@ -433,6 +449,10 @@ public class Corporate_ServiceRequests {
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // CORPORATE TRANSFER
+    // ══════════════════════════════════════════════════════════════════════
+
     /**
      * JS date setter — same pattern as Regular_ServiceRequests.
      * Handles Pickaday readonly inputs.
@@ -454,7 +474,8 @@ public class Corporate_ServiceRequests {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // CORPORATE TRANSFER
+    // CORPORATE TRANSFER — submit only (split from doCorporateTransfer so
+    // submit/approve can be exercised independently across test cases)
     // ══════════════════════════════════════════════════════════════════════
 
     /**
@@ -553,11 +574,6 @@ public class Corporate_ServiceRequests {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // CORPORATE TRANSFER — submit only (split from doCorporateTransfer so
-    // submit/approve can be exercised independently across test cases)
-    // ══════════════════════════════════════════════════════════════════════
-
     /**
      * Submit-only step of Corporate Transfer — click link, fill fields,
      * submit, accept the JS confirm() alert. Does NOT approve.
@@ -633,13 +649,20 @@ public class Corporate_ServiceRequests {
         Select sel = new Select(selectElement);
         for (WebElement opt : sel.getOptions()) {
             String text = opt.getText().trim();
-            if (!text.isEmpty() && !text.startsWith("--") && !text.equalsIgnoreCase("Select")) {
+            if (!text.isEmpty() && !text.startsWith(
+                    "--") && !text.equalsIgnoreCase("Select")) {
                 sel.selectByVisibleText(text);
                 return text;
             }
         }
         return "";
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // CORPORATE CENTER TRANSFER — button flow (Transfer Applicable=No)
+    // Confirmed live (child 71962): form id="frm-center-transfer" reuses
+    // joining_month/newCenter/newProgram/submit_Btn field ids.
+    // ══════════════════════════════════════════════════════════════════════
 
     /**
      * Approve-only step of Corporate Transfer via "Approve Corporate
@@ -670,28 +693,6 @@ public class Corporate_ServiceRequests {
         System.out.println("   Toast/response after approve: " + toast);
         return toast;
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // CORPORATE CENTER TRANSFER — button flow (Transfer Applicable=No)
-    // Confirmed live (child 71962): form id="frm-center-transfer" reuses
-    // joining_month/newCenter/newProgram/submit_Btn field ids.
-    // ══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Submit the Corporate Center Transfer button-flow form.
-     * Pre-condition: generateAccountStatement(childId) already called.
-     *
-     * @param applicableMonth visible text e.g. "Aug 2026"
-     * @param centerName      visible text of the "Shift To" center dropdown
-     * @param programName     visible text of "Program To" — pass null/empty
-     *                        to leave as "-- Select --" if not required
-     * @return response/toast text visible right after submit
-     */
-    // ✅ Set by submitCorporateCenterTransfer() — the actual Applicable
-    // Month visible text used (whether passed explicitly or resolved via
-    // "first available"), so callers can derive the request's WEF date
-    // (1st of this month) for the migration API's required "date" param.
-    private String lastSelectedApplicableMonth;
 
     public String getLastSelectedApplicableMonth() {
         return lastSelectedApplicableMonth;
