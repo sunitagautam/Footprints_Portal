@@ -53,7 +53,7 @@ public class AdmissionMigration_Testcases extends BaseTest {
     private static final String AM_CENTER_RESTRICTED_CHILD_ID = "TODO_CENTER_RESTRICTED_CHILD_ID"; // 66969/66970 confirmed live NOT center-restricted (66970 got consumed by an exploratory submit — has its own Pending request now)
 
     // Child with an existing pending Child Attrition/Withdraw request — SC_017 TC_023.
-    private static final String AM_ATTRITION_CONFLICT_CHILD_ID = "TODO_ATTRITION_CONFLICT_CHILD_ID"; // 66969 confirmed live NOT attrition-conflicted — submitted successfully, now has its own Pending request
+    private static final String AM_ATTRITION_CONFLICT_CHILD_ID = "67004";
 
     // Corporate child with outstanding Dues — confirmed live to block
     // migration with the exact spec message — SC_017_TC_002/SC_016_TC_003.
