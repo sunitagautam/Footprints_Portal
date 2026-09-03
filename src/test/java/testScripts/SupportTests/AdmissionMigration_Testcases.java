@@ -50,7 +50,13 @@ public class AdmissionMigration_Testcases extends BaseTest {
     private static final String AM_CORPORATE_CHILD_ID = "66752"; // backup: 66865 — 64301 has Dues, 64719 is Paused (both reused for the bonus checks), 72454 consumed
 
     // Child at a center restricted to Corporate-only admissions — SC_017 TC_022.
-    private static final String AM_CENTER_RESTRICTED_CHILD_ID = "TODO_CENTER_RESTRICTED_CHILD_ID"; // 66969/66970 confirmed live NOT center-restricted (66970 got consumed by an exploratory submit — has its own Pending request now)
+    // NOTE for finding a replacement once this child is consumed/reused:
+    // this restriction ONLY applies to children at ONSITE centers — a
+    // Corporate child at an onsite center has no Migrate-to-Regular button
+    // at all. Regular (non-onsite) Corporate centers do NOT have this
+    // restriction (confirmed live: 66969/66970 are not onsite and migrated
+    // normally).
+    private static final String AM_CENTER_RESTRICTED_CHILD_ID = "71846"; // onsite center — no migration allowed
 
     // Child with an existing pending Child Attrition/Withdraw request — SC_017 TC_023.
     private static final String AM_ATTRITION_CONFLICT_CHILD_ID = "67004";
@@ -419,19 +425,21 @@ public class AdmissionMigration_Testcases extends BaseTest {
     }
 
     // SC_017_TC_022 — center restricted to Corporate-only admissions
+    // Confirmed live (per user, child 71846, an onsite center): the
+    // restriction manifests as the Migrate button not rendering at all on
+    // Account Statement — same absent-button pattern as the Paused-child
+    // bonus check, just for a different underlying reason (onsite center,
+    // not Paused status).
     @Test(priority = 11,
-            description = "SC_017_TC_022 — Migration blocked for centers that only take Corporate admissions")
+            description = "SC_017_TC_022 — Migrate button hidden for onsite centers that don't allow migration")
     public void sc017_tc022_centerRestrictedToCorporateOnly() throws InterruptedException {
         Reporter.log("▶ SC_017_TC_022 — Center-restricted | child: " + AM_CENTER_RESTRICTED_CHILD_ID, true);
 
         migrationPage.generateAccountStatement(AM_CENTER_RESTRICTED_CHILD_ID);
-        migrationPage.clickMigrateCorporateToRegular();
-
-        String restrictedMsg = migrationPage.getVisibleMessageContaining(
-                "Can't Migrate to Regular as this Center takes only Corporate Admissions");
-        Reporter.log("   Restriction message: " + restrictedMsg, true);
-        Assert.assertFalse(restrictedMsg.isEmpty(),
-                "❌ Expected center-restriction message not shown");
+        boolean visible = migrationPage.isMigrateCorporateToRegularVisible();
+        Reporter.log("   Migrate button visible: " + visible, true);
+        Assert.assertFalse(visible,
+                "❌ Expected Migrate button hidden for an onsite-center-restricted child");
     }
 
     // SC_017_TC_023 — blocked when a Child Attrition/Withdraw request exists
