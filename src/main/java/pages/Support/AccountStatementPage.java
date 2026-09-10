@@ -950,6 +950,255 @@ public class AccountStatementPage {
     }
 
     // ═══════════════════════════════════════════════
+    // CANCEL REGISTRATION
+    // Confirmed live via screenshots (2026-09-09):
+    // Button: <a class="popdown_xl_large btn btn-xs text-muted has-text
+    //   reg-padding" href="cancel_registration?pop=yes&child_id=<id>">
+    //   <span class="btn btn-xs btn-danger">Cancel Registration</span></a>
+    // Opens an AJAX modal titled "Cancel Registration" with a pre-filled
+    // Child ID field + Reason textarea (placeholder "Enter your comments
+    // here") + a "Cancel Registration" submit button. Submitting fires a
+    // NATIVE confirm() — "Are you sure you want to cancel registration?"
+    // — then shows an inline green success banner "Cancelling
+    // Registration Processed" in the same modal. After the page reflects
+    // the change: child status label becomes "(ATTRITION)", the button
+    // is replaced by "REFUND WELCOME KIT", a "Billing Cancel Date : <date>"
+    // line appears under both subscription panels, and at least one
+    // ledger row gains "(Voided on <date>)".
+    // Field/modal locators below are first-pass, built from screenshots
+    // only (not yet confirmed against live DOM) — refine on first live
+    // run, same as every other feature in this project.
+    // ═══════════════════════════════════════════════
+    @FindBy(xpath = "//a[contains(@href,'cancel_registration')]")
+    private WebElement cancelRegistrationLink;
+
+    @FindBy(id = "cancel_reason")
+    private WebElement cancelRegistrationReasonInput;
+
+    @FindBy(id = "cancel_registration")
+    private WebElement cancelRegistrationSubmitBtn;
+
+    @FindBy(xpath = "//*[contains(normalize-space(.),'Cancelling Registration Processed')]")
+    private WebElement cancelRegistrationSuccessBanner;
+
+    @FindBy(xpath = "//a[normalize-space(.)='REFUND WELCOME KIT']" +
+            " | //span[normalize-space(.)='REFUND WELCOME KIT']")
+    private WebElement refundWelcomeKitBtn;
+
+
+    public boolean isCancelRegistrationButtonVisible() {
+        try {
+            return cancelRegistrationLink.isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void clickCancelRegistration() throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(cancelRegistrationLink));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", cancelRegistrationLink);
+        System.out.println("▶ Cancel Registration clicked");
+        Thread.sleep(1200);
+    }
+
+    public boolean isCancelRegistrationModalVisible() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.visibilityOf(cancelRegistrationReasonInput));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // CANCEL REGISTRATION — DEFAULT VIEW (SC_011_TC_002)
+    // Consolidated single check covering: title, close icon,
+    // Child ID field, Reason field, submit button.
+    // ═══════════════════════════════════════════════
+    public boolean isCancelRegistrationDefaultViewCorrect() {
+        try {
+            boolean titleVisible = !driver.findElements(By.xpath(
+                    "//*[contains(normalize-space(.),'Cancel Registration')]")).isEmpty();
+            boolean closeIconVisible = !driver.findElements(By.xpath(
+                    "//button[contains(@class,'close')]" +
+                            " | //span[@aria-hidden='true' and (text()='×' or text()='x')]" +
+                            " | //i[contains(@class,'fa-times')]" +
+                            " | //i[contains(@class,'fa-remove')]")).isEmpty();
+            boolean childIdFieldVisible = !driver.findElements(By.xpath(
+                    "//*[contains(normalize-space(.),'Child ID')]")).isEmpty();
+            boolean reasonFieldVisible = cancelRegistrationReasonInput.isDisplayed();
+            boolean submitBtnVisible = cancelRegistrationSubmitBtn.isDisplayed();
+            boolean allVisible = titleVisible && closeIconVisible && childIdFieldVisible
+                    && reasonFieldVisible && submitBtnVisible;
+            System.out.println("✅ Cancel Registration default view — title:" + titleVisible
+                    + " closeIcon:" + closeIconVisible + " childIdField:" + childIdFieldVisible
+                    + " reasonField:" + reasonFieldVisible + " submitBtn:" + submitBtnVisible);
+            return allVisible;
+        } catch (Exception e) {
+            System.out.println("⚠ isCancelRegistrationDefaultViewCorrect: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public void enterCancelRegistrationReason(String reason) throws InterruptedException {
+        wait.until(ExpectedConditions.visibilityOf(cancelRegistrationReasonInput));
+        cancelRegistrationReasonInput.clear();
+        cancelRegistrationReasonInput.sendKeys(reason);
+        System.out.println("✅ Cancel Registration reason entered: " + reason);
+        Thread.sleep(300);
+    }
+
+    // ═══════════════════════════════════════════════
+    // SUBMIT CANCEL REGISTRATION
+    // Accepts the native confirm() ("Are you sure you want to
+    // cancel registration?") and returns its text.
+    // ═══════════════════════════════════════════════
+    public String submitCancelRegistration() throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(cancelRegistrationSubmitBtn));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", cancelRegistrationSubmitBtn);
+        System.out.println("▶ Cancel Registration submit clicked");
+        Thread.sleep(800);
+
+        String alertText = "";
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.alertIsPresent());
+            org.openqa.selenium.Alert alert = driver.switchTo().alert();
+            alertText = alert.getText();
+            System.out.println("▶ Confirm popup: " + alertText);
+            alert.accept();
+            System.out.println("✅ Alert accepted — cancel registration submitted");
+            Thread.sleep(1500);
+        } catch (Exception e) {
+            System.out.println("⚠ No confirm alert after Cancel Registration submit: " + e.getMessage());
+        }
+        return alertText;
+    }
+
+    public String getCancelRegistrationSuccessMessage() {
+        try {
+            WebElement banner = new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.visibilityOf(cancelRegistrationSuccessBanner));
+            String msg = banner.getText().trim();
+            System.out.println("✅ Cancel Registration success message: " + msg);
+            return msg;
+        } catch (Exception e) {
+            System.out.println("⚠ getCancelRegistrationSuccessMessage: " + e.getMessage());
+            return "";
+        }
+    }
+
+    public boolean isRefundWelcomeKitButtonVisible() {
+        try {
+            return refundWelcomeKitBtn.isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // CHILD STATUS LABEL — reads the parenthesised status next to
+    // the child's name in the header line, e.g. "#73014 AADISHREE
+    // YADAV   (ATTRITION)   [PAYMENT PLAN : V1]". A positional
+    // xpath to the containing <legend> proved fragile (differs by
+    // child/page state) — scans the full body text instead, same
+    // fallback style already used by getMonthlyPlanAmount().
+    // ═══════════════════════════════════════════════
+    public String getChildStatusLabel() {
+        try {
+            String bodyText = driver.findElement(By.tagName("body")).getText();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                    "#\\d+\\s+[^()\\n]*\\(([^)]+)\\)\\s*\\[PAYMENT PLAN").matcher(bodyText);
+            if (m.find()) {
+                String status = m.group(1).trim();
+                System.out.println("✅ Child status label: " + status);
+                return status;
+            }
+            System.out.println("⚠ getChildStatusLabel: header line not found in body text");
+        } catch (Exception e) {
+            System.out.println("⚠ getChildStatusLabel: " + e.getMessage());
+        }
+        return "";
+    }
+
+    public boolean isChildStatusAttrition() {
+        return getChildStatusLabel().toUpperCase().contains("ATTRITION");
+    }
+
+    // ═══════════════════════════════════════════════
+    // BILLING CANCEL DATE — "Billing Cancel Date : 09 Sep, 2026" is
+    // rendered as a label element plus a sibling text node, so an
+    // xpath text() match only ever returns the label itself (same
+    // trap documented for AdmissionMigrationRequest's banner text).
+    // Scans the body text instead.
+    // ═══════════════════════════════════════════════
+    public String getBillingCancelDateText() {
+        try {
+            String bodyText = driver.findElement(By.tagName("body")).getText();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                    "Billing Cancel Date\\s*:?\\s*([^\\n]+)").matcher(bodyText);
+            if (m.find()) {
+                String date = m.group(1).trim();
+                System.out.println("✅ Billing Cancel Date: " + date);
+                return date;
+            }
+            System.out.println("⚠ getBillingCancelDateText: not found in body text");
+        } catch (Exception e) {
+            System.out.println("⚠ getBillingCancelDateText: " + e.getMessage());
+        }
+        return "";
+    }
+
+    // ═══════════════════════════════════════════════
+    // VOIDED INVOICE REFERENCES — scans the ledger table for
+    // any row whose text contains "Voided on" and reads that
+    // row's first cell (the Reference column), e.g. "PI/985388".
+    // ═══════════════════════════════════════════════
+    public List<String> getVoidedInvoiceReferences() {
+        List<String> refs = new java.util.ArrayList<>();
+        try {
+            ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
+            Thread.sleep(500);
+            List<WebElement> voidedRows = driver.findElements(By.xpath(
+                    "//tr[.//*[contains(normalize-space(.),'Voided on')]]"));
+            for (WebElement row : voidedRows) {
+                try {
+                    String ref = row.findElement(By.xpath("./td[1]")).getText().trim();
+                    if (!ref.isEmpty()) {
+                        refs.add(ref);
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            System.out.println("✅ Voided invoice references: " + refs);
+        } catch (Exception e) {
+            System.out.println("⚠ getVoidedInvoiceReferences: " + e.getMessage());
+        }
+        return refs;
+    }
+
+    // ═══════════════════════════════════════════════
+    // REFUND LIST — SC_011_TC_004 (UI-verify only, no exact
+    // refund-amount math). Checks that a given invoice/reference
+    // text appears somewhere on the refund_list screen.
+    // ═══════════════════════════════════════════════
+    public boolean isReferenceVisibleOnRefundList(String reference) {
+        try {
+            return !driver.findElements(By.xpath(
+                    "//*[contains(normalize-space(.),'" + reference + "')]")).isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void closeCancelRegistrationModal() throws InterruptedException {
+        closeModalByJs();
+    }
+
+    // ═══════════════════════════════════════════════
     // FORCE-CLOSE ALL MODALS VIA JS — used in @AfterMethod
     // ═══════════════════════════════════════════════
     public void closeModalByJs() {

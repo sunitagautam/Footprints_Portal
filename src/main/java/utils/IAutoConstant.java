@@ -19,6 +19,9 @@ public final class IAutoConstant {
     public static final String SMS_VIEW_URL =
             "https://test-franchise.footprintseducation.in/sms_view";
 
+    public static final String REFUND_LIST_URL =
+            "https://test-franchise.footprintseducation.in/refund_list";
+
 
     // ═══════════════════════════════════════════════
     // LOGIN CREDENTIALS

@@ -205,4 +205,18 @@ public class Navigations {
         System.out.println("✅ Navigated to: SMS View");
         Thread.sleep(1500);
     }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → REFUND LIST
+    // Navigates directly via URL — no sub-menu link
+    // needed since the screen URL is known. Used by
+    // Cancel Registration's SC_011_TC_004 to verify a
+    // voided invoice appears for Finance to refund.
+    // ═══════════════════════════════════════════════
+    public void goToRefundList() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.REFUND_LIST_URL);
+        System.out.println("✅ Navigated to: Refund List");
+        Thread.sleep(1500);
+    }
 }
