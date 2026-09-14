@@ -104,6 +104,18 @@ public class APIs {
             "parentapp/extendedDaycareCronJob";
 
     // ═══════════════════════════════════════════════
+    // TIEUP PROGRAM CHANGE — process request as per WEF date (added 2026-09-11)
+    // URL : {{Base_URL}}migrationprocess/processTieupProgramChangeRequests
+    //       ?key=F@@tpr!nt$ChargeBeeUpdate$&child_id=<child_id>&ckey=2107B04D9668
+    // Use : run ON the request's own WEF date — per user, a positive/
+    //       successful response only comes when run on/after the WEF date
+    //       (same timing-gate family as other process/cron endpoints
+    //       elsewhere in this file, e.g. cronProcessCenterShiftRequests).
+    // ═══════════════════════════════════════════════
+    private static final String TIEUP_PROCESS_REQUEST =
+            "migrationprocess/processTieupProgramChangeRequests";
+
+    // ═══════════════════════════════════════════════
     // TIME EXTENSION ENDPOINTS
     // ═══════════════════════════════════════════════
     // Same physical endpoint as CS_PENDING_TO_PROCESSING/ED_APPROVE_REQUEST —
@@ -395,6 +407,31 @@ public class APIs {
                 .response();
 
         System.out.println("✅ Pending→Approved — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // TIEUP PROGRAM CHANGE — process request as per WEF date (added 2026-09-11)
+    // Run this ON the request's own WEF date to get a positive response.
+    // ═══════════════════════════════════════════════
+    public static Response processTieupProgramChangeRequest(String childId) {
+        String endpoint = TIEUP_PROCESS_REQUEST
+                + "?key=F@@tpr!nt$ChargeBeeUpdate$"
+                + "&child_id=" + childId
+                + "&ckey=2107B04D9668";
+        System.out.println("▶ Tieup Program Change: process request as per WEF date");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ processTieupProgramChangeRequest — Status: " + response.getStatusCode());
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }
