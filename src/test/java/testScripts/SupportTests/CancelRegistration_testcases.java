@@ -1,12 +1,12 @@
 package testScripts.SupportTests;
 
+import org.openqa.selenium.JavascriptExecutor;
 import org.testng.Assert;
 import org.testng.Reporter;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.openqa.selenium.JavascriptExecutor;
 import pages.Navigations;
 import pages.Support.AccountStatementPage;
 import utils.BaseTest;
@@ -37,13 +37,13 @@ public class CancelRegistration_testcases extends BaseTest {
     // currently consumed (Attrition) as of 2026-09-10 — fresh Regular
     // children (within the Cancel Registration eligibility window: 3 days
     // before to 1 day after Joining Date) are needed for the next clean run.
-    private static final String CR_VIEW_CHILD_ID = "73705";
-    private static final String CR_FULL_FLOW_CHILD_ID = "73705";
-    private static final String CR_BEFORE_JOINING_CHILD_ID = "73832";
+    private static final String CR_VIEW_CHILD_ID = "74167";
+    private static final String CR_FULL_FLOW_CHILD_ID = "74167";
+    private static final String CR_BEFORE_JOINING_CHILD_ID = "74227";
     // 73860 (user-supplied 2026-09-09) had no Cancel Registration button at
     // all — likely outside the "next day of Joining Date" eligibility window.
     // Falling back to one of the earlier-supplied TC_006 backups.
-    private static final String CR_AFTER_JOINING_CHILD_ID = "73735";
+    private static final String CR_AFTER_JOINING_CHILD_ID = "74189";
 
     // Mixed admission-type children supplied by user (2026-09-10) to confirm
     // Cancel Registration behaves identically regardless of admission type
