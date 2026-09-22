@@ -43,9 +43,9 @@ public class OneTimeCharges_Testcases extends BaseTest {
                 {"SC_015_TC_013", "Transport Fee", "3000", "Transport fee", false, false, "", "", ""},
                 {"SC_015_TC_014", "Tuition Fee", "300", "Tuition Fee", false, false, "", "", ""},
                 {"SC_015_TC_015", "Courier Charges", "50", "Courier charges", false, false, "", "", ""},
-                {"SC_015_TC_016", "Welcome Kit", "4000", "Welcome Kit charges", true, false, "", "", ""},
-                {"SC_015_TC_017", "Welcome Kit Without Read-O-Stick", "5000", "Welcome Kit Without Read-O-Stick", true, false, "", "", ""},
-                {"SC_015_TC_018", "Welcome Kit With Read-O-Stick", "7500", "Welcome Kit With Read-O-Stick", true, false, "", "", ""},
+                {"SC_015_TC_016", "Welcome Kit (Learning Toy)", "4000", "Welcome Kit charges", true, false, "", "", ""},
+                {"SC_015_TC_017", "Welcome Kit (Learning Toy + Book Set)", "5000", "Welcome Kit Without Read-O-Stick", true, false, "", "", ""},
+                {"SC_015_TC_018", "Welcome Kit (Learning Toy + Read-O-Stick)", "7500", "Welcome Kit With Read-O-Stick", true, false, "", "", ""},
                 {"SC_015_TC_019", "Late Stay", "400", "late amount updated rate", true, true, "08/21/2024", "2", "30"},
                 {"SC_015_TC_020", "Apron Charges", "200", "Apron Charges", false, false, "", "", ""},
                 {"SC_015_TC_021", "New Book-set", "3500", "New Book-set Charges", false, false, "", "", ""},
@@ -183,9 +183,9 @@ public class OneTimeCharges_Testcases extends BaseTest {
                 "Registration Fee", "School Bag",
                 "Security Fee", "Tee Shirt Charges",
                 "Transport Fee", "Tuition Fee",
-                "Welcome Kit",
-                "Welcome Kit Without Read-O-Stick",
-                "Welcome Kit With Read-O-Stick"
+                "Welcome Kit (Learning Toy)",
+                "Welcome Kit (Learning Toy + Book Set)",
+                "Welcome Kit (Learning Toy + Read-O-Stick)"
         };
 
         boolean allPresent = oneTimeChargesPage
