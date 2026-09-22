@@ -40,8 +40,8 @@ public class TieupProgramChange_Testcases extends BaseTest {
     // (stale), which was causing TC001 to fail — not a code regression.
     // Confirmed live server date = 2026-09-10; the picker's own minimum
     // lead-time default highlighted 2026-09-17, so that's used here.
-    private static final String TIEUP_PROCESSING_DATE = "2026-09-29"; // ISO YYYY-MM-DD
-    private static final String TIEUP_WEF_DATE = "2026-09-29"; // same as processing
+    private static final String TIEUP_PROCESSING_DATE = "2026-11-29"; // ISO YYYY-MM-DD
+    private static final String TIEUP_WEF_DATE = "2026-11-29"; // same as processing
     private static final String TIEUP_FEE_BREAKUP = "8000";
     private static final String TIEUP_PARENT_MONTHLY = "3000";
     private static final String TIEUP_CORPORATE_MONTHLY = "5000";

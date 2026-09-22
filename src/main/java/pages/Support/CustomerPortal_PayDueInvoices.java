@@ -185,29 +185,33 @@ public class CustomerPortal_PayDueInvoices {
     // ═══════════════════════════════════════════════
 
     public String extractUpiPaymentJson() throws InterruptedException {
-        try {
-            new WebDriverWait(driver, Duration.ofSeconds(15))
-                    .until(ExpectedConditions.presenceOfElementLocated(
-                            By.id("payment_json_icici_upi")));
-            Thread.sleep(1000);
+        // Confirmed live (2026-09-22, child 68827): the hidden field's real id
+        // is "payment_json_icici_up" (no trailing "i") — differs from this
+        // method's original assumption of "payment_json_icici_upi". Both ids
+        // are tried since it's not yet confirmed whether this varies by
+        // child/flow or the original id was simply always wrong.
+        String[] candidateIds = {"payment_json_icici_up", "payment_json_icici_upi"};
+        for (String id : candidateIds) {
+            try {
+                new WebDriverWait(driver, Duration.ofSeconds(10))
+                        .until(ExpectedConditions.presenceOfElementLocated(By.id(id)));
+                Thread.sleep(500);
 
-            String json = (String) ((JavascriptExecutor) driver)
-                    .executeScript(
-                            "return document.getElementById(" +
-                                    "'payment_json_icici_upi').value;");
+                String json = (String) ((JavascriptExecutor) driver)
+                        .executeScript("return document.getElementById(arguments[0]).value;", id);
 
-            if (json != null && !json.isEmpty()) {
-                System.out.println("✅ UPI JSON extracted (length="
-                        + json.length() + ")");
-            } else {
-                System.out.println("⚠ UPI JSON value is empty");
+                if (json != null && !json.isEmpty()) {
+                    System.out.println("✅ UPI JSON extracted via id=" + id
+                            + " (length=" + json.length() + ")");
+                    return json;
+                }
+                System.out.println("⚠ Field id=" + id + " found but value is empty");
+            } catch (Exception ignored) {
+                System.out.println("▶ Field id=" + id + " not present");
             }
-            return json != null ? json : "";
-        } catch (Exception e) {
-            System.out.println("❌ UPI JSON extraction failed: "
-                    + e.getMessage());
-            return "";
         }
+        System.out.println("❌ UPI JSON extraction failed — neither candidate id found/populated");
+        return "";
     }
 
     // ═══════════════════════════════════════════════

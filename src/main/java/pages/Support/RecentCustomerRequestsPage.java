@@ -1096,6 +1096,207 @@ public class RecentCustomerRequestsPage {
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // EXTENDED DAYCARE — STOP / EARLY RESUME (new enhancement, additive).
+    // Used by ServiceRequest_ExtendedDaycareTest's tc011/tc012.
+    // See CLAUDE.md "NEW enhancement: Extended Day Care Stop / Early Resume".
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * True if the Actions column for this child's Extended Daycare row
+     * contains the new STOP / EARLY RESUME control.
+     */
+    public boolean isEDStopEarlyResumeVisible(String admId) throws InterruptedException {
+        String actions = getEDColumnValue(admId, "Actions");
+        return actions != null && actions.toUpperCase().contains("STOP")
+                && actions.toUpperCase().contains("RESUME");
+    }
+
+    /**
+     * Clicks the STOP / EARLY RESUME control on this child's Extended
+     * Daycare row. Assumes navigateByChildId/getEDColumnValue was already
+     * called so the grid for this admId is loaded.
+     */
+    public void clickEDStopEarlyResume(String admId) throws InterruptedException {
+        int row = findExtendedDaycareRow();
+        if (row == -1) {
+            throw new RuntimeException("❌ No Extended Daycare row found for child " + admId);
+        }
+        By actionsCellButton = By.xpath("(//table[contains(@class,'dataTable')]/tbody/tr)[" + row
+                + "]//button[contains(translate(.,'abcdefghijklmnopqrstuvwxyz',"
+                + "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'),'STOP')"
+                + " or contains(translate(.,'abcdefghijklmnopqrstuvwxyz',"
+                + "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'),'RESUME')]"
+                + " | (//table[contains(@class,'dataTable')]/tbody/tr)[" + row + "]//a[contains(translate(.,"
+                + "'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'),'STOP')"
+                + " or contains(translate(.,'abcdefghijklmnopqrstuvwxyz',"
+                + "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'),'RESUME')]");
+        WebElement btn = wait.until(ExpectedConditions.presenceOfElementLocated(actionsCellButton));
+        try {
+            btn.click();
+        } catch (Exception e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        }
+        System.out.println("▶ STOP / EARLY RESUME clicked for child " + admId);
+        Thread.sleep(1000);
+    }
+
+    /**
+     * Diagnostic — dumps every currently visible modal/alert's HTML so the
+     * real field ids/classes of the "Extended Daycare Stop / Early Resume
+     * Request" modal can be identified before writing real interaction
+     * methods. Mirrors OneTimeChargesPage.dumpVisibleModalsAndAlerts().
+     */
+    public String dumpEDStopEarlyResumeModalHtml() {
+        try {
+            String html = (String) ((JavascriptExecutor) driver).executeScript(
+                    "var sel = '.modal, .modal-content, .alert, [class*=\"alert\"]';" +
+                            "var els = document.querySelectorAll(sel);" +
+                            "var out = [];" +
+                            "els.forEach(function(el){" +
+                            "  if (el.offsetParent !== null) {" +
+                            "    out.push(el.outerHTML);" +
+                            "  }" +
+                            "});" +
+                            "return out.join('\\n----------\\n');");
+            System.out.println("▶ ED STOP/EARLY RESUME MODAL DUMP:\n" + html);
+            return html == null ? "" : html;
+        } catch (Exception e) {
+            System.out.println("⚠ Could not dump ED Stop/Early Resume modal: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Opens the "New End Date" pickadate.js widget (id="early_resume_date")
+     * and clicks the day cell matching dayOfMonth (e.g. "28") within the
+     * currently-displayed month — confirmed live the widget's own
+     * prev/next month nav is disabled for this flow (the valid range never
+     * spans a month boundary), so no month navigation is implemented here.
+     * Confirmed live: unlike Withdraw Child's attrition_date / Tie-Up's
+     * processing_date pickadate widgets (which required real widget clicks
+     * because raw JS injection silently corrupted the backend payload),
+     * this one has no year/month &lt;select&gt; to drive — a direct day-cell
+     * click is the only interaction needed.
+     */
+    public void selectEarlyResumeDay(String dayOfMonth) throws InterruptedException {
+        WebElement dateInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.id("early_resume_date")));
+        try {
+            dateInput.click();
+        } catch (Exception e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", dateInput);
+        }
+        Thread.sleep(500);
+
+        By dayCell = By.xpath("//div[@id='early_resume_date_root']" +
+                "//div[contains(@class,'picker__day') and not(contains(@class,'picker__day--disabled'))" +
+                " and normalize-space(text())='" + dayOfMonth + "']");
+        WebElement cell = wait.until(ExpectedConditions.elementToBeClickable(dayCell));
+        try {
+            cell.click();
+        } catch (Exception e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", cell);
+        }
+        System.out.println("✅ Early Resume new end date day selected: " + dayOfMonth);
+        Thread.sleep(500);
+    }
+
+    /**
+     * Reads the dynamic info banner ("Extended Daycare will now run for
+     * N day(s), shortened by M day(s) from the original end date.") —
+     * id="resume_days-alert", confirmed live.
+     */
+    public String getEarlyResumeInfoBannerText() {
+        try {
+            WebElement el = new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.visibilityOfElementLocated(By.id("resume_days-alert")));
+            String text = el.getText().trim();
+            System.out.println("▶ Early Resume info banner: " + text);
+            return text;
+        } catch (Exception e) {
+            System.out.println("⚠ Early Resume info banner not found: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Clicks the Submit button (id="submit_early_resume", confirmed live)
+     * on the Extended Daycare Stop / Early Resume Request modal.
+     */
+    public void clickSubmitEarlyResume() throws InterruptedException {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(By.id("submit_early_resume")));
+        try {
+            btn.click();
+        } catch (Exception e) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        }
+        System.out.println("▶ Submit (Early Resume) clicked");
+        Thread.sleep(1000);
+    }
+
+    /**
+     * Reads whatever success/result banner appears inside the modal after
+     * Submit (e.g. "Extended Daycare end date has been revised. The
+     * invoice has been updated to Rs. &lt;amount&gt; for the revised
+     * period.") — generic alert/success scan, mirrors
+     * dumpEDStopEarlyResumeModalHtml()'s selector set.
+     */
+    public String getEarlyResumeResultMessage() {
+        By[] candidates = {
+                By.cssSelector(".alert-success"),
+                By.cssSelector(".alert-danger"),
+                By.cssSelector(".alert-warning"),
+                By.cssSelector(".alert-info"),
+                By.xpath("//*[contains(translate(.,'ABCDEFGHIJKLMNOPQRSTUVWXYZ'," +
+                        "'abcdefghijklmnopqrstuvwxyz'),'end date has been revised')]")
+        };
+        for (By by : candidates) {
+            try {
+                WebElement el = new WebDriverWait(driver, Duration.ofSeconds(8))
+                        .until(ExpectedConditions.visibilityOfElementLocated(by));
+                String text = el.getText().trim();
+                if (!text.isEmpty()) {
+                    System.out.println("▶ Early Resume result message: " + text);
+                    return text;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        System.out.println("▶ No Early Resume result message found");
+        return "";
+    }
+
+    /**
+     * Diagnostic — clicks the "New End Date" pickadate.js input
+     * (id="early_resume_date", confirmed live) to open its calendar, then
+     * dumps the picker root's (id="early_resume_date_root") HTML so the
+     * real year/month controls (enabled &lt;select&gt; vs. disabled,
+     * requiring prev/next arrow nav — differs across this app's other
+     * pickadate widgets, e.g. Withdraw Child's attrition_date vs. Tie-Up's
+     * processing_date) can be confirmed before writing real date-setting
+     * logic. Additive only — not yet wired into any real interaction.
+     */
+    public String dumpEarlyResumeDatePickerRoot() {
+        try {
+            WebElement dateInput = driver.findElement(By.id("early_resume_date"));
+            try {
+                dateInput.click();
+            } catch (Exception e) {
+                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", dateInput);
+            }
+            Thread.sleep(600);
+            String html = (String) ((JavascriptExecutor) driver).executeScript(
+                    "var root = document.getElementById('early_resume_date_root');" +
+                            "return root ? root.outerHTML : 'NOT FOUND';");
+            System.out.println("▶ early_resume_date_root DUMP:\n" + html);
+            return html == null ? "" : html;
+        } catch (Exception e) {
+            System.out.println("⚠ Could not dump early_resume_date_root: " + e.getMessage());
+            return "";
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // TIME EXTENSION-SPECIFIC HELPERS (called from ServiceRequest_TimeExtensionTest)
     // Filters by Admission ID via direct URL, then finds the row whose
     // "Request Type" column matches "Start Time Extension" or "Stop Time

@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 import pages.Navigations;
 import pages.Settings.UserRightsPage;
 import pages.Support.AccountStatementPage;
+import pages.Support.CustomerPortal_PayDueInvoices;
 import pages.Support.RecentCustomerRequestsPage;
 import pages.Support.Regular_ServiceRequests;
 import utils.APIs;
@@ -20,6 +21,7 @@ import utils.BaseTest;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +39,8 @@ import java.util.regex.Pattern;
  * 8  tc008_cronBeforeEndDateNoPrematureComplete SC008_TC_003  Cron before End Date — no early completion (UI + RestAssured)
  * 9  tc009_inactiveChildBlocked                 SC008_TC_001  Inactive child blocked            (UI)
  * 10 tc010_perDayChargeFormula                  SC003_TC_001  round(6.67% x half-day fee)       (UI + RestAssured)
+ * 11 tc011_earlyResumeUnpaidInvoiceVoidAndReissue   Stop/Early Resume enhancement — unpaid invoice → void + reissue (UI + RestAssured)
+ * 12 tc012_earlyResumePaidInvoiceCreditNote          Stop/Early Resume enhancement — paid invoice → credit note      (UI + RestAssured)
  * <p>
  * PRE-CONDITIONS — update constants below:
  * ED_CHILD_ID            Active Regular child; no pending/approved Extended Daycare request.
@@ -74,12 +78,37 @@ public class ServiceRequest_ExtendedDaycareTest extends BaseTest {
 
     private static final String ED_HALFDAY_FEE_CHILD_ID = "70602"; // half-day fee read dynamically from the account (varies by center)
 
+    // ── STOP / EARLY RESUME ENHANCEMENT — TEST DATA ────────────────────────
+    // Both confirmed working end-to-end 2026-09-22 (see CLAUDE.md "NEW enhancement:
+    // Extended Day Care Stop / Early Resume"). Both children are now CONSUMED
+    // (already early-resumed to End Date = 28 Sep 2026) — fresh Regular children
+    // with no existing ED request are needed for the next clean re-run.
+    private static final String EARLY_RESUME_UNPAID_CHILD_ID = "68338"; // unpaid invoice → void + reissue
+    private static final String EARLY_RESUME_PAID_CHILD_ID = "70256"; // paid invoice → credit note
+    // The test server's clock briefly drifted to Oct 1 mid-session (confirmed
+    // via the portal header clock), causing ED submission to silently fail
+    // for two otherwise-valid children (68419, 70243) with these Sep dates
+    // now in the past. User has since reset the server date back to Sep 22
+    // (today) — reverting to the original values.
+    private static final String EARLY_RESUME_START_DATE = "2026-09-22";
+    private static final String EARLY_RESUME_END_DATE = "2026-09-30";
+    private static final String EARLY_RESUME_NEW_END_DAY = "28"; // day-of-month clicked in the pickadate calendar
+
+    // ── STOP / EARLY RESUME — BUTTON VISIBILITY ACROSS STATES ──────────────
+    // Children supplied 2026-09-22. BUTTON_VIS_CHILD_ID is chained across
+    // Pending -> Approved -> Completed on ONE ED lifecycle (same child).
+    // BUTTON_VIS_CANCEL_CHILD_ID gets its own fresh ED lifecycle, cancelled
+    // while Pending. 70485/70383 held as spares, not yet used.
+    private static final String BUTTON_VIS_CHILD_ID = "70801";
+    private static final String BUTTON_VIS_CANCEL_CHILD_ID = "70779";
+
     // ── PAGE OBJECTS ─────────────────────────────────────────────────────
     private Regular_ServiceRequests serviceRequestPage;
     private AccountStatementPage accountStatementPage;
     private RecentCustomerRequestsPage recentRequestsPage;
     private UserRightsPage userRightsPage;
     private Navigations navigations;
+    private CustomerPortal_PayDueInvoices payDueInvoicesPage;
 
     // ── LIFECYCLE ────────────────────────────────────────────────────────
     @BeforeClass(alwaysRun = true)
@@ -89,6 +118,7 @@ public class ServiceRequest_ExtendedDaycareTest extends BaseTest {
         accountStatementPage = new AccountStatementPage(driver);
         serviceRequestPage = new Regular_ServiceRequests(driver);
         recentRequestsPage = new RecentCustomerRequestsPage(driver);
+        payDueInvoicesPage = new CustomerPortal_PayDueInvoices(driver);
 
         System.out.println("▶ ED_CHILD_ID    : " + ED_CHILD_ID);
         System.out.println("▶ ED_START_DATE  : " + ED_START_DATE);
@@ -792,5 +822,649 @@ public class ServiceRequest_ExtendedDaycareTest extends BaseTest {
         } else {
             Reporter.log("✅ TC010 PASSED — Per-day charge formula correct", true);
         }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC011 — Stop / Early Resume enhancement: unpaid invoice → the
+    //  original ED invoice is voided and a new, reduced invoice is raised
+    //  for the shortened period.
+    //  Confirmed end-to-end 2026-09-22 on child 74054 — see CLAUDE.md
+    //  "NEW enhancement: Extended Day Care Stop / Early Resume".
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 11,
+            description = "Stop/Early Resume — unpaid ED invoice is voided and reissued for the shortened period")
+    public void tc011_earlyResumeUnpaidInvoiceVoidAndReissue() throws InterruptedException {
+        Reporter.log("▶ TC011 — Early Resume (unpaid invoice) | child=" + EARLY_RESUME_UNPAID_CHILD_ID, true);
+
+        String status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_UNPAID_CHILD_ID);
+        System.out.println("   [Existing ED status] '" + status + "'");
+
+        if (status.isEmpty()) {
+            navigations.goToAccountStatement();
+            accountStatementPage.generateAccountStatement(EARLY_RESUME_UNPAID_CHILD_ID);
+            serviceRequestPage.clickServiceRequestLink();
+            Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+
+            serviceRequestPage.selectServiceType("Extended Daycare");
+            Assert.assertTrue(serviceRequestPage.isExtendedDaycareFormVisible(), "❌ Extended Daycare form not visible");
+
+            serviceRequestPage.setEDFromDate(EARLY_RESUME_START_DATE);
+            Thread.sleep(300);
+            serviceRequestPage.setEDToDate(EARLY_RESUME_END_DATE);
+            Thread.sleep(300);
+            serviceRequestPage.submitExtendedDaycare();
+            Thread.sleep(800);
+            if (!serviceRequestPage.getAlertText().isEmpty()) {
+                serviceRequestPage.acceptAlert();
+                Thread.sleep(2000);
+            }
+            String submitResponse = serviceRequestPage.getResponseMessage();
+            Assert.assertFalse(submitResponse.toUpperCase().contains("ERROR"), "❌ Submit returned error: " + submitResponse);
+
+            Thread.sleep(2000);
+            status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_UNPAID_CHILD_ID);
+            Assert.assertEquals(status, "Pending", "❌ ED submission did not reach Pending");
+
+            Response approveResp = APIs.getExtendedDaycarePendingToApproved(EARLY_RESUME_UNPAID_CHILD_ID);
+            Assert.assertTrue(approveResp.getStatusCode() >= 200 && approveResp.getStatusCode() < 300,
+                    "❌ Approval API failed: " + approveResp.getStatusCode());
+            Thread.sleep(1500);
+            status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_UNPAID_CHILD_ID);
+        }
+        Assert.assertEquals(status, "Approved", "❌ Pre-condition: child " + EARLY_RESUME_UNPAID_CHILD_ID
+                + " must have an Approved ED request before Early Resume — supply a fresh child if this one is already consumed");
+
+        boolean stopVisible = recentRequestsPage.isEDStopEarlyResumeVisible(EARLY_RESUME_UNPAID_CHILD_ID);
+        Assert.assertTrue(stopVisible, "❌ STOP/EARLY RESUME action not visible for an Approved ED request");
+        Reporter.log("✅ STOP/EARLY RESUME visible for Approved ED request", true);
+
+        recentRequestsPage.clickEDStopEarlyResume(EARLY_RESUME_UNPAID_CHILD_ID);
+        Thread.sleep(1500);
+        recentRequestsPage.selectEarlyResumeDay(EARLY_RESUME_NEW_END_DAY);
+
+        String infoBanner = recentRequestsPage.getEarlyResumeInfoBannerText();
+        System.out.println("   [Info banner] " + infoBanner);
+        Assert.assertTrue(infoBanner.toLowerCase().contains("shortened"),
+                "❌ Info banner did not show the expected day-count message: '" + infoBanner + "'");
+
+        recentRequestsPage.clickSubmitEarlyResume();
+        Thread.sleep(1000);
+        recentRequestsPage.acceptActionAlert();
+
+        String resultMessage = recentRequestsPage.getEarlyResumeResultMessage();
+        System.out.println("   [Result message] " + resultMessage);
+        Reporter.log("   Result message: '" + resultMessage + "'", true);
+        Assert.assertTrue(resultMessage.toLowerCase().contains("end date has been revised"),
+                "❌ Expected success message not shown: '" + resultMessage + "'");
+        Assert.assertTrue(resultMessage.toLowerCase().contains("invoice has been updated"),
+                "❌ Expected the UNPAID-invoice wording ('invoice has been updated'), got: '" + resultMessage + "'");
+
+        try {
+            driver.switchTo().alert().dismiss();
+        } catch (Exception ignored) {
+        }
+        serviceRequestPage.closeModalByJs();
+        Thread.sleep(500);
+
+        String newEndDate = recentRequestsPage.getEDEndDate(EARLY_RESUME_UNPAID_CHILD_ID);
+        System.out.println("   [End Date after Early Resume] " + newEndDate);
+        Assert.assertTrue(newEndDate.contains(EARLY_RESUME_NEW_END_DAY),
+                "❌ End Date should now be day " + EARLY_RESUME_NEW_END_DAY + " — got: " + newEndDate);
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(EARLY_RESUME_UNPAID_CHILD_ID);
+        List<String> voided = accountStatementPage.getVoidedInvoiceReferences();
+        String creditText = accountStatementPage.getExtendedDaycareEarlyStopCreditText();
+        System.out.println("   [Voided invoices] " + voided);
+        System.out.println("   [Credit row] '" + creditText + "'");
+
+        Assert.assertFalse(voided.isEmpty(), "❌ Expected the original ED invoice to be voided for an unpaid invoice");
+        Assert.assertTrue(creditText.isEmpty(), "❌ Did NOT expect a credit note for the unpaid-invoice path, but found: '" + creditText + "'");
+
+        Reporter.log("✅ TC011 PASSED — unpaid invoice voided (" + voided + ") and reissued for the shortened period", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC012 — Stop / Early Resume enhancement: paid invoice → the
+    //  original invoice is left untouched and a credit note is raised
+    //  instead, for the unused period.
+    //  Confirmed end-to-end 2026-09-22 on child 67647 — see CLAUDE.md
+    //  "NEW enhancement: Extended Day Care Stop / Early Resume".
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 12,
+            description = "Stop/Early Resume — paid ED invoice is left untouched and a credit note is raised instead")
+    public void tc012_earlyResumePaidInvoiceCreditNote() throws InterruptedException {
+        Reporter.log("▶ TC012 — Early Resume (paid invoice) | child=" + EARLY_RESUME_PAID_CHILD_ID, true);
+        String mainWindowHandle = driver.getWindowHandle();
+
+        String status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_PAID_CHILD_ID);
+        System.out.println("   [Existing ED status] '" + status + "'");
+
+        if (status.isEmpty()) {
+            navigations.goToAccountStatement();
+            accountStatementPage.generateAccountStatement(EARLY_RESUME_PAID_CHILD_ID);
+            serviceRequestPage.clickServiceRequestLink();
+            Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+
+            serviceRequestPage.selectServiceType("Extended Daycare");
+            Assert.assertTrue(serviceRequestPage.isExtendedDaycareFormVisible(), "❌ Extended Daycare form not visible");
+
+            serviceRequestPage.setEDFromDate(EARLY_RESUME_START_DATE);
+            Thread.sleep(300);
+            serviceRequestPage.setEDToDate(EARLY_RESUME_END_DATE);
+            Thread.sleep(300);
+            serviceRequestPage.submitExtendedDaycare();
+            Thread.sleep(800);
+            if (!serviceRequestPage.getAlertText().isEmpty()) {
+                serviceRequestPage.acceptAlert();
+                Thread.sleep(2000);
+            }
+            String submitResponse = serviceRequestPage.getResponseMessage();
+            Assert.assertFalse(submitResponse.toUpperCase().contains("ERROR"), "❌ Submit returned error: " + submitResponse);
+
+            Thread.sleep(2000);
+            status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_PAID_CHILD_ID);
+            Assert.assertEquals(status, "Pending", "❌ ED submission did not reach Pending");
+
+            Response approveResp = APIs.getExtendedDaycarePendingToApproved(EARLY_RESUME_PAID_CHILD_ID);
+            Assert.assertTrue(approveResp.getStatusCode() >= 200 && approveResp.getStatusCode() < 300,
+                    "❌ Approval API failed: " + approveResp.getStatusCode());
+            Thread.sleep(1500);
+            status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_PAID_CHILD_ID);
+
+            // Pay the ED invoice via the Customer Portal UPI flow (reused from the
+            // unrelated DueInvoices_Testcases feature's CustomerPortal_PayDueInvoices).
+            navigations.goToAccountStatement();
+            accountStatementPage.generateAccountStatement(EARLY_RESUME_PAID_CHILD_ID);
+            Set<String> tabsBefore = driver.getWindowHandles();
+            accountStatementPage.clickCustomerPortal();
+            payDueInvoicesPage.waitAndSwitchToNewTab(tabsBefore);
+            Assert.assertTrue(payDueInvoicesPage.isPayDueInvoiceBtnPresent(),
+                    "❌ No due invoice found on Customer Portal — child " + EARLY_RESUME_PAID_CHILD_ID + " has nothing to pay");
+
+            Set<String> tabsBefore2 = driver.getWindowHandles();
+            payDueInvoicesPage.clickPayDueInvoice();
+            payDueInvoicesPage.waitAndSwitchToNewTab(tabsBefore2);
+            String upiJson = payDueInvoicesPage.extractUpiPaymentJson();
+            Assert.assertFalse(upiJson.isEmpty(), "❌ UPI payment JSON was empty");
+
+            Response payResp = APIs.postUpiPaymentEvent(upiJson);
+            Assert.assertTrue(payResp.getStatusCode() >= 200 && payResp.getStatusCode() < 300,
+                    "❌ Payment API failed: " + payResp.getStatusCode() + " | " + payResp.getBody().asString());
+            payDueInvoicesPage.closeAllExtraTabsAndReturn(mainWindowHandle);
+            Thread.sleep(2000);
+        }
+        Assert.assertEquals(status, "Approved", "❌ Pre-condition: child " + EARLY_RESUME_PAID_CHILD_ID
+                + " must have an Approved, paid ED request before Early Resume — supply a fresh child if this one is already consumed");
+
+        navigations.goToRecentCustomerRequests();
+        boolean stopVisible = recentRequestsPage.isEDStopEarlyResumeVisible(EARLY_RESUME_PAID_CHILD_ID);
+        Assert.assertTrue(stopVisible, "❌ STOP/EARLY RESUME action not visible for an Approved ED request");
+        Reporter.log("✅ STOP/EARLY RESUME visible for Approved (paid) ED request", true);
+
+        recentRequestsPage.clickEDStopEarlyResume(EARLY_RESUME_PAID_CHILD_ID);
+        Thread.sleep(1500);
+        recentRequestsPage.selectEarlyResumeDay(EARLY_RESUME_NEW_END_DAY);
+
+        String infoBanner = recentRequestsPage.getEarlyResumeInfoBannerText();
+        System.out.println("   [Info banner] " + infoBanner);
+        Assert.assertTrue(infoBanner.toLowerCase().contains("shortened"),
+                "❌ Info banner did not show the expected day-count message: '" + infoBanner + "'");
+
+        recentRequestsPage.clickSubmitEarlyResume();
+        Thread.sleep(1000);
+        recentRequestsPage.acceptActionAlert();
+
+        String resultMessage = recentRequestsPage.getEarlyResumeResultMessage();
+        System.out.println("   [Result message] " + resultMessage);
+        Reporter.log("   Result message: '" + resultMessage + "'", true);
+        Assert.assertTrue(resultMessage.toLowerCase().contains("end date has been revised"),
+                "❌ Expected success message not shown: '" + resultMessage + "'");
+        Assert.assertTrue(resultMessage.toLowerCase().contains("credit"),
+                "❌ Expected the PAID-invoice wording (a credit note), got: '" + resultMessage + "'");
+
+        try {
+            driver.switchTo().alert().dismiss();
+        } catch (Exception ignored) {
+        }
+        serviceRequestPage.closeModalByJs();
+        Thread.sleep(500);
+
+        // A direct URL navigation here (matching tc011's proven sequence) settles the
+        // page before generateAccountStatement()'s form interaction — going straight
+        // from the just-closed modal to a top-nav menu click raced with leftover DOM
+        // state and timed out on frm_child_id in an earlier run against this exact step.
+        String newEndDate = recentRequestsPage.getEDEndDate(EARLY_RESUME_PAID_CHILD_ID);
+        System.out.println("   [End Date after Early Resume] " + newEndDate);
+        Assert.assertTrue(newEndDate.contains(EARLY_RESUME_NEW_END_DAY),
+                "❌ End Date should now be day " + EARLY_RESUME_NEW_END_DAY + " — got: " + newEndDate);
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(EARLY_RESUME_PAID_CHILD_ID);
+        List<String> voided = accountStatementPage.getVoidedInvoiceReferences();
+        String creditText = accountStatementPage.getExtendedDaycareEarlyStopCreditText();
+        System.out.println("   [Voided invoices] " + voided);
+        System.out.println("   [Credit row] '" + creditText + "'");
+
+        Assert.assertTrue(voided.isEmpty(), "❌ Did NOT expect the paid invoice to be voided, but found: " + voided);
+        Assert.assertFalse(creditText.isEmpty(), "❌ Expected a credit note for the paid-invoice path, but none was found");
+
+        Reporter.log("✅ TC012 PASSED — paid invoice untouched, credit note raised instead: '" + creditText + "'", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC013 — Stop / Early Resume enhancement: button visibility —
+    //  hidden while Pending, visible once Approved (in-progress).
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 13,
+            description = "Stop/Early Resume — action hidden while Pending, visible once Approved")
+    public void tc013_stopEarlyResumeHiddenPendingVisibleApproved() throws InterruptedException {
+        Reporter.log("▶ TC013 — button visibility (Pending/Approved) | child=" + BUTTON_VIS_CHILD_ID, true);
+
+        String status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CHILD_ID);
+        System.out.println("   [Existing ED status] '" + status + "'");
+
+        if (status.isEmpty()) {
+            navigations.goToAccountStatement();
+            accountStatementPage.generateAccountStatement(BUTTON_VIS_CHILD_ID);
+            serviceRequestPage.clickServiceRequestLink();
+            Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+
+            serviceRequestPage.selectServiceType("Extended Daycare");
+            Assert.assertTrue(serviceRequestPage.isExtendedDaycareFormVisible(), "❌ Extended Daycare form not visible");
+
+            // Confirmed live (2026-09-22): Start Date == End Date (0-day span)
+            // is silently rejected client-side — no confirm popup even
+            // appears, matching tc010's original suspicion about same-day
+            // ranges. Using a valid 1-day span instead; this means tc014's
+            // "Completed" check can't actually complete same-day (End Date
+            // is tomorrow, not yet due) — tc014 is written to degrade to
+            // informational-only in that case rather than hard-assert it.
+            String today = LocalDate.now().toString();
+            String tomorrow = LocalDate.now().plusDays(1).toString();
+            serviceRequestPage.setEDFromDate(today);
+            Thread.sleep(300);
+            serviceRequestPage.setEDToDate(tomorrow);
+            Thread.sleep(300);
+            serviceRequestPage.submitExtendedDaycare();
+            Thread.sleep(800);
+            if (!serviceRequestPage.getAlertText().isEmpty()) {
+                serviceRequestPage.acceptAlert();
+                Thread.sleep(2000);
+            }
+            String submitResponse = serviceRequestPage.getResponseMessage();
+            Assert.assertFalse(submitResponse.toUpperCase().contains("ERROR"), "❌ Submit returned error: " + submitResponse);
+
+            Thread.sleep(2000);
+            status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CHILD_ID);
+            Assert.assertEquals(status, "Pending", "❌ ED submission did not reach Pending");
+        }
+
+        if ("Pending".equalsIgnoreCase(status)) {
+            boolean stopVisibleWhilePending = recentRequestsPage.isEDStopEarlyResumeVisible(BUTTON_VIS_CHILD_ID);
+            System.out.println("   STOP/EARLY RESUME visible while Pending: " + stopVisibleWhilePending);
+            Assert.assertFalse(stopVisibleWhilePending, "❌ STOP/EARLY RESUME should NOT be visible while Pending");
+            Reporter.log("✅ STOP/EARLY RESUME correctly hidden while Pending", true);
+
+            Response approveResp = APIs.getExtendedDaycarePendingToApproved(BUTTON_VIS_CHILD_ID);
+            Assert.assertTrue(approveResp.getStatusCode() >= 200 && approveResp.getStatusCode() < 300,
+                    "❌ Approval API failed: " + approveResp.getStatusCode());
+            Thread.sleep(1500);
+            status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CHILD_ID);
+        }
+        Assert.assertEquals(status, "Approved", "❌ Pre-condition: child " + BUTTON_VIS_CHILD_ID + " must be Approved");
+
+        boolean stopVisibleWhileApproved = recentRequestsPage.isEDStopEarlyResumeVisible(BUTTON_VIS_CHILD_ID);
+        System.out.println("   STOP/EARLY RESUME visible while Approved: " + stopVisibleWhileApproved);
+        Assert.assertTrue(stopVisibleWhileApproved, "❌ STOP/EARLY RESUME should be visible while Approved (in-progress)");
+
+        Reporter.log("✅ TC013 PASSED — hidden while Pending, visible while Approved", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC014 — Stop / Early Resume enhancement: button hidden after the
+    //  request reaches Completed (End Date arrived, cron run).
+    //  Continues on the SAME child/request left Approved by TC013.
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 14,
+            description = "Stop/Early Resume — action hidden once the ED request is Completed")
+    public void tc014_stopEarlyResumeHiddenAfterCompleted() throws InterruptedException {
+        Reporter.log("▶ TC014 — button visibility (Completed) | child=" + BUTTON_VIS_CHILD_ID, true);
+
+        String status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CHILD_ID);
+        Assert.assertEquals(status, "Approved",
+                "❌ Pre-condition: child " + BUTTON_VIS_CHILD_ID + " must be Approved (run tc013 first)");
+
+        Response cronResp = APIs.runExtendedDaycareCronJob();
+        System.out.println("   [Cron API] HTTP " + cronResp.getStatusCode() + " | " + cronResp.getBody().asString());
+        Assert.assertTrue(cronResp.getStatusCode() >= 200 && cronResp.getStatusCode() < 300,
+                "❌ Cron API failed: " + cronResp.getStatusCode());
+        Thread.sleep(1500);
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(BUTTON_VIS_CHILD_ID);
+        accountStatementPage.clickChildHistory();
+        Assert.assertTrue(accountStatementPage.isChildHistoryModalVisible(), "❌ Child History modal did not open");
+
+        List<WebElement> paragraphs = accountStatementPage.getHistoryParagraphs();
+        boolean completedToday = false;
+        String today = LocalDate.now().toString();
+        for (WebElement p : paragraphs) {
+            String text = p.getText();
+            if (text.contains("Extended Daycare") && text.toLowerCase().contains("completed") && text.contains(today)) {
+                completedToday = true;
+                System.out.println("   [History] " + text.trim());
+                break;
+            }
+        }
+        accountStatementPage.closeChildHistoryModal();
+
+        if (!completedToday) {
+            Reporter.log("⚠ TC014 INFO — No fresh 'Completed' Child History entry dated today was found for child "
+                    + BUTTON_VIS_CHILD_ID + " — the cron may not have completed this request same-day. "
+                    + "Checking button visibility anyway, but this result is informational if completion didn't actually happen.", true);
+        } else {
+            Reporter.log("✅ Extended Daycare marked Completed today, confirmed via Child History", true);
+        }
+
+        navigations.goToRecentCustomerRequests();
+        boolean stopVisibleAfterCompleted = recentRequestsPage.isEDStopEarlyResumeVisible(BUTTON_VIS_CHILD_ID);
+        System.out.println("   STOP/EARLY RESUME visible after Completed: " + stopVisibleAfterCompleted);
+
+        if (completedToday) {
+            Assert.assertFalse(stopVisibleAfterCompleted, "❌ STOP/EARLY RESUME should NOT be visible after Completed");
+            Reporter.log("✅ TC014 PASSED — STOP/EARLY RESUME correctly hidden after Completed", true);
+        } else {
+            Reporter.log("⚠ TC014 INFO — completion not confirmed this run; button visibility observed as "
+                    + stopVisibleAfterCompleted + " but not hard-asserted", true);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC015 — Stop / Early Resume enhancement: button hidden after the
+    //  request is Cancelled (while it was Pending).
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 15,
+            description = "Stop/Early Resume — action hidden once the ED request is Cancelled")
+    public void tc015_stopEarlyResumeHiddenAfterCancelled() throws InterruptedException {
+        Reporter.log("▶ TC015 — button visibility (Cancelled) | child=" + BUTTON_VIS_CANCEL_CHILD_ID, true);
+
+        String status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CANCEL_CHILD_ID);
+        System.out.println("   [Existing ED status] '" + status + "'");
+
+        if (status.isEmpty()) {
+            navigations.goToAccountStatement();
+            accountStatementPage.generateAccountStatement(BUTTON_VIS_CANCEL_CHILD_ID);
+            serviceRequestPage.clickServiceRequestLink();
+            Assert.assertTrue(serviceRequestPage.isModalVisible(), "❌ Service Request panel did not open");
+
+            serviceRequestPage.selectServiceType("Extended Daycare");
+            Assert.assertTrue(serviceRequestPage.isExtendedDaycareFormVisible(), "❌ Extended Daycare form not visible");
+
+            serviceRequestPage.setEDFromDate(LocalDate.now().toString());
+            Thread.sleep(300);
+            serviceRequestPage.setEDToDate(LocalDate.now().plusDays(15).toString());
+            Thread.sleep(300);
+            serviceRequestPage.submitExtendedDaycare();
+            Thread.sleep(800);
+            if (!serviceRequestPage.getAlertText().isEmpty()) {
+                serviceRequestPage.acceptAlert();
+                Thread.sleep(2000);
+            }
+            String submitResponse = serviceRequestPage.getResponseMessage();
+            Assert.assertFalse(submitResponse.toUpperCase().contains("ERROR"), "❌ Submit returned error: " + submitResponse);
+
+            Thread.sleep(2000);
+            status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CANCEL_CHILD_ID);
+        }
+        Assert.assertEquals(status, "Pending", "❌ Pre-condition: child " + BUTTON_VIS_CANCEL_CHILD_ID + " must have a Pending ED request");
+
+        boolean cancelVisible = recentRequestsPage.isEDCancelVisible(BUTTON_VIS_CANCEL_CHILD_ID);
+        Assert.assertTrue(cancelVisible, "❌ CANCEL action should be visible while Pending");
+
+        // Reuses the generic cancel_customer_request button already wired for
+        // Program Change / Corporate Transfer — confirmed to be the same
+        // underlying control class across request types in this app.
+        recentRequestsPage.clickCancelProgramChange();
+        Thread.sleep(800);
+        try {
+            driver.switchTo().alert().accept();
+            Thread.sleep(500);
+        } catch (Exception ignored) {
+        }
+        try {
+            recentRequestsPage.confirmCancelRequest();
+        } catch (Exception ignored) {
+        }
+        Thread.sleep(1500);
+
+        status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CANCEL_CHILD_ID);
+        System.out.println("   [Status after cancel] " + status);
+        Reporter.log("   Status after cancel: '" + status + "'", true);
+        Assert.assertEquals(status, "Cancelled", "❌ Expected Request Status = Cancelled after cancel");
+
+        boolean stopVisibleAfterCancelled = recentRequestsPage.isEDStopEarlyResumeVisible(BUTTON_VIS_CANCEL_CHILD_ID);
+        System.out.println("   STOP/EARLY RESUME visible after Cancelled: " + stopVisibleAfterCancelled);
+        Assert.assertFalse(stopVisibleAfterCancelled, "❌ STOP/EARLY RESUME should NOT be visible after Cancelled");
+
+        Reporter.log("✅ TC015 PASSED — STOP/EARLY RESUME correctly hidden after Cancelled", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC016 — Stop / Early Resume enhancement: engineer a genuinely
+    //  same-day-due Completed request (by using Early Resume itself to
+    //  shorten BUTTON_VIS_CHILD_ID's end date to TODAY, since its own
+    //  original End Date was tomorrow), then confirm:
+    //    (a) a Child History entry records the early stop/revision, and
+    //    (b) after the cron completes it, STOP/EARLY RESUME is hidden.
+    //  Continues on the SAME child left Approved (End Date = tomorrow) by
+    //  TC013/TC014.
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 16,
+            description = "Stop/Early Resume — child history entry recorded, and action hidden after a genuine same-day Completion")
+    public void tc016_historyEntryAndHiddenAfterGenuineCompletion() throws InterruptedException {
+        Reporter.log("▶ TC016 — history entry + genuine same-day Completed | child=" + BUTTON_VIS_CHILD_ID, true);
+
+        String status = recentRequestsPage.getEDRequestStatus(BUTTON_VIS_CHILD_ID);
+        Assert.assertEquals(status, "Approved",
+                "❌ Pre-condition: child " + BUTTON_VIS_CHILD_ID + " must be Approved (run tc013 first)");
+
+        String todayDay = String.valueOf(LocalDate.now().getDayOfMonth());
+        System.out.println("   [Shortening end date to today, day=" + todayDay + "]");
+
+        boolean stopVisible = recentRequestsPage.isEDStopEarlyResumeVisible(BUTTON_VIS_CHILD_ID);
+        Assert.assertTrue(stopVisible, "❌ STOP/EARLY RESUME not visible on the Approved request");
+
+        recentRequestsPage.clickEDStopEarlyResume(BUTTON_VIS_CHILD_ID);
+        Thread.sleep(1500);
+        recentRequestsPage.selectEarlyResumeDay(todayDay);
+
+        String infoBanner = recentRequestsPage.getEarlyResumeInfoBannerText();
+        System.out.println("   [Info banner] " + infoBanner);
+
+        recentRequestsPage.clickSubmitEarlyResume();
+        Thread.sleep(1000);
+        recentRequestsPage.acceptActionAlert();
+
+        String resultMessage = recentRequestsPage.getEarlyResumeResultMessage();
+        System.out.println("   [Result message] " + resultMessage);
+        Assert.assertTrue(resultMessage.toLowerCase().contains("end date has been revised"),
+                "❌ Expected success message not shown: '" + resultMessage + "'");
+
+        try {
+            driver.switchTo().alert().dismiss();
+        } catch (Exception ignored) {
+        }
+        serviceRequestPage.closeModalByJs();
+        Thread.sleep(500);
+
+        String newEndDate = recentRequestsPage.getEDEndDate(BUTTON_VIS_CHILD_ID);
+        System.out.println("   [End Date after Early Resume] " + newEndDate);
+
+        // ── Child History entry check ──────────────────────────────────
+        // Confirmed live (2026-09-22): getHistoryParagraphs() returns 0
+        // elements against this modal's real (card-based, tabbed "Child
+        // Updates History (N)") layout — its locator is stale. Using the
+        // additive getChildHistoryFullText() fallback instead. Confirmed
+        // live exact entry text for this exact action: "Extended Daycare
+        // Early Stop: end date revised from 2026-09-23 to 2026-09-22,
+        // revised duration 1 day(s) (by Jaydeep Kar)".
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(BUTTON_VIS_CHILD_ID);
+        accountStatementPage.clickChildHistory();
+        Assert.assertTrue(accountStatementPage.isChildHistoryModalVisible(), "❌ Child History modal did not open");
+        Thread.sleep(1000);
+
+        String historyText = accountStatementPage.getChildHistoryFullText();
+        accountStatementPage.closeChildHistoryModal();
+
+        boolean revisionEntryFound = historyText.contains("Extended Daycare Early Stop")
+                && historyText.toLowerCase().contains("end date revised from");
+        if (revisionEntryFound) {
+            Reporter.log("✅ Child History records the early stop/revision (\"Extended Daycare Early Stop: "
+                    + "end date revised from ... \")", true);
+        } else {
+            Reporter.log("⚠ TC016 INFO — no 'Extended Daycare Early Stop: end date revised from...' entry found "
+                    + "for child " + BUTTON_VIS_CHILD_ID + ". Full history text: " + historyText, true);
+        }
+        Assert.assertTrue(revisionEntryFound, "❌ Child History should record the Early Stop/revision entry");
+
+        // ── Genuine same-day Completed + button-hidden check ───────────
+        Response cronResp = APIs.runExtendedDaycareCronJob();
+        System.out.println("   [Cron API] HTTP " + cronResp.getStatusCode() + " | " + cronResp.getBody().asString());
+        Assert.assertTrue(cronResp.getStatusCode() >= 200 && cronResp.getStatusCode() < 300,
+                "❌ Cron API failed: " + cronResp.getStatusCode());
+        Thread.sleep(1500);
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(BUTTON_VIS_CHILD_ID);
+        accountStatementPage.clickChildHistory();
+        Assert.assertTrue(accountStatementPage.isChildHistoryModalVisible(), "❌ Child History modal did not open (post-cron)");
+        Thread.sleep(1000);
+        String historyTextAfterCron = accountStatementPage.getChildHistoryFullText();
+        accountStatementPage.closeChildHistoryModal();
+
+        boolean completedToday = historyTextAfterCron.contains("Extended Daycare duration Completed");
+        System.out.println("   Completed entry found: " + completedToday);
+
+        navigations.goToRecentCustomerRequests();
+        boolean stopVisibleAfterCompleted = recentRequestsPage.isEDStopEarlyResumeVisible(BUTTON_VIS_CHILD_ID);
+        System.out.println("   STOP/EARLY RESUME visible after genuine same-day Completed: " + stopVisibleAfterCompleted);
+
+        Assert.assertTrue(completedToday, "❌ Request was not marked Completed today after shortening End Date to today + running cron");
+        // Confirmed live (2026-09-22, child 70801): the action REMAINS VISIBLE even
+        // after genuine same-day Completion (confirmed via the cron API's own
+        // response naming this exact child, and the Child History "duration
+        // Completed" entry). This contradicts the stated requirement ("not shown
+        // for requests that are... already Completed"). Asserting the SPEC'D
+        // (correct) behavior here so this stays a live regression check — this
+        // is a real, reportable gap, not a test-code bug. See CLAUDE.md.
+        Assert.assertFalse(stopVisibleAfterCompleted,
+                "❌ BUG: STOP/EARLY RESUME is still visible after the request genuinely Completed "
+                        + "(child " + BUTTON_VIS_CHILD_ID + ") — spec says it should be hidden once Completed.");
+
+        Reporter.log("✅ TC016 PASSED — genuinely Completed same-day, STOP/EARLY RESUME correctly hidden", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC017 — Stop / Early Resume enhancement: repeating Early Resume
+    //  with the SAME (already-current) end date must NOT create a second
+    //  credit entry. Reuses EARLY_RESUME_PAID_CHILD_ID (70256), which
+    //  already has exactly one credit entry from tc012.
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 17,
+            description = "Stop/Early Resume — repeat submission with the same date does not create a duplicate ledger entry")
+    public void tc017_duplicateSubmissionNoDuplicateLedgerEntry() throws InterruptedException {
+        Reporter.log("▶ TC017 — duplicate submission, ledger entry count | child=" + EARLY_RESUME_PAID_CHILD_ID, true);
+
+        String status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_PAID_CHILD_ID);
+        Assert.assertEquals(status, "Approved",
+                "❌ Pre-condition: child " + EARLY_RESUME_PAID_CHILD_ID + " must be Approved (run tc012 first)");
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(EARLY_RESUME_PAID_CHILD_ID);
+        int creditCountBefore = accountStatementPage.countExtendedDaycareEarlyStopCreditEntries();
+        System.out.println("   [Credit entries before repeat attempt] " + creditCountBefore);
+        Assert.assertEquals(creditCountBefore, 1, "❌ Pre-condition: expected exactly 1 credit entry before repeating");
+
+        navigations.goToRecentCustomerRequests();
+        boolean stopVisible = recentRequestsPage.isEDStopEarlyResumeVisible(EARLY_RESUME_PAID_CHILD_ID);
+        Assert.assertTrue(stopVisible, "❌ STOP/EARLY RESUME not visible on the still-Approved request");
+
+        recentRequestsPage.clickEDStopEarlyResume(EARLY_RESUME_PAID_CHILD_ID);
+        Thread.sleep(1500);
+        // Select the SAME day as the already-current End Date — a genuine no-op.
+        recentRequestsPage.selectEarlyResumeDay(EARLY_RESUME_NEW_END_DAY);
+
+        String infoBanner = recentRequestsPage.getEarlyResumeInfoBannerText();
+        System.out.println("   [Info banner on repeat] " + infoBanner);
+        Reporter.log("   Info banner on repeat: '" + infoBanner + "'", true);
+        Assert.assertTrue(infoBanner.contains("0 day(s)"),
+                "❌ Expected 'shortened by 0 day(s)' when repeating with the same date, got: '" + infoBanner + "'");
+
+        boolean submitBecameClickable;
+        try {
+            recentRequestsPage.clickSubmitEarlyResume();
+            submitBecameClickable = true;
+        } catch (Exception e) {
+            submitBecameClickable = false;
+            System.out.println("   Submit did not become clickable (expected for a no-op): " + e.getMessage());
+        }
+        System.out.println("   [Submit became clickable] " + submitBecameClickable);
+        Reporter.log("   Submit became clickable on repeat: " + submitBecameClickable, true);
+
+        try {
+            driver.switchTo().alert().dismiss();
+        } catch (Exception ignored) {
+        }
+        serviceRequestPage.closeModalByJs();
+        Thread.sleep(500);
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(EARLY_RESUME_PAID_CHILD_ID);
+        int creditCountAfter = accountStatementPage.countExtendedDaycareEarlyStopCreditEntries();
+        System.out.println("   [Credit entries after repeat attempt] " + creditCountAfter);
+        Reporter.log("   Credit entries after repeat attempt: " + creditCountAfter, true);
+
+        Assert.assertEquals(creditCountAfter, 1,
+                "❌ A duplicate credit entry was created by repeating Early Resume with the same date");
+
+        Reporter.log("✅ TC017 PASSED — no duplicate credit entry created on repeat/no-op submission", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  DIAGNOSTIC — read-only recheck of child 70801's state after TC016's
+    //  earlier run already genuinely completed it via the cron API (real
+    //  backend state, confirmed in the API response) — does NOT click
+    //  Stop/Early Resume again, just re-reads grid status, Child History,
+    //  and button visibility with the timing fix now in place.
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 18,
+            description = "DIAGNOSTIC — read-only recheck of child 70801 post-completion (history + button visibility)")
+    public void diagnostic_recheckCompletedChild70801() throws InterruptedException {
+        String childId = BUTTON_VIS_CHILD_ID;
+        String status = recentRequestsPage.getEDRequestStatus(childId);
+        String end = recentRequestsPage.getEDEndDate(childId);
+        System.out.println("   [Status] " + status + "  [End Date] " + end);
+        Reporter.log("   Status=" + status + " | End Date=" + end, true);
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(childId);
+        accountStatementPage.clickChildHistory();
+        Assert.assertTrue(accountStatementPage.isChildHistoryModalVisible(), "❌ Child History modal did not open");
+        Thread.sleep(1200);
+
+        List<WebElement> paragraphs = accountStatementPage.getHistoryParagraphs();
+        System.out.println("   [History paragraph count] " + paragraphs.size());
+        for (WebElement p : paragraphs) {
+            System.out.println("   [History entry] " + p.getText().trim());
+        }
+        takeScreenshot("diagnostic_recheck_history_modal_" + childId);
+        accountStatementPage.closeChildHistoryModal();
+
+        navigations.goToRecentCustomerRequests();
+        boolean stopVisible = recentRequestsPage.isEDStopEarlyResumeVisible(childId);
+        System.out.println("   STOP/EARLY RESUME visible now: " + stopVisible);
+        Reporter.log("   STOP/EARLY RESUME visible now: " + stopVisible, true);
     }
 }

@@ -616,6 +616,32 @@ public class AccountStatementPage {
         return historyParagraphs;
     }
 
+    /**
+     * Additive fallback for getHistoryParagraphs() — confirmed live
+     * (2026-09-22) that the Child History modal has been redesigned into a
+     * card-based "Child Updates History (N) / Backend Requests (N)" tabbed
+     * layout that no longer matches historyParagraphs' original
+     * modal-body/pre-scrollable/p locator (which now finds 0 elements even
+     * when entries are clearly visible). Dumps the whole visible modal's
+     * text instead, for substring/regex matching — same fallback pattern
+     * already used elsewhere in this file (getBillingCancelDateText(),
+     * getTransferCaseBannerText()) after narrow element-based locators
+     * proved fragile against real app markup.
+     */
+    public String getChildHistoryFullText() {
+        try {
+            WebElement modal = driver.findElement(By.xpath(
+                    "//*[contains(@class,'modal') and .//*[contains(.,'Child Updates History')]]" +
+                            " | //*[contains(.,'Child Updates History')]/ancestor::div[contains(@class,'modal')][1]"));
+            String text = modal.getText();
+            System.out.println("▶ Child History full text dump:\n" + text);
+            return text;
+        } catch (Exception e) {
+            System.out.println("⚠ getChildHistoryFullText: " + e.getMessage());
+            return "";
+        }
+    }
+
     public void closeChildHistoryModal() throws InterruptedException {
         closePopdown();
     }
@@ -1178,6 +1204,65 @@ public class AccountStatementPage {
             System.out.println("⚠ getVoidedInvoiceReferences: " + e.getMessage());
         }
         return refs;
+    }
+
+    // ═══════════════════════════════════════════════
+    // EXTENDED DAYCARE EARLY STOP CREDIT — additive, for the new Stop /
+    // Early Resume enhancement's "already-paid invoice" settlement path
+    // (a credit note is raised instead of voiding the original invoice).
+    // Confirmed live text pattern: "Credits - Extended DayCare |
+    // Extended Daycare Early Stop Credit, Period - <start> To <end>".
+    // ═══════════════════════════════════════════════
+    public String getExtendedDaycareEarlyStopCreditText() {
+        try {
+            ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
+            Thread.sleep(500);
+            // Confirmed live: this ledger entry is a plain <div> stack, NOT a <tr> —
+            // e.g. <div style="border-left:5px solid #FF5722;">Credit issued on ...
+            // <div class="row">...Extended Daycare Early Stop Credit...</div></div>.
+            // Find the innermost element carrying the marker text, then walk up to
+            // the outer "Credit issued on" wrapper div for the full description.
+            WebElement innermost = driver.findElement(By.xpath(
+                    "//*[contains(normalize-space(.),'Extended Daycare Early Stop Credit')]" +
+                            "[not(.//*[contains(normalize-space(.),'Extended Daycare Early Stop Credit')])]"));
+            WebElement rowDiv;
+            try {
+                rowDiv = innermost.findElement(By.xpath("./ancestor::div[contains(.,'Credit issued on')][1]"));
+            } catch (Exception e) {
+                rowDiv = innermost; // fall back to whatever we found if the wrapper isn't there
+            }
+            String text = rowDiv.getText().trim();
+            System.out.println("✅ Extended Daycare Early Stop Credit row: " + text);
+            return text;
+        } catch (Exception e) {
+            System.out.println("▶ No Extended Daycare Early Stop Credit row found: " + e.getMessage());
+            return "";
+        }
+    }
+
+    public boolean isExtendedDaycareEarlyStopCreditVisible() {
+        return !getExtendedDaycareEarlyStopCreditText().isEmpty();
+    }
+
+    /**
+     * Counts how many distinct "Extended Daycare Early Stop Credit" ledger
+     * entries exist for the currently-generated Account Statement — used to
+     * confirm a duplicate/no-op Early Resume submission does NOT create a
+     * second credit entry (AC #7).
+     */
+    public int countExtendedDaycareEarlyStopCreditEntries() {
+        try {
+            ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight);");
+            Thread.sleep(500);
+            List<WebElement> matches = driver.findElements(By.xpath(
+                    "//*[contains(normalize-space(.),'Extended Daycare Early Stop Credit')]" +
+                            "[not(.//*[contains(normalize-space(.),'Extended Daycare Early Stop Credit')])]"));
+            System.out.println("✅ Extended Daycare Early Stop Credit entry count: " + matches.size());
+            return matches.size();
+        } catch (Exception e) {
+            System.out.println("⚠ countExtendedDaycareEarlyStopCreditEntries: " + e.getMessage());
+            return -1;
+        }
     }
 
     // ═══════════════════════════════════════════════
