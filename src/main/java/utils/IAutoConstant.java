@@ -19,6 +19,12 @@ public final class IAutoConstant {
     public static final String SMS_VIEW_URL =
             "https://test-franchise.footprintseducation.in/sms_view";
 
+    // Settings → Email View — confirmed live (2026-09-22): only the Rakesh
+    // user has access to this screen (not other switched-to users like
+    // Jaydeep Kar).
+    public static final String EMAIL_VIEW_URL =
+            "https://test-franchise.footprintseducation.in/email_view";
+
     public static final String REFUND_LIST_URL =
             "https://test-franchise.footprintseducation.in/refund_list";
 

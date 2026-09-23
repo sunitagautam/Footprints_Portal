@@ -207,6 +207,18 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // SETTINGS → EMAIL VIEW
+    // Navigates directly via URL — only the Rakesh user
+    // has access to this screen (confirmed live, 2026-09-22).
+    // ═══════════════════════════════════════════════
+    public void goToEmailView() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.EMAIL_VIEW_URL);
+        System.out.println("✅ Navigated to: Email View");
+        Thread.sleep(1500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → REFUND LIST
     // Navigates directly via URL — no sub-menu link
     // needed since the screen URL is known. Used by
