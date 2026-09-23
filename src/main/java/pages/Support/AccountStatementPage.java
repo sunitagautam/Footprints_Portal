@@ -1284,6 +1284,263 @@ public class AccountStatementPage {
     }
 
     // ═══════════════════════════════════════════════
+    // RECTIFY BRANCH SELECTION (SC_010_TC_001 to SC_010_TC_019)
+    // Confirmed live (2026-09-23) via user-supplied screenshots + DOM:
+    // Button: <a class="popdown_medium btn text-muted has-text bg-violet-400
+    //   btn-rectify-branch" href="pop_rectify_branch?pop=yes&child_id=<id>"
+    //   title="">Rectify Branch Selection</a> — a popdown_medium modal
+    // (distinct size class from Cancel Registration's popdown_xl_large).
+    // Hover tooltip (not automated — cosmetic) shows Admission Date /
+    // Joining Date / note: "You can rectify branch upto 3 days from
+    // joining date, after that this option will be disabled."
+    //
+    // Modal: form#frm-rectify-center, close button button.close-popdown,
+    // "Shift To*" center dropdown (select#new_center, grouped by city
+    // optgroups, values are center ids), "Joining Date*" pickadate.js
+    // field (input#new_joining, popup root #new_joining_root) whose
+    // year/month <select>s AND both nav arrows are all disabled —
+    // confirms only one month is ever shown (the ~7-day valid window
+    // from the current joining date), so no month navigation is needed,
+    // just a direct day-cell click — same pattern as Extended Daycare's
+    // Early Resume widget fix (raw JS value-injection has repeatedly
+    // corrupted this widget family's internal state elsewhere in this
+    // project — e.g. Withdraw Child's attrition_date — so the real
+    // widget is always driven directly, never injected).
+    // Submit: button#submit_request — fires a NATIVE confirm():
+    // "Do you want to change center?" (Cancel/OK).
+    // On OK, an inline success banner appears in the modal:
+    // <div class="alert alert-success msg-branch-rectify">Requests for
+    // branch corrections were successfully processed! New child ID
+    // #<new_id> was created by the system.</div> (confirmed live exact
+    // markup — starts display:none, shown after success).
+    // After closing, Account Statement legend gains "TRANSFER CASE TO
+    // #<new_id>" (red) — note this is the "TO" wording, distinct from
+    // Admission Migration's own "TRANSFER CASE FROM #<id>" pattern
+    // (getTransferCaseBannerText(), which lives in a different page
+    // object, AdmissionMigrationRequest.java, for the NEW child side) —
+    // old child status flips to "(ATTRITION)" (reuse
+    // isChildStatusAttrition()), "Billing Cancel Date" appears under
+    // Monthly Subscription (reuse getBillingCancelDateText()), and any
+    // due invoices get voided (reuse getVoidedInvoiceReferences()).
+    // ═══════════════════════════════════════════════
+    @FindBy(xpath = "//a[contains(@class,'btn-rectify-branch')]")
+    private WebElement rectifyBranchLink;
+
+    @FindBy(id = "new_center")
+    private WebElement rectifyShiftToSelect;
+
+    @FindBy(id = "new_joining")
+    private WebElement rectifyJoiningDateInput;
+
+    @FindBy(id = "submit_request")
+    private WebElement rectifySubmitBtn;
+
+    @FindBy(className = "msg-branch-rectify")
+    private WebElement rectifyBranchSuccessBanner;
+
+    public boolean isRectifyBranchButtonVisible() {
+        try {
+            return rectifyBranchLink.isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void clickRectifyBranchSelection() throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(rectifyBranchLink));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", rectifyBranchLink);
+        System.out.println("▶ Rectify Branch Selection clicked");
+        Thread.sleep(1200);
+    }
+
+    // Named distinctly from the pre-existing, generic isRectifyBranchModalVisible()
+    // (built earlier against an imprecise button locator, left untouched per
+    // this project's "never edit existing methods" convention) to avoid a
+    // method-name collision — this one checks the real form.new_center select.
+    public boolean isRectifyBranchFormVisible() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.visibilityOf(rectifyShiftToSelect));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // RECTIFY BRANCH — DEFAULT VIEW (SC_010_TC_003)
+    // Consolidated single check: Shift To, Joining Date, Submit,
+    // close icon — per project's default-view-testcase-format
+    // convention (one step, not split per field).
+    // ═══════════════════════════════════════════════
+    public boolean isRectifyBranchDefaultViewCorrect() {
+        try {
+            boolean shiftToVisible = rectifyShiftToSelect.isDisplayed();
+            boolean joiningDateVisible = rectifyJoiningDateInput.isDisplayed();
+            boolean submitVisible = rectifySubmitBtn.isDisplayed();
+            boolean closeIconVisible = !driver.findElements(
+                    By.cssSelector("button.close-popdown")).isEmpty();
+            boolean allVisible = shiftToVisible && joiningDateVisible
+                    && submitVisible && closeIconVisible;
+            System.out.println("✅ Rectify Branch default view — shiftTo:" + shiftToVisible
+                    + " joiningDate:" + joiningDateVisible + " submit:" + submitVisible
+                    + " closeIcon:" + closeIconVisible);
+            return allVisible;
+        } catch (Exception e) {
+            System.out.println("⚠ isRectifyBranchDefaultViewCorrect: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // centerName == null picks the first real option (skips the
+    // "-- Select --" placeholder) — same null-param convention already
+    // used by Corporate Transfer's submitCorporateTransfer(month, null...).
+    public void selectRectifyBranchShiftToCenter(String centerName) {
+        wait.until(ExpectedConditions.visibilityOf(rectifyShiftToSelect));
+        Select select = new Select(rectifyShiftToSelect);
+        if (centerName == null) {
+            for (WebElement option : select.getOptions()) {
+                String text = option.getText().trim();
+                if (!text.isEmpty() && !text.equalsIgnoreCase("-- Select --")) {
+                    select.selectByVisibleText(text);
+                    System.out.println("✅ Rectify Branch Shift To (auto-picked): " + text);
+                    return;
+                }
+            }
+            System.out.println("⚠ selectRectifyBranchShiftToCenter: no real option found to auto-pick");
+        } else {
+            select.selectByVisibleText(centerName);
+            System.out.println("✅ Rectify Branch Shift To: " + centerName);
+        }
+    }
+
+    /**
+     * Drives the real pickadate.js widget for Joining Date via a direct
+     * day-cell click — both nav arrows and the year/month selects are
+     * disabled on this widget, so the target date must fall within the
+     * single month already shown (confirmed live: the ~7-day window from
+     * the current joining date). No month navigation is attempted.
+     */
+    public void setRectifyBranchJoiningDate(String isoDate) throws InterruptedException {
+        java.time.LocalDate target = java.time.LocalDate.parse(isoDate);
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].removeAttribute('readonly');", rectifyJoiningDateInput);
+        wait.until(ExpectedConditions.elementToBeClickable(rectifyJoiningDateInput));
+        rectifyJoiningDateInput.click();
+        Thread.sleep(500);
+
+        WebElement root = driver.findElement(By.id("new_joining_root"));
+        wait.until(ExpectedConditions.visibilityOf(root));
+
+        try {
+            String monthText = root.findElement(
+                    By.cssSelector(".picker__select--month option[selected]")).getText().trim();
+            String yearText = root.findElement(
+                    By.cssSelector(".picker__select--year option[selected]")).getText().trim();
+            System.out.println("ℹ Rectify Branch picker shown month/year: " + monthText + " " + yearText);
+        } catch (Exception ignored) {
+        }
+
+        try {
+            WebElement dayCell = root.findElement(By.xpath(
+                    ".//div[contains(@class,'picker__day--infocus') and not(contains(@class,'picker__day--disabled'))]"
+                            + "[normalize-space(text())='" + target.getDayOfMonth() + "']"));
+            dayCell.click();
+            System.out.println("✅ Rectify Branch Joining Date set: " + isoDate);
+        } catch (Exception e) {
+            System.out.println("⚠ Day cell not enabled/found for " + isoDate + " — trying JS click fallback");
+            WebElement dayCell = root.findElement(By.xpath(
+                    ".//div[contains(@class,'picker__day--infocus')]"
+                            + "[normalize-space(text())='" + target.getDayOfMonth() + "']"));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", dayCell);
+            System.out.println("✅ Rectify Branch Joining Date set (JS fallback): " + isoDate);
+        }
+        Thread.sleep(500);
+    }
+
+    /**
+     * Clicks Submit and accepts the native confirm() ("Do you want to
+     * change center?"), returning its text.
+     */
+    public String submitRectifyBranch() throws InterruptedException {
+        wait.until(ExpectedConditions.elementToBeClickable(rectifySubmitBtn));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", rectifySubmitBtn);
+        System.out.println("▶ Rectify Branch submit clicked");
+        Thread.sleep(800);
+
+        String alertText = "";
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.alertIsPresent());
+            org.openqa.selenium.Alert alert = driver.switchTo().alert();
+            alertText = alert.getText();
+            System.out.println("▶ Confirm popup: " + alertText);
+            alert.accept();
+            System.out.println("✅ Alert accepted — rectify branch submitted");
+            Thread.sleep(2000);
+        } catch (Exception e) {
+            System.out.println("⚠ No confirm alert after Rectify Branch submit: " + e.getMessage());
+        }
+        return alertText;
+    }
+
+    public String getRectifyBranchSuccessMessage() {
+        try {
+            WebElement banner = new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions.visibilityOf(rectifyBranchSuccessBanner));
+            String msg = banner.getText().trim();
+            System.out.println("✅ Rectify Branch success message: " + msg);
+            return msg;
+        } catch (Exception e) {
+            System.out.println("⚠ getRectifyBranchSuccessMessage: " + e.getMessage());
+            return "";
+        }
+    }
+
+    public String extractNewChildIdFromRectifyMessage(String message) {
+        // WebElement.getText() returns the RENDERED text — this banner is
+        // CSS-uppercased on screen ("NEW CHILD ID #74235...") even though the
+        // raw DOM text is mixed-case ("New child ID #..."). Confirmed live
+        // (2026-09-23): a case-sensitive match on "New" silently returned ""
+        // against the real uppercased rendering. Match case-insensitively.
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("new child id\\s*#(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(message);
+        return m.find() ? m.group(1) : "";
+    }
+
+    /**
+     * Reads the "TRANSFER CASE TO #<id>" legend banner on the OLD
+     * child's Account Statement after a successful rectify — distinct
+     * wording from Admission Migration's "TRANSFER CASE FROM #<id>"
+     * (different page object, opposite direction of the pointer).
+     */
+    public String getTransferCaseToBannerText() {
+        try {
+            String bodyText = driver.findElement(By.tagName("body")).getText();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile(
+                    "TRANSFER CASE TO #\\d+").matcher(bodyText);
+            if (m.find()) {
+                String text = m.group().trim();
+                System.out.println("✅ Transfer Case To banner: " + text);
+                return text;
+            }
+            System.out.println("⚠ getTransferCaseToBannerText: not found in body text");
+        } catch (Exception e) {
+            System.out.println("⚠ getTransferCaseToBannerText: " + e.getMessage());
+        }
+        return "";
+    }
+
+    // Named distinctly from the pre-existing closeRectifyBranchModal()
+    // (uses closePopdown(), left untouched) to avoid a collision.
+    public void closeRectifyBranchPopup() throws InterruptedException {
+        closeModalByJs();
+    }
+
+    // ═══════════════════════════════════════════════
     // FORCE-CLOSE ALL MODALS VIA JS — used in @AfterMethod
     // ═══════════════════════════════════════════════
     public void closeModalByJs() {
