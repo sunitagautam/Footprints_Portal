@@ -13,7 +13,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Navigations;
 import pages.Settings.UserRightsPage;
-import pages.Support.AccountStatementPage;
+import pages.Support.FinancialReports.AccountStatementPage;
 import pages.Support.Regular_ServiceRequests;
 import utils.APIs;
 import utils.BaseTest;

@@ -8,7 +8,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Navigations;
-import pages.Support.AccountStatementPage;
+import pages.Support.FinancialReports.AccountStatementPage;
 import utils.BaseTest;
 
 import java.util.List;

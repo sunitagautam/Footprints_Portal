@@ -7,7 +7,7 @@
     <test verbose="2" preserve-order="true"
           name="Account Statement Tests">
         <classes>
-            <class name="testScripts.SupportTests.AccountStatement_Testcases">
+            <class name="testScripts.SupportTests.FinancialReports.AccountStatement_Testcases">
             </class>
         </classes>
     </test>

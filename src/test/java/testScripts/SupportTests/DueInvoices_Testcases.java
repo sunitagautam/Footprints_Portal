@@ -9,13 +9,12 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
-import org.testng.ITestContext;
 import org.testng.Reporter;
 import org.testng.annotations.*;
 import pages.Navigations;
 import pages.Settings.SMSView_Page;
-import pages.Support.AccountStatementPage;
 import pages.Support.CustomerPortal_PayDueInvoices;
+import pages.Support.FinancialReports.AccountStatementPage;
 import utils.APIs;
 import utils.BaseTest;
 import utils.IAutoConstant;
@@ -31,10 +30,10 @@ public class DueInvoices_Testcases extends BaseTest {
 
     // Test card credentials (ICICI sandbox)
     private static final String ICICI_CARD_NUMBER = "4111111111111111";
-    private static final String ICICI_EXPIRY_MM   = "07";
+    private static final String ICICI_EXPIRY_MM = "07";
     private static final String ICICI_EXPIRY_YYYY = "2029";
-    private static final String ICICI_CARD_CVV    = "328";
-    private static final String ICICI_OTP         = "123456";
+    private static final String ICICI_CARD_CVV = "328";
+    private static final String ICICI_OTP = "123456";
     private static final String ICICI_CARD_HOLDER = "Test User";
     private WebDriverWait wait;
     private AccountStatementPage accountStatementPage;
@@ -157,7 +156,7 @@ public class DueInvoices_Testcases extends BaseTest {
 
         // Step 5b — Extract CC/DC hidden payment JSON and save both to JMeter CSV
         String ccdcJson = portalPage.extractCcdcPaymentJson();
-        saveToJmeterCsv(childId, "UPI",  upiJson);
+        saveToJmeterCsv(childId, "UPI", upiJson);
         saveToJmeterCsv(childId, "CARD", ccdcJson);
         Reporter.log("✅ Step 5b — Both JSONs saved to JMeter CSV", true);
 
@@ -433,7 +432,7 @@ public class DueInvoices_Testcases extends BaseTest {
 
         // ── Click Pay via Credit / Debit Card ────────────────
         WebElement ccddBtn = wait.until(ExpectedConditions.elementToBeClickable(
-            By.id("btn_icici_ccdc")));
+                By.id("btn_icici_ccdc")));
         ccddBtn.click();
         System.out.println("▶ Clicked: Pay via Credit / Debit Card");
 
@@ -444,56 +443,56 @@ public class DueInvoices_Testcases extends BaseTest {
 
         // ── Expand Cards section ──────────────────────────────
         WebElement cardsSection = wait.until(ExpectedConditions.elementToBeClickable(
-            By.id("cardAccordionBtn")));
+                By.id("cardAccordionBtn")));
         cardsSection.click();
         System.out.println("▶ Cards section expanded");
         Thread.sleep(1000);
 
         // ── Name on Card ──────────────────────────────────────
         WebElement nameField = wait.until(ExpectedConditions.elementToBeClickable(
-            By.id("nameOnCard")));
+                By.id("nameOnCard")));
         nameField.sendKeys(fName);
         System.out.println("✅ Name on card: " + fName);
 
         // ── Card Number ───────────────────────────────────────
         wait.until(ExpectedConditions.elementToBeClickable(
-            By.id("cardNoMasked"))).sendKeys(ICICI_CARD_NUMBER);
+                By.id("cardNoMasked"))).sendKeys(ICICI_CARD_NUMBER);
         System.out.println("✅ Card number entered");
         Thread.sleep(1000);
 
         // ── Expiry Month (select, id="month") ─────────────────
         WebElement monthEl = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("month")));
         ((JavascriptExecutor) driver).executeScript(
-            "var el=arguments[0]; el.style.cssText='display:block !important;" +
-            "visibility:visible !important;opacity:1 !important;" +
-            "height:30px !important;width:80px !important;';", monthEl);
+                "var el=arguments[0]; el.style.cssText='display:block !important;" +
+                        "visibility:visible !important;opacity:1 !important;" +
+                        "height:30px !important;width:80px !important;';", monthEl);
         Thread.sleep(300);
         new Select(monthEl).selectByValue(ICICI_EXPIRY_MM);
         ((JavascriptExecutor) driver).executeScript(
-            "var el=arguments[0];" +
-            "el.dispatchEvent(new Event('change',{bubbles:true}));" +
-            "el.dispatchEvent(new Event('input',{bubbles:true}));" +
-            "if(window.jQuery){jQuery(el).trigger('change').trigger('input');}",
-            monthEl);
+                "var el=arguments[0];" +
+                        "el.dispatchEvent(new Event('change',{bubbles:true}));" +
+                        "el.dispatchEvent(new Event('input',{bubbles:true}));" +
+                        "if(window.jQuery){jQuery(el).trigger('change').trigger('input');}",
+                monthEl);
         Object mmVal = ((JavascriptExecutor) driver).executeScript(
-            "return document.getElementById('month').value;");
+                "return document.getElementById('month').value;");
         System.out.println("✅ Expiry month set — DOM value: " + mmVal);
         Thread.sleep(500);
 
         // ── Expiry Year (select, id="year") ───────────────────
         WebElement yearEl = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("year")));
         ((JavascriptExecutor) driver).executeScript(
-            "var el=arguments[0]; el.style.cssText='display:block !important;" +
-            "visibility:visible !important;opacity:1 !important;" +
-            "height:30px !important;width:80px !important;';", yearEl);
+                "var el=arguments[0]; el.style.cssText='display:block !important;" +
+                        "visibility:visible !important;opacity:1 !important;" +
+                        "height:30px !important;width:80px !important;';", yearEl);
         Thread.sleep(300);
         // Year options load asynchronously after month selection — wait until populated
         wait.until(d -> new Select(d.findElement(By.id("year"))).getOptions().size() > 1);
         Select yearSelect = new Select(yearEl);
         System.out.println("▶ Year dropdown options: " +
-            yearSelect.getOptions().stream()
-                .map(o -> "'" + o.getAttribute("value") + "'")
-                .collect(java.util.stream.Collectors.joining(", ")));
+                yearSelect.getOptions().stream()
+                        .map(o -> "'" + o.getAttribute("value") + "'")
+                        .collect(java.util.stream.Collectors.joining(", ")));
         // Gateway may use 4-digit ("2029") or 2-digit ("29") option values
         try {
             yearSelect.selectByValue(ICICI_EXPIRY_YYYY);
@@ -503,24 +502,24 @@ public class DueInvoices_Testcases extends BaseTest {
             yearSelect.selectByValue(twoDigit);
         }
         ((JavascriptExecutor) driver).executeScript(
-            "var el=arguments[0];" +
-            "el.dispatchEvent(new Event('change',{bubbles:true}));" +
-            "el.dispatchEvent(new Event('input',{bubbles:true}));" +
-            "if(window.jQuery){jQuery(el).trigger('change').trigger('input');}",
-            yearEl);
+                "var el=arguments[0];" +
+                        "el.dispatchEvent(new Event('change',{bubbles:true}));" +
+                        "el.dispatchEvent(new Event('input',{bubbles:true}));" +
+                        "if(window.jQuery){jQuery(el).trigger('change').trigger('input');}",
+                yearEl);
         Object yyyyVal = ((JavascriptExecutor) driver).executeScript(
-            "return document.getElementById('year').value;");
+                "return document.getElementById('year').value;");
         System.out.println("✅ Expiry year set  — DOM value: " + yyyyVal);
         Thread.sleep(500);
 
         // ── CVV (input type=password, id="cvv") ───────────────
         wait.until(ExpectedConditions.elementToBeClickable(
-            By.id("cvv"))).sendKeys(ICICI_CARD_CVV);
+                By.id("cvv"))).sendKeys(ICICI_CARD_CVV);
         System.out.println("✅ CVV entered");
 
         // ── Pay Now (paytBtn2 → submits card form) ─────────────
         WebElement payNow = wait.until(ExpectedConditions.elementToBeClickable(
-            By.id("paytBtn2")));
+                By.id("paytBtn2")));
         payNow.click();
         System.out.println("▶ Clicked: Pay Now");
 
@@ -535,7 +534,7 @@ public class DueInvoices_Testcases extends BaseTest {
 
         // ── Click Verify OTP ──────────────────────────────────
         WebElement verifyBtn = wait.until(ExpectedConditions.elementToBeClickable(
-            By.xpath("//button[contains(text(),'Verify OTP')] | //input[@value='Verify OTP']")));
+                By.xpath("//button[contains(text(),'Verify OTP')] | //input[@value='Verify OTP']")));
         verifyBtn.click();
         System.out.println("▶ Clicked: Verify OTP");
 
@@ -562,7 +561,10 @@ public class DueInvoices_Testcases extends BaseTest {
         Thread.sleep(2000);
 
         // ── Switch back to default content (exit any iframe) ──
-        try { driver.switchTo().defaultContent(); } catch (Exception ignored) {}
+        try {
+            driver.switchTo().defaultContent();
+        } catch (Exception ignored) {
+        }
 
         // ── Extract icici_post_data (data-post attribute) ─────
         String iciciPostData = "";
@@ -639,20 +641,20 @@ public class DueInvoices_Testcases extends BaseTest {
                 }
 
                 fw.write(
-                    json.optString("txnid")              + "," +
-                    json.optString("txn_id")             + "," +
-                    json.optString("payment_mode")       + "," +
-                    json.optString("amount")             + "," +
-                    json.optString("convenience_charge") + "," +
-                    csv(json.optString("firstname"))     + "," +
-                    json.optString("email")              + "," +
-                    json.optString("phone")              + "," +
-                    csv(json.optString("productinfo"))   + "," +
-                    json.optString("udf1")               + "," +
-                    json.opt("udf2")                     + "," +
-                    json.optString("udf3")               + "," +
-                    csv(validJson)                        // full JSON for API-only runs
-                    + System.lineSeparator()
+                        json.optString("txnid") + "," +
+                                json.optString("txn_id") + "," +
+                                json.optString("payment_mode") + "," +
+                                json.optString("amount") + "," +
+                                json.optString("convenience_charge") + "," +
+                                csv(json.optString("firstname")) + "," +
+                                json.optString("email") + "," +
+                                json.optString("phone") + "," +
+                                csv(json.optString("productinfo")) + "," +
+                                json.optString("udf1") + "," +
+                                json.opt("udf2") + "," +
+                                json.optString("udf3") + "," +
+                                csv(validJson)                        // full JSON for API-only runs
+                                + System.lineSeparator()
                 );
 
                 System.out.println("✅ JMeter CSV row saved — child=" + childId

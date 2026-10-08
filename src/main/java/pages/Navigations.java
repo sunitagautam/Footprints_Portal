@@ -231,4 +231,16 @@ public class Navigations {
         System.out.println("✅ Navigated to: Refund List");
         Thread.sleep(1500);
     }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → FINANCIAL UPDATES → CREDITS ISSUED
+    // Navigates directly via URL, same as Email View /
+    // Refund List.
+    // ═══════════════════════════════════════════════
+    public void goToCreditsIssued() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.CREDITS_ISSUED_URL);
+        System.out.println("✅ Navigated to: Credits Issued");
+        Thread.sleep(1500);
+    }
 }

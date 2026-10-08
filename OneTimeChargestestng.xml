@@ -7,7 +7,7 @@
     <test verbose="2" preserve-order="true"
           name="/Users/sunitagautam/FP_Automation/Footprint/src/test/java/testScripts/SupportTests/OneTimeCharges_Testcases.java">
         <classes>
-            <class name="testScripts.SupportTests.OneTimeCharges_Testcases">
+            <class name="testScripts.SupportTests.FinancialUpdates.OneTimeCharges_Testcases">
             </class>
         </classes>
     </test>

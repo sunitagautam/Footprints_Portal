@@ -12,7 +12,7 @@
     <test name="Support — Online Payment Received"
           preserve-order="true">
         <classes>
-            <class name="testScripts.SupportTests.OnlinePaymentReceived_Testcases"/>
+            <class name="testScripts.SupportTests.FinancialReports.OnlinePaymentReceived_Testcases"/>
         </classes>
     </test>
 
