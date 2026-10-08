@@ -2185,7 +2185,7 @@ Files: `pages/Support/FinancialUpdates/CreditIssued_Page.java` (new), `testScrip
   - Default view now checks the table's DEFINED columns via `getDefinedColumnHeaders()` — the responsive DataTable folds "Update Status" into the "+" expander when long descriptions squeeze it.
   - Confirm wait is now 20s.
   - In the per-type test, the new grid row is the hard proof of issuance; a missed flash message is only logged. Customer Payment (not listed, by design) keeps the message as a hard check.
-- Leftover unrevoked chain credit from the complete run: **152220** (Book, 73041). Per-type credits are intentionally left in place.
+- Chain credit **152220** (Book, 73041) from the complete run was revoked manually by the user (2026-10-08). Per-type credits are intentionally left in place.
 - OneTime Charges regression (same day, child 72620): **25/25 passed**.
 
 ### Per-credit-type happy flow (2026-10-06) — `sc002_tc001_happyFlowEachCreditType` (DataProvider `creditTypes`, same pattern as OneTime Charges' `chargeTypeData`)
