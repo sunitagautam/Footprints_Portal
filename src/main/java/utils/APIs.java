@@ -182,6 +182,25 @@ public class APIs {
             "admissionpipeline/processAdmissionPipeline";
 
     // ═══════════════════════════════════════════════
+    // PAYMENT PLAN MIGRATION (V1 ↔ V2) ENDPOINTS
+    // ═══════════════════════════════════════════════
+    // From "Payment Plan Migration.postman_collection.json" — no ckey needed
+    // for any of these (confirmed by user, 2026-10-13).
+    // Saves renewal-due children to Support → Financial Updates → Payment Plan
+    // Migration and, with send_promotional_email=yes, sends the offer email.
+    private static final String PPM_SAVE_PROMOTIONAL_DATA =
+            "financialprocess/saveMigrationPromotionalData/";
+
+    // Reminder email before annual billing (days = days before billing).
+    private static final String PPM_REMINDER_EMAIL =
+            "financialprocess/sendMigrationPromotionalReminderEmail";
+
+    // Month-end cron that executes confirmed migrations — per the collection,
+    // only allowed on the last day of the month between 11:00 PM and 11:59 PM.
+    private static final String PPM_PROCESS_MIGRATION =
+            "planmigration/processMigrationRequests";
+
+    // ═══════════════════════════════════════════════
     // API 1 — POST Payment Event (UPI or Card JSON)
     //
     // URL  : {{Base_URL}}Eventlistener/iciciPaymentEvents
@@ -847,6 +866,73 @@ public class APIs {
                 .response();
 
         System.out.println("✅ Process Admission Pipeline — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // PAYMENT PLAN MIGRATION — Save promotional data + send offer email (one child)
+    //
+    // URL : {{Base_URL}}financialprocess/saveMigrationPromotionalData/?send_promotional_email=yes&child_id=<id>
+    // Use : V1→V2 renewal offer — saves the child to the Payment Plan
+    //       Migration screen (status "Informed") and emails the parent.
+    // ═══════════════════════════════════════════════
+    public static Response sendPlanMigrationPromotionalEmail(String childId) {
+        String endpoint = PPM_SAVE_PROMOTIONAL_DATA
+                + "?send_promotional_email=yes"
+                + "&child_id=" + childId;
+        return getAndLog("Payment Plan Migration: Save Promotional Data + Send Email", endpoint);
+    }
+
+    // ═══════════════════════════════════════════════
+    // PAYMENT PLAN MIGRATION — Save promotional data + send offer email (all children, as of a date)
+    //
+    // URL : {{Base_URL}}financialprocess/saveMigrationPromotionalData?send_promotional_email=yes&date=<yyyy-MM-dd>
+    // ═══════════════════════════════════════════════
+    public static Response sendPlanMigrationPromotionalEmailForDate(String date) {
+        String endpoint = PPM_SAVE_PROMOTIONAL_DATA
+                + "?send_promotional_email=yes"
+                + "&date=" + date;
+        return getAndLog("Payment Plan Migration: Save Promotional Data + Send Email (by date)", endpoint);
+    }
+
+    // ═══════════════════════════════════════════════
+    // PAYMENT PLAN MIGRATION — Reminder email
+    //
+    // URL : {{Base_URL}}financialprocess/sendMigrationPromotionalReminderEmail?days=<days>
+    // ═══════════════════════════════════════════════
+    public static Response sendPlanMigrationReminderEmail(int days) {
+        String endpoint = PPM_REMINDER_EMAIL + "?days=" + days;
+        return getAndLog("Payment Plan Migration: Reminder Email", endpoint);
+    }
+
+    // ═══════════════════════════════════════════════
+    // PAYMENT PLAN MIGRATION — Process confirmed migrations (month-end cron)
+    //
+    // URL : {{Base_URL}}planmigration/processMigrationRequests?child_id=<id>&date=<yyyy-MM-dd>
+    // Gate: "Plan migration cron is allowed only on the last day of the month
+    //       between 11:00 PM and 11:59 PM" — server clock must be in that window.
+    // ═══════════════════════════════════════════════
+    public static Response processPlanMigrationRequests(String childId, String date) {
+        String endpoint = PPM_PROCESS_MIGRATION
+                + "?child_id=" + childId
+                + "&date=" + date;
+        return getAndLog("Payment Plan Migration: Process Migration Requests", endpoint);
+    }
+
+    private static Response getAndLog(String label, String endpoint) {
+        System.out.println("▶ " + label);
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ " + label + " — Status: " + response.getStatusCode());
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }

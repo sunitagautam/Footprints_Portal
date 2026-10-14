@@ -723,6 +723,25 @@ public class AccountStatementPage {
         }
     }
 
+    /**
+     * Waits (up to {@code timeoutSec}) for the Child History popup to contain {@code expected},
+     * e.g. "Plan Migration Completed", and returns the popup text ("" if not found).
+     */
+    public String waitForChildHistoryText(String expected, int timeoutSec) throws InterruptedException {
+        long end = System.currentTimeMillis() + timeoutSec * 1000L;
+        String text = "";
+        while (System.currentTimeMillis() < end) {
+            // The redesigned popup's entries are not inside the element getChildHistoryFullText() matches
+            // (its XPath hits ".modal-title"), so read the page text from the popup heading onward.
+            String body = driver.findElement(By.tagName("body")).getText();
+            int i = body.indexOf("Child Updates History");
+            text = i < 0 ? "" : body.substring(i);
+            if (text.contains(expected)) return text;
+            Thread.sleep(1000);
+        }
+        return text;
+    }
+
     public void closeChildHistoryModal() throws InterruptedException {
         closePopdown();
     }
@@ -1548,5 +1567,143 @@ public class AccountStatementPage {
         } catch (Exception e) {
             System.out.println("⚠ JS close: " + e.getMessage());
         }
+    }
+
+    // ═══════════════════════════════════════════════
+    // PAYMENT PLAN MIGRATION — V2 (Short Term) → V1 (Long Term)
+    // Confirmed live 2026-10-13 (child 49851):
+    //  1. "Migrate in Long Term Payment Plan" → native confirm
+    //     "Are you sure you want to migrate plan from V2 to V1?"
+    //  2. Modal #modal_form_migration_request "Plan Migration Request - V2 to V1"
+    //     → select #next_yearly_billing_date → "Confirm Migration"
+    //  3. Native confirm "...The new plan will be effective from next month"
+    //     → message in .migration-error-msg → page reloads after ~3 s.
+    // ═══════════════════════════════════════════════
+    private static final By MIGRATE_LONG_TERM_BTN = By.xpath(
+            "//a[contains(@href,'migratePlanV1V2newPlan') and contains(normalize-space(.),'Migrate in Long Term Payment Plan')]");
+    private static final By MIGRATE_SHORT_TERM_BTN = By.xpath(
+            "//a[contains(normalize-space(.),'Migrate in Short Term Payment Plan')]");
+    private static final By PLAN_MIGRATION_MODAL = By.id("modal_form_migration_request");
+    private static final By PLAN_MIGRATION_TITLE = By.cssSelector("#modal_form_migration_request .modal-title");
+    private static final By PLAN_MIGRATION_MONTHLY = By.id("display-monthly-amount");
+    private static final By PLAN_MIGRATION_YEARLY = By.id("display-yearly-amount");
+    private static final By PLAN_MIGRATION_DATE = By.id("next_yearly_billing_date");
+    private static final By PLAN_MIGRATION_NOTE = By.cssSelector("#frm-plan-migration-request .invoice-text");
+    private static final By PLAN_MIGRATION_CONFIRM = By.cssSelector("#modal_form_migration_request .btn-model-migrate");
+    // flash_message() inserts a sibling <div class="flash-msg"><div class="alert ...">text</div></div>
+    // after the target element (confirmed live), not text inside it.
+    private static final By PLAN_MIGRATION_MESSAGE = By.cssSelector(
+            "#modal_form_migration_request .migration-error-msg, #modal_form_migration_request .flash-msg");
+    private static final By PLAN_MIGRATION_PAGE_MESSAGE = By.cssSelector(
+            ".message-plan-migration, .message-plan-migration ~ .flash-msg");
+
+    /** Reads the header span, e.g. {@code <span class="">[Payment Plan : V1]</span>} → "V1". */
+    public String getPaymentPlanLabel() {
+        for (WebElement span : driver.findElements(By.xpath("//legend//span[contains(normalize-space(.),'Payment Plan :')]"))) {
+            java.util.regex.Matcher sm = java.util.regex.Pattern.compile("(?i)Payment Plan\\s*:\\s*(V\\d)").matcher(span.getText());
+            if (sm.find()) return sm.group(1).toUpperCase();
+        }
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)\\[PAYMENT PLAN\\s*:\\s*(V\\d)\\]")
+                .matcher(driver.findElement(By.tagName("body")).getText());
+        return m.find() ? m.group(1).toUpperCase() : "";
+    }
+
+    public boolean isMigrateToLongTermPlanVisible() {
+        return !driver.findElements(MIGRATE_LONG_TERM_BTN).isEmpty()
+                && driver.findElement(MIGRATE_LONG_TERM_BTN).isDisplayed();
+    }
+
+    public boolean isMigrateToShortTermPlanVisible() {
+        List<WebElement> els = driver.findElements(MIGRATE_SHORT_TERM_BTN);
+        return !els.isEmpty() && els.get(0).isDisplayed();
+    }
+
+    /** Clicks the button and returns the first native confirm's text; accepts it when {@code accept} is true. */
+    public String clickMigrateToLongTermPlan(boolean accept) {
+        WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(MIGRATE_LONG_TERM_BTN));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
+        btn.click();
+        org.openqa.selenium.Alert alert = wait.until(ExpectedConditions.alertIsPresent());
+        String text = alert.getText();
+        if (accept) alert.accept(); else alert.dismiss();
+        return text;
+    }
+
+    public boolean isPlanMigrationModalVisible() {
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(PLAN_MIGRATION_DATE));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public String getPlanMigrationModalTitle() {
+        return driver.findElement(PLAN_MIGRATION_TITLE).getText().trim();
+    }
+
+    public String getPlanMigrationMonthlyAmount() {
+        return driver.findElement(PLAN_MIGRATION_MONTHLY).getText().trim();
+    }
+
+    public String getPlanMigrationYearlyAmount() {
+        return driver.findElement(PLAN_MIGRATION_YEARLY).getText().trim();
+    }
+
+    public String getPlanMigrationNote() {
+        return driver.findElement(PLAN_MIGRATION_NOTE).getText().trim();
+    }
+
+    public List<String> getAnnualRecurringDateOptions() {
+        List<String> values = new java.util.ArrayList<>();
+        for (WebElement o : new Select(driver.findElement(PLAN_MIGRATION_DATE)).getOptions()) {
+            if (!o.getAttribute("value").isEmpty()) values.add(o.getAttribute("value"));
+        }
+        return values;
+    }
+
+    /** {@code isoDate} = option value, e.g. "2026-11-01". */
+    public void selectAnnualRecurringDate(String isoDate) {
+        new Select(driver.findElement(PLAN_MIGRATION_DATE)).selectByValue(isoDate);
+    }
+
+    /** Clicks "Confirm Migration" without a date and returns the validation message. */
+    public String confirmPlanMigrationWithoutDate() {
+        driver.findElement(PLAN_MIGRATION_CONFIRM).click();
+        return waitForText(PLAN_MIGRATION_MESSAGE, 5000);
+    }
+
+    /**
+     * Clicks "Confirm Migration", accepts the second native confirm and returns
+     * {confirmText, resultMessage}. The message is read straight away because the
+     * page reloads ~3 s after a successful save.
+     */
+    public String[] confirmPlanMigration() {
+        driver.findElement(PLAN_MIGRATION_CONFIRM).click();
+        org.openqa.selenium.Alert alert = wait.until(ExpectedConditions.alertIsPresent());
+        String confirmText = alert.getText();
+        alert.accept();
+        return new String[]{confirmText, waitForText(PLAN_MIGRATION_MESSAGE, 8000)};
+    }
+
+    /** Error shown on the page (outside the modal) when step 1 is rejected, e.g. dues. */
+    public String getPlanMigrationPageMessage() {
+        return waitForText(PLAN_MIGRATION_PAGE_MESSAGE, 5000);
+    }
+
+    private String waitForText(By locator, long timeoutMs) {
+        long end = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < end) {
+            try {
+                for (WebElement el : driver.findElements(locator)) {
+                    String t = el.getText().trim();
+                    if (!t.isEmpty()) return t;
+                }
+                Thread.sleep(150);
+            } catch (Exception ignored) {
+                // page may be reloading — keep polling
+            }
+        }
+        return "";
     }
 }
