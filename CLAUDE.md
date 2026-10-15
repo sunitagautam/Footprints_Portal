@@ -1921,6 +1921,20 @@ Account Statement. A user without the right does not see the button at all.
   - `tc007` asserts the spec'd behaviour and keeps failing until fixed. 74246 is read-only there (not consumed).
   - `tc007` removes the right from Rakesh first (`UserRightsPage.removeRight()`) if he has it.
 
+- **Test cases (2026-10-15):** SC_011_TC_013–020 added to
+  `~/Desktop/QA_Documents/Testcases Scripts/TC_CancelRegistration.xlsx`; the format was verified unchanged.
+  - Iteration 1: TC_013 Pass, TC_014 Fail (the bug), TC_016 Fail (same cause), TC_018 Pass, TC_020 Pass.
+  - TC_015 (direct URL), TC_017 step 2 and TC_019 (Days validity) are Not executed.
+  - The Document History entry and QueryLogs Q1 were added.
+
+- **FIXED by dev — retest PASSED (2026-10-15):**
+  - `sc011_tc007` (Rakesh, no right, 74246): the button is now hidden.
+  - Direct URL `cancel_registration?pop=yes&child_id=74246` as Rakesh without the right shows **"Sorry! You are not
+    authorise to access this screen."** with no form.
+  - Assign the right to Rakesh, then a fresh login: the button is visible. The right was removed again afterwards, so
+    Rakesh is back to no right.
+  - Iteration 2 is filled in the workbook, and QueryLogs Q1 is Closed.
+
 Not yet confirmed (ask the user / verify live before automating):
 
 - Whether Rakesh has the right by default. The existing 8 tests depend on this.
