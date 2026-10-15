@@ -3154,3 +3154,22 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
     `new_monthly_fee_onward_april`.
   - The screen shows the older row by default. Created by date-shifted test runs, not a production case. Screenshot:
     `Bug Evidence/PlanMigration_StaleRecord/09_DB_payment_plan_migrations_two_rows_62694.png`.
+- **Full test-case document (2026-10-15):** `~/Desktop/QA_Documents/Testcases Scripts/TC_Payment_Plan_Migration.xlsx`,
+  from `TC_Template_Enanched_13Oct.xlsx`. The template format was verified unchanged (sheets, data validations, merged
+  cells, column widths, conditional formats, freeze panes).
+  - 88 TCs / 136 step rows:
+
+    | Scenario | Area | TCs |
+    |---|---|---|
+    | SC001 | PPM screen | 14 |
+    | SC002 | Account Statement V2→V1 | 16 |
+    | SC003 | V2→V1 email | 18 |
+    | SC004 | V1→V2 email | 13 |
+    | SC005 | Eligibility / billing cron | 7 |
+    | SC006 | Manual & non-functional | 20 |
+
+  - Iteration 1 is filled from automation runs: 50 PASS, 6 FAIL (Bug 1 ×2, Bug 3, Bug 4 ×2, minor content),
+    32 NOT EXECUTED.
+  - The Test Summary is filled; QueryLogs has Q1–Q6. The superseded 13 Oct draft `TC_Payment_Plan_Migration_13Oct.xlsx`
+    is kept.
+  - The user plans to update the automation after the dev fixes Bugs 1/3/4 (and possible approved enhancements).
