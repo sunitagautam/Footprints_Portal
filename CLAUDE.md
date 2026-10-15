@@ -3133,3 +3133,24 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
   06 shows 62694 still Pending with Update, 07 shows 62700 Completed for comparison, and 08 shows 62694 Account
   Statement V1 15,799.
 - **Bug 5 reported to the dev team by the user (2026-10-14).**
+- **Bug 5 cause (user, 2026-10-14):** an EARLIER request/record existed for the same month (created in the past),
+  example child **62621**.
+  - Read-only check of 62621 (Rudra Pratap): V2 9,749; one PPM row Nov 2026 "9,749 → 7,749 | Pending" (the amount
+    matches the current fee); no Customer Requests; no plan-migration history.
+  - The earlier record is not visible on screen — likely from the bulk saveMigrationPromotionalData runs ("[Info] New
+    Payment Plan Migration Records Saved in DB" 15 Sep / 05 Oct 2026).
+  - Proposed clean repro (pending the user's OK + server Oct 24): send the offer to 62621 and Confirm. If the row stays
+    Pending, the earlier same-month record alone triggers Bug 5 (no fee change needed).
+- **Bug 5 CLOSED — not a real case (developer, 2026-10-14):** caused by an earlier same-month record created while the
+  test server date was moved back and forth. Production cannot reach this state. The write-up file is marked CLOSED;
+  no 62621 repro needed.
+  - **Lesson for future runs:** prefer children with NO existing Payment Plan Migration row for the target month (or
+    accept that rows pre-created by earlier date-shifted runs may not update on screen).
+- **Bug 5 root cause confirmed (DB screenshot from the user):** `ftprints_footprint.payment_plan_migrations` has 2
+  rows for admission 62694, both V2_TO_V1 with `annual_billing_date` 2026-11-01:
+  - `migration_id` 9053: existing_monthly_fee 12499 → new 10499 (older — the one shown on screen, stays Pending).
+  - 9055: 17799 → 15799 (used by the offer/Confirm/cron).
+  - Other columns: `migration_direction` ENUM, `existing_annual_fee`, `new_annual_fee`,
+    `new_monthly_fee_onward_april`.
+  - The screen shows the older row by default. Created by date-shifted test runs, not a production case. Screenshot:
+    `Bug Evidence/PlanMigration_StaleRecord/09_DB_payment_plan_migrations_two_rows_62694.png`.
