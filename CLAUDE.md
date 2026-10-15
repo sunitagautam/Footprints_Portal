@@ -1884,6 +1884,48 @@ graceful-skip pattern). Fixed the constants to be clearly documented as needing 
   *Corporate** and **Summer Camp** admission child IDs later, for additional coverage of this same feature across
   admission types.
 
+### NEW enhancement: access right `Cancel_Registration` (received 2026-10-15, NOT yet automated)
+
+A new user right **`Cancel_Registration`** ("Cancel child registration") now controls the Cancel Registration action
+on Account Statement. Until now the feature had no right check, and the tests ran as Rakesh with no user switch.
+
+**Rule (user, 2026-10-15):** only a user who has `Cancel_Registration` can see the Cancel Registration button on
+Account Statement. A user without the right does not see the button at all.
+
+**Status (2026-10-15, server date Oct 15):**
+
+- **Jaydeep Kar has the right** (user). Excel row added: `Jaydeep Kar | Cancel Registration | Cancel_Registration`.
+- Rakesh (user_id 357) had NO right. Then `tc008`'s first version **assigned `Cancel_Registration` to Rakesh**, so he has
+  it now. Remove it before rerunning `tc007`.
+- Assign UI (`manage_user_rights?user_id=<id>`, user-supplied DOM): search `#assign-search` → checkbox
+  `input.right-checkbox[value=Cancel_Registration]` → `#right_updated_comment` (Request Reference, required) →
+  `#update_right` "Assign Right". No alert was observed. Helpers: `UserRightsPage.assignRight()` / `hasRight()`.
+- `sc011_tc007_buttonHiddenWithoutCancelRegistrationRight` (Rakesh, child **73856**) passed, but it is INCONCLUSIVE:
+  73856's Joining Date is Oct 5, 2026, so it is outside the eligibility window at Oct 15. The button also stayed hidden
+  after Rakesh got the right.
+- **`sc011_tc008_userWithCancelRegistrationRightCanCancel` PASSED (2026-10-15)** as Jaydeep on child **74181** (Joining
+  Date Oct 14, 2026, inside the window):
+  - The button was visible, and the confirm read "Are you sure you want to cancel registration?".
+  - Status → **ATTRITION**; voided invoice **PI/1002474**.
+  - "Billing Cancel Date" was not found on the page this time (logged blank, not asserted).
+  - 74181 is now CONSUMED. The default for `-DcrRightChildId` is 74181; pass a fresh in-window child for the next run.
+
+- **🐛 BUG (2026-10-15, reported to dev by the user): the right is NOT enforced.** `sc011_tc007` as Rakesh on child
+  **74246** (JOINING PIPELINE, Joining Date Oct 14 — inside the window) FAILS: the button is visible although Rakesh has
+  no `Cancel_Registration` right.
+  - The right was removed via Current Rights "×" (`button.previlige_right_id` in `#assigned_rights`; confirm "Are you
+    sure you want to Delete Right ?") and by the user. The `#rights-search` check shows "No matching records found".
+  - Reproduced on fresh logins; the user also sees it manually.
+  - Write-up: `~/Desktop/QA_Documents/Bug Evidence/Bug_CancelRegistration_RightNotEnforced.md` + screenshots in
+    `CancelRegistration_RightNotEnforced/`.
+  - `tc007` asserts the spec'd behaviour and keeps failing until fixed. 74246 is read-only there (not consumed).
+  - `tc007` removes the right from Rakesh first (`UserRightsPage.removeRight()`) if he has it.
+
+Not yet confirmed (ask the user / verify live before automating):
+
+- Whether Rakesh has the right by default. The existing 8 tests depend on this.
+- Whether the server also blocks a direct `cancel_registration?pop=yes&child_id=<id>` URL for a user without the right.
+
 ## Requirements — Admission Migration (Regular ↔ Corporate) (`AdmissionMigration_Testcases.java`)
 
 Source: `Admission Migration.docx` (flow/screenshots) + `TC_Account Statement Scripts.xlsx` (sheet

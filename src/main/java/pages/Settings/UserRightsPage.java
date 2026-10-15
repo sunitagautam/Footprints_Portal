@@ -228,6 +228,87 @@ public class UserRightsPage {
     }
 
     // ═══════════════════════════════════════════════
+    // ASSIGN ADDITIONAL RIGHT (manage_user_rights?user_id=<id>)
+    // Confirmed DOM (user, 2026-10-15): search #assign-search →
+    // checkbox input.right-checkbox[value=<right>] → request
+    // reference #right_updated_comment → button #update_right
+    // ("Assign Right"). Returns the page's message text, if any.
+    // ═══════════════════════════════════════════════
+    public String assignRight(String userId, String rightTitle, String requestReference)
+            throws InterruptedException {
+        driver.get(IAutoConstant.MANAGE_USER_RIGHTS_URL + userId);
+        WebElement search = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("assign-search")));
+        search.clear();
+        search.sendKeys(rightTitle);
+        Thread.sleep(1000);
+
+        WebElement checkbox = wait.until(ExpectedConditions.presenceOfElementLocated(
+                By.cssSelector("input.right-checkbox[value='" + rightTitle + "']")));
+        if (!checkbox.isSelected()) {
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", checkbox);
+        }
+        WebElement reference = driver.findElement(By.id("right_updated_comment"));
+        reference.clear();
+        reference.sendKeys(requestReference);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();",
+                driver.findElement(By.id("update_right")));
+        System.out.println("▶ Assign Right clicked: " + rightTitle);
+
+        String alertText = "";
+        try {
+            alertText = new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.alertIsPresent()).getText();
+            driver.switchTo().alert().accept();
+            System.out.println("▶ Alert accepted: " + alertText);
+        } catch (Exception ignored) {
+        }
+        Thread.sleep(3000);
+        return alertText;
+    }
+
+    // Current Rights table #assigned_rights (all rows are in the DOM); a
+    // row's first cell holds the right title. Confirmed live 2026-10-15.
+    private static final String FIND_ASSIGNED_ROW_JS =
+            "return [...document.querySelectorAll('#assigned_rights tbody tr')]"
+                    + ".find(r=>r.cells[0]&&r.cells[0].textContent.trim()===arguments[0])||null;";
+
+    public boolean hasRight(String userId, String rightTitle) throws InterruptedException {
+        driver.get(IAutoConstant.MANAGE_USER_RIGHTS_URL + userId);
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("assigned_rights")));
+        Thread.sleep(1500);
+        boolean found = ((JavascriptExecutor) driver).executeScript(FIND_ASSIGNED_ROW_JS, rightTitle) != null;
+        System.out.println((found ? "✅" : "ℹ") + " Right " + rightTitle + " assigned to user " + userId + ": " + found);
+        return found;
+    }
+
+    // Removes a right via its Current Rights row "×" (button.previlige_right_id,
+    // name=delete_right). Accepts a confirm() if one appears; returns its text.
+    public String removeRight(String userId, String rightTitle) throws InterruptedException {
+        driver.get(IAutoConstant.MANAGE_USER_RIGHTS_URL + userId);
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("assigned_rights")));
+        Thread.sleep(1500);
+        WebElement row = (WebElement) ((JavascriptExecutor) driver).executeScript(FIND_ASSIGNED_ROW_JS, rightTitle);
+        if (row == null) {
+            System.out.println("ℹ Right " + rightTitle + " not assigned to user " + userId + " — nothing to remove");
+            return "";
+        }
+        WebElement del = row.findElement(By.cssSelector("button.previlige_right_id"));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", del);
+        System.out.println("▶ Delete right clicked: " + rightTitle);
+
+        String alertText = "";
+        try {
+            alertText = new WebDriverWait(driver, Duration.ofSeconds(5))
+                    .until(ExpectedConditions.alertIsPresent()).getText();
+            driver.switchTo().alert().accept();
+            System.out.println("▶ Alert accepted: " + alertText);
+        } catch (Exception ignored) {
+        }
+        Thread.sleep(3000);
+        return alertText;
+    }
+
+    // ═══════════════════════════════════════════════
     // VERIFY USER HAS RIGHT TITLE
     // ═══════════════════════════════════════════════
     public boolean verifyUserHasRight(String rightTitle) {

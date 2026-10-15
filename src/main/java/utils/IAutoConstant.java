@@ -28,6 +28,10 @@ public final class IAutoConstant {
     public static final String REFUND_LIST_URL =
             "https://test-franchise.footprintseducation.in/refund_list";
 
+    // Settings → User Rights Management, per user (append user_id)
+    public static final String MANAGE_USER_RIGHTS_URL =
+            "https://test-franchise.footprintseducation.in/manage_user_rights?user_id=";
+
     // Support → Financial Updates → Credits Issued
     public static final String CREDITS_ISSUED_URL =
             "https://test-franchise.footprintseducation.in/issue_credits";

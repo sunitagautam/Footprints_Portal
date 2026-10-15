@@ -8,6 +8,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Navigations;
+import pages.Settings.UserRightsPage;
 import pages.Support.FinancialReports.AccountStatementPage;
 import utils.BaseTest;
 
@@ -50,6 +51,15 @@ public class CancelRegistration_testcases extends BaseTest {
     // (Regular/Corporate/Summer Camp) — the feature itself is type-agnostic.
     private static final String CR_MIXED_ADMISSION_CHILD_ID_1 = "71141";
     private static final String CR_MIXED_ADMISSION_CHILD_ID_2 = "71990";
+
+    // Cancel_Registration right (2026-10-15): child for the "no right" check
+    // (Rakesh has no right). Read-only — not consumed.
+    private static final String CR_NO_RIGHT_CHILD_ID = System.getProperty("crNoRightChildId", "74246");
+    private static final String RAKESH_USER_ID = "357"; // manage_user_rights?user_id=357
+    private static final String CANCEL_REGISTRATION_RIGHT = "Cancel_Registration";
+    // Positive check: Jaydeep Kar (has Cancel_Registration) cancels this
+    // child (CONSUMED → Attrition). Override with -DcrRightChildId=<id>.
+    private static final String CR_WITH_RIGHT_CHILD_ID = System.getProperty("crRightChildId", "74181");
 
     private static final String CANCEL_REASON = "Automation test - cancel registration";
 
@@ -221,6 +231,84 @@ public class CancelRegistration_testcases extends BaseTest {
         Reporter.log("▶ BONUS mixed admission type — child: " + CR_MIXED_ADMISSION_CHILD_ID_2, true);
 
         performCancelRegistrationAndVerify(CR_MIXED_ADMISSION_CHILD_ID_2);
+    }
+
+    // ═══════════════════════════════════════════════
+    // Access right Cancel_Registration (2026-10-15): only a user with
+    // this right sees the Cancel Registration button. Rakesh currently
+    // has NO such right (user, 2026-10-15) → button must be hidden even
+    // for a child inside the eligibility window. Read-only, reusable.
+    // ═══════════════════════════════════════════════
+    @Test(priority = 9,
+            description = "Cancel_Registration right — button hidden for a user without the right (Rakesh)")
+    public void sc011_tc007_buttonHiddenWithoutCancelRegistrationRight() throws InterruptedException {
+        Reporter.log("▶ SC_011_TC_007 — user without Cancel_Registration (Rakesh), child: "
+                + CR_NO_RIGHT_CHILD_ID, true);
+
+        UserRightsPage userRightsPage = new UserRightsPage(driver);
+        if (userRightsPage.hasRight(RAKESH_USER_ID, CANCEL_REGISTRATION_RIGHT)) {
+            String msg = userRightsPage.removeRight(RAKESH_USER_ID, CANCEL_REGISTRATION_RIGHT);
+            Reporter.log("   Removed Cancel_Registration from Rakesh. Alert: " + msg, true);
+        }
+        Assert.assertFalse(userRightsPage.hasRight(RAKESH_USER_ID, CANCEL_REGISTRATION_RIGHT),
+                "❌ Rakesh still has Cancel_Registration — negative check not valid");
+
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(CR_NO_RIGHT_CHILD_ID);
+        String status = accountStatementPage.getChildStatusLabel();
+        boolean buttonVisible = accountStatementPage.isCancelRegistrationButtonVisible();
+        Reporter.log("   Child status: " + status, true);
+        Reporter.log("   Joining Date: " + joiningDateOf(CR_NO_RIGHT_CHILD_ID), true);
+        Reporter.log("   Cancel Registration button visible: " + buttonVisible, true);
+
+        Assert.assertFalse(buttonVisible,
+                "❌ Cancel Registration button is visible for a user WITHOUT the Cancel_Registration right (child "
+                        + CR_NO_RIGHT_CHILD_ID + ")");
+        navigations.goToAccountStatement();
+    }
+
+    // ═══════════════════════════════════════════════
+    // Cancel_Registration right — positive: Jaydeep Kar has the right
+    // (user, 2026-10-15; Excel row "Cancel Registration"). Switch to him,
+    // then the button shows and the full flow works. Runs LAST — the user
+    // switch stays for the rest of the session.
+    // ═══════════════════════════════════════════════
+    @Test(priority = 10,
+            description = "Cancel_Registration right — user with the right sees the button and cancels registration")
+    public void sc011_tc008_userWithCancelRegistrationRightCanCancel() throws Exception {
+        String user = getUserForScreen("Cancel Registration");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Cancel Registration in Excel");
+        Reporter.log("▶ SC_011_TC_008 — " + user + " (has Cancel_Registration), child: " + CR_WITH_RIGHT_CHILD_ID, true);
+
+        UserRightsPage userRightsPage = new UserRightsPage(driver);
+        navigations.goToUserRights();
+        userRightsPage.switchUser(user);
+        Thread.sleep(2000);
+
+        Reporter.log("   Joining Date: " + joiningDateOf(CR_WITH_RIGHT_CHILD_ID), true);
+        navigations.goToAccountStatement();
+        accountStatementPage.generateAccountStatement(CR_WITH_RIGHT_CHILD_ID);
+        Assert.assertTrue(accountStatementPage.isCancelRegistrationButtonVisible(),
+                "❌ Cancel Registration button not visible for a user WITH the right (child "
+                        + CR_WITH_RIGHT_CHILD_ID + ") — check the child is within the eligibility window");
+
+        performCancelRegistrationAndVerify(CR_WITH_RIGHT_CHILD_ID);
+    }
+
+    // Reads the Joining Date from the child info popup page (logged only,
+    // to show the child is inside the 3-days-before/1-day-after window).
+    private String joiningDateOf(String childId) {
+        try {
+            String base = driver.getCurrentUrl().replaceAll("^(https?://[^/]+/).*$", "$1");
+            driver.get(base + "pop_child_info?&child_id=" + childId);
+            Thread.sleep(2000);
+            String body = driver.findElement(org.openqa.selenium.By.tagName("body")).getText();
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("Joining Date\\s*:?\\s*\\n?\\s*([A-Za-z]+ \\d{1,2}, \\d{4})").matcher(body);
+            return m.find() ? m.group(1) : "(not found)";
+        } catch (Exception e) {
+            return "(not read: " + e.getMessage() + ")";
+        }
     }
 
     // ═══════════════════════════════════════════════
