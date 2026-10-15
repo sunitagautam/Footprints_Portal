@@ -10,6 +10,7 @@ import static io.restassured.RestAssured.given;
  * PAYMENT EVENTS
  * postPaymentEvent(json)                          — POST Eventlistener/iciciPaymentEvents (unified UPI/Card)
  * postUpiPaymentEvent(upiJson)                     — POST Eventlistener/iciciPaymentEvents (UPI/NetBanking)
+ * postProcessPayments(smartGatewayJson)            — POST Eventlistener/processPayments/ (HDFC SmartGateway settlement)
  * postCardPaymentEvent(dataPost)                   — POST create/icici_payment (Credit/Debit Card)
  * getCheckAndProcessData()                         — GET middleware/checkAndProcessData
  * <p>
@@ -79,6 +80,12 @@ public class APIs {
 
     private static final String CHECK_AND_PROCESS =
             "middleware/checkAndProcessData";
+
+    // HDFC SmartGateway settlement endpoint (user-supplied 2026-10-08)
+    //   {{Base_URL}}Eventlistener/processPayments/
+    // Body: hidden JSON id="payment_json_smartgateway" (single→double quotes)
+    private static final String SMARTGATEWAY_PROCESS_PAYMENTS =
+            "Eventlistener/processPayments/";
 
     // ═══════════════════════════════════════════════
     // CENTER SHIFT CRON ENDPOINTS
@@ -254,6 +261,36 @@ public class APIs {
                 .response();
 
         System.out.println("✅ UPI Event — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
+    // API 1b — POST HDFC SmartGateway Payment (processPayments)
+    //
+    // URL  : {{Base_URL}}Eventlistener/processPayments/
+    // Body : hidden JSON id="payment_json_smartgateway"
+    //        (single quotes → double quotes, same as UPI)
+    // Use  : After extracting payment_json_smartgateway from the
+    //        online payment page. Settles the SmartGateway payment.
+    // ═══════════════════════════════════════════════
+    public static Response postProcessPayments(String smartGatewayJson) {
+        String validJson = convertSingleQuotesToDouble(smartGatewayJson);
+        System.out.println("▶ POST SmartGateway processPayments");
+        System.out.println("   URL  : " + ADMISSIONS_BASE_URL + SMARTGATEWAY_PROCESS_PAYMENTS);
+        System.out.println("   Body : " + validJson);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .contentType("application/json")
+                .body(validJson)
+                .when()
+                .post(SMARTGATEWAY_PROCESS_PAYMENTS)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ processPayments — Status: " + response.getStatusCode());
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }

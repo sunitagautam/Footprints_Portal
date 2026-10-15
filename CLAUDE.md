@@ -2318,6 +2318,64 @@ answers:
 - Sheet's date-range data (Nov–Dec 2024) may be stale — confirm a window that actually has data.
 - Whether Credit Amount accepts negatives (relevant to SC004_TC_003's "skip email if negative" rule).
 
+## Requirements — Due Invoices payment via HDFC SmartGateway (`DueInvoices_Via_HDFCSmartGatewayTest.java`)
+
+The online payment page (`test.footprintseducation.in/onlinepayment?child_id=<id>`) for SmartGateway-enabled
+children replaces the old ICICI "Pay via Credit/Debit Card"/UPI buttons with a single **"Pay via HDFC SmartGateway"**
+button. Merchant **SG5525**, hosted page on `smartgateway.hdfcuat.bank.in` (JusPay, UAT). Automated as a NEW test class
+(user's explicit request for a separate file, like the Transport 1-Way/2-Way split), with HDFC methods added
+additively to the existing `pages/Support/CustomerPortal_PayDueInvoices.java` (per one-page-object-per-screen).
+
+### Confirmed live (2026-10-08) — do not re-derive without evidence
+
+- Online payment page has a **hidden field `id="payment_json_smartgateway"`** holding the settlement JSON — same pattern
+  as ICICI's `payment_json_icici_upi`/`_ccdc`. Example value (child 55863):
+  `{'status':'success','txnid':'<hex>','txn_id':'DEVTXN<n>','amount':'6824.00','firstname':..,'email':'d_55863_father@gmail.com','phone':..,'productinfo':'Payment of due invoices as on - October 8 2026','udf1':'1002054','udf2':'300','udf3':'6524','payment_gateway':'HDFC Smart'}`.
+  `udf1` = invoice id. Single-quoted like the ICICI payloads (use `convertSingleQuotesToDouble`).
+- **Settlement endpoint (user-supplied):** `POST {{Base_URL}}Eventlistener/processPayments/` where `{{Base_URL}}` =
+  `https://test-admissions.footprintseducation.in/api/` (same base as `iciciPaymentEvents`). Confirmed live: HTTP 200,
+  response `{"status":"success","message":"Transaction received txnid <txnid>"}`.
+- Browser path (for reference, NOT the automated assertion): "Pay via HDFC SmartGateway" → JusPay hosted page
+  (Credit/Debit Cards | UPI | Netbanking | Wallets) → **JusPay UAT simulator** ("Choose the statuses you want to
+  simulate", Transaction State dropdown "Select Options" + Submit) → pick **CHARGED** → "Status captured successfully"
+  → redirect back to Footprints. The 2026-10-08 simulator URL carried `cardIssuerBankName=DNB_AXIS&cardType=DNB`
+  (a Netbanking path reaches the simulator without entering real card details).
+
+### Building blocks added (additive only)
+
+- `CustomerPortal_PayDueInvoices.java` — `extractSmartGatewayPaymentJson()` (reads `payment_json_smartgateway`,
+  DOM-confirmed). Plus browser-simulator helpers `clickPayViaHdfcSmartGateway()`, `isHdfcHostedPageLoaded()`,
+  `getHdfcOrderId()`, `waitForJuspaySimulator()`, `simulateTransactionState(state)`, `isSimulatorStatusCaptured(state)`,
+  `waitForReturnToFootprints()` — hosted-page/simulator locators are **[LIVE-TBD]** (from screenshots only, not DOM).
+- `utils/APIs.java` — `postProcessPayments(smartGatewayJson)` → POST `Eventlistener/processPayments/`.
+- `DueInvoices_HDFCSmartGatewaytestng.xml` — suite. Child IDs from the same `testData/Invoices_Due.csv`
+  (Status = "Payment Due"); single child via `-DchildId=XXXX`.
+
+### Status (2026-10-08)
+
+- **TC_SG_001 `extractSmartGatewayJsonAndPostApi` — CONFIRMED PASSING** (child 55863): extract
+  `payment_json_smartgateway` → POST `processPayments` → HTTP 200 success → child marked Paid in CSV. Reliable,
+  DOM-confirmed path, mirrors ICICI's TC_001. Child **55863 consumed** (invoice 1002054, ₹6824.00).
+- **TC_SG_002 `payViaSmartGatewaySimulator` — `enabled=false`**: full browser flow via the JusPay simulator. Its
+  hosted-page method-selection + simulator-dropdown locators need one live exploration run to lock before enabling.
+
+### Security verification — HDFC SmartGateway audit (findings doc NOT on this machine) — HELD
+
+HDFC flagged amount-/order-ID-tampering on the settlement pipeline (`processPayments`/`captureDirectPaymentResponse`
+accepting a CHARGED payload from anyone). 5 acceptance criteria (forged/no-secret rejected; settle only after
+server-to-server HDFC Order Status CHARGED + amount match; replay settles once; return-page order bound to session +
+unsigned can't mark FAILED; TLS verified on gateway cURL). **Status: HELD, not verified.** Reasons:
+- Observed live that `processPayments` settles from the request body alone with **no auth secret** (confirmed by user:
+  "there is no secret url") and returns `success` — i.e. currently **pre-fix**; negative tests are pointless until the
+  fix is deployed.
+- The findings doc (`website/features-md/HDFC_SMARTGATEWAY_SECURITY_FINDINGS.md`) and the 4 repos
+  (`footprint_listener`, `footprints-api-server`, `website`, `billing`) are not on this machine — AC 5 (TLS) and the two
+  SQL-injection points are code-review items needing repo access.
+- Sending forged/tampered payloads at the live endpoint is blocked by the Claude Code auto-mode classifier — the
+  negative API tests must be run by the user (or via Postman), not by the assistant.
+Resume only after dev confirms the fix is deployed; then build/run the AC 1/3/4 negative tests (user executes them) and
+do the AC 5 + SQLi code review against the shared repos.
+
 ## Requirements — Payment Plan Migration (V1 ↔ V2) (requirement received 2026-10-13, NOT yet automated)
 
 Screen: Support → Account Statement → new button (user's description: "Migrate to short term or long term plan", or a

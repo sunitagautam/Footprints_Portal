@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<suite name="Due Invoices - HDFC SmartGateway Suite" verbose="1">
+
+    <parameter name="browser" value="chrome"/>
+
+    <!--
+    ══════════════════════════════════════════════════════════════
+     TC_SG_001  extractSmartGatewayJsonAndPostApi
+                Extract hidden id="payment_json_smartgateway"
+                + POST {{Base_URL}}Eventlistener/processPayments/
+                + mark child Paid in CSV.  (enabled)
+
+     TC_SG_002  payViaSmartGatewaySimulator
+                Full browser flow via JusPay UAT simulator (CHARGED).
+                enabled=false — hosted-page/simulator locators [LIVE-TBD],
+                need one live run to lock before enabling.
+
+     Child IDs: testData/Invoices_Due.csv (Status = "Payment Due").
+     Single child: -DchildId=XXXX
+    ══════════════════════════════════════════════════════════════
+    -->
+
+    <test name="SmartGateway - JSON + processPayments API">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Via_HDFCSmartGatewayTest">
+                <methods>
+                    <include name="extractSmartGatewayJsonAndPostApi"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+    <test name="SmartGateway - Browser simulator flow (disabled)">
+        <classes>
+            <class name="testScripts.SupportTests.DueInvoices_Via_HDFCSmartGatewayTest">
+                <methods>
+                    <include name="payViaSmartGatewaySimulator"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+
+</suite>

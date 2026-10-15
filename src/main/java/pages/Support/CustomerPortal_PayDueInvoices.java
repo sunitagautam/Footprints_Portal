@@ -420,4 +420,240 @@ public class CustomerPortal_PayDueInvoices {
         } catch (Exception ignored) {
         }
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // HDFC SMARTGATEWAY FLOW  (additive — 2026-10-08)
+    //
+    // Online Payment page → "Pay via HDFC SmartGateway" button
+    // → JusPay hosted page (smartgateway.hdfcuat.bank.in)
+    // → JusPay UAT simulator ("Choose the statuses you want to
+    //   simulate", Transaction State dropdown) → CHARGED
+    // → "Status captured successfully"
+    // → redirect back to *.footprintseducation.in
+    //
+    // NOTE: locators marked [LIVE-TBD] are best-effort from the
+    // 2026-10-08 screenshots and MUST be confirmed with a live
+    // run before being trusted (per project "no assumptions"
+    // convention). They are text/URL-anchored to be as robust
+    // as possible in the meantime.
+    // ═══════════════════════════════════════════════════════════
+
+    // "Pay via HDFC SmartGateway" button on the online payment page
+    @FindBy(xpath = "//*[self::a or self::button or self::input]" +
+            "[contains(normalize-space(.),'Pay via HDFC SmartGateway')" +
+            " or contains(@value,'Pay via HDFC SmartGateway')]")
+    private WebElement payViaHdfcSmartGatewayBtn;
+
+    /**
+     * Clicks "Pay via HDFC SmartGateway" on the online payment page.
+     * Confirmed live 2026-10-08 (child 48019): button text is exactly
+     * "Pay via HDFC SmartGateway".
+     */
+    public void clickPayViaHdfcSmartGateway() throws InterruptedException {
+        new WebDriverWait(driver, Duration.ofSeconds(20))
+                .until(ExpectedConditions.elementToBeClickable(payViaHdfcSmartGatewayBtn));
+        ((JavascriptExecutor) driver)
+                .executeScript("arguments[0].click();", payViaHdfcSmartGatewayBtn);
+        System.out.println("▶ Pay via HDFC SmartGateway clicked");
+        Thread.sleep(2500);
+    }
+
+    // Hidden input holding the SmartGateway payment JSON on the online
+    // payment page — confirmed live 2026-10-08:
+    //   id="payment_json_smartgateway"
+    //   value={'status':'success','txnid':..,'amount':..,'udf1':<invoiceId>,
+    //          'payment_gateway':'HDFC Smart'}
+    // Mirrors the ICICI hidden fields (payment_json_icici_upi / _ccdc).
+    @FindBy(id = "payment_json_smartgateway")
+    private WebElement smartGatewayPaymentJsonInput;
+
+    /**
+     * Extracts the hidden SmartGateway payment JSON (id=payment_json_smartgateway)
+     * from the online payment page. Returns "" if absent/empty.
+     * This is the reliable, DOM-confirmed settlement path (same approach as
+     * ICICI's extractUpiPaymentJson) — preferred over driving the JusPay
+     * hosted-page/simulator UI.
+     */
+    public String extractSmartGatewayPaymentJson() throws InterruptedException {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions.presenceOfElementLocated(
+                            By.id("payment_json_smartgateway")));
+            Thread.sleep(500);
+            String json = (String) ((JavascriptExecutor) driver)
+                    .executeScript("return document.getElementById(" +
+                            "'payment_json_smartgateway').value;");
+            if (json != null && !json.isEmpty()) {
+                System.out.println("✅ SmartGateway JSON extracted (length="
+                        + json.length() + ")");
+                return json;
+            }
+            System.out.println("⚠ payment_json_smartgateway found but value is empty");
+        } catch (Exception e) {
+            System.out.println("❌ SmartGateway JSON extraction failed: "
+                    + e.getMessage());
+        }
+        return "";
+    }
+
+    /**
+     * Waits until the JusPay/HDFC SmartGateway hosted page has loaded.
+     * Confirmed live: host is smartgateway.hdfcuat.bank.in (UAT).
+     */
+    public boolean isHdfcHostedPageLoaded() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(30))
+                    .until(ExpectedConditions.urlContains("smartgateway.hdfcuat.bank.in"));
+            System.out.println("✅ HDFC SmartGateway hosted page — "
+                    + driver.getCurrentUrl());
+            return true;
+        } catch (Exception e) {
+            System.out.println("⚠ HDFC hosted page not detected — current URL: "
+                    + driver.getCurrentUrl());
+            return false;
+        }
+    }
+
+    /**
+     * Reads the Order ID shown on the hosted page header
+     * (e.g. "Order ID: 64c7009b5f320f051c01"). Returns "" if absent.
+     * Scans the whole page body (header markup not DOM-confirmed yet).
+     */
+    public String getHdfcOrderId() {
+        try {
+            String body = driver.findElement(By.tagName("body")).getText();
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("Order ID[:\\s]*([A-Za-z0-9]+)")
+                    .matcher(body);
+            if (m.find()) {
+                String id = m.group(1).trim();
+                System.out.println("✅ HDFC Order ID: " + id);
+                return id;
+            }
+        } catch (Exception e) {
+            System.out.println("⚠ getHdfcOrderId: " + e.getMessage());
+        }
+        return "";
+    }
+
+    /**
+     * [LIVE-TBD] Advances from the hosted payment page to the JusPay UAT
+     * simulator ("Choose the statuses you want to simulate").
+     *
+     * The 2026-10-08 simulator URL carried cardIssuerBankName=DNB_AXIS &
+     * cardType=DNB, i.e. a Netbanking path was used to reach it without
+     * entering real card details. The exact clicks (method tile → bank →
+     * proceed) are NOT DOM-confirmed — this method must be finalised during
+     * the first live exploration run. It currently waits for the simulator
+     * URL and returns whether it was reached, so the test fails loudly here
+     * rather than on a wrong guess downstream.
+     */
+    public boolean waitForJuspaySimulator() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(40))
+                    .until(ExpectedConditions.or(
+                            ExpectedConditions.urlContains("/v2/pay/start/"),
+                            ExpectedConditions.textToBePresentInElementLocated(
+                                    By.tagName("body"),
+                                    "Choose the statuses you want to simulate")));
+            System.out.println("✅ JusPay UAT simulator reached — "
+                    + driver.getCurrentUrl());
+            return true;
+        } catch (Exception e) {
+            System.out.println("⚠ JusPay simulator not reached — current URL: "
+                    + driver.getCurrentUrl());
+            return false;
+        }
+    }
+
+    /**
+     * On the JusPay UAT simulator, selects the given Transaction State
+     * (e.g. "CHARGED", "FAILED") and submits.
+     *
+     * Confirmed live from screenshots: label "Transaction State", a
+     * "Select Options" dropdown, a "Submit" button, then a
+     * "Status captured successfully" panel. The dropdown's underlying
+     * widget type (native <select> vs. custom) is [LIVE-TBD] — this
+     * tries a native Select first, then falls back to click-the-option
+     * by visible text.
+     */
+    public void simulateTransactionState(String state) throws InterruptedException {
+        // Try a native <select> labelled/near "Transaction State"
+        boolean picked = false;
+        try {
+            WebElement sel = new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.presenceOfElementLocated(
+                            By.xpath("//select")));
+            new org.openqa.selenium.support.ui.Select(sel)
+                    .selectByVisibleText(state);
+            picked = true;
+            System.out.println("✅ Transaction State selected (native select): " + state);
+        } catch (Exception ignored) {
+            // Fall back to a custom dropdown: open it, then click the option
+            try {
+                WebElement trigger = driver.findElement(By.xpath(
+                        "//*[contains(normalize-space(.),'Select Options')]"));
+                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", trigger);
+                Thread.sleep(800);
+                WebElement option = new WebDriverWait(driver, Duration.ofSeconds(10))
+                        .until(ExpectedConditions.elementToBeClickable(By.xpath(
+                                "//*[normalize-space(text())='" + state + "']")));
+                ((JavascriptExecutor) driver).executeScript("arguments[0].click();", option);
+                picked = true;
+                System.out.println("✅ Transaction State selected (custom dropdown): " + state);
+            } catch (Exception e) {
+                System.out.println("⚠ Could not select Transaction State '"
+                        + state + "': " + e.getMessage());
+            }
+        }
+        if (!picked) {
+            throw new IllegalStateException(
+                    "❌ Transaction State '" + state + "' could not be selected on simulator");
+        }
+        Thread.sleep(600);
+
+        // Submit
+        WebElement submit = new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.elementToBeClickable(By.xpath(
+                        "//button[normalize-space(.)='Submit']" +
+                        " | //input[@value='Submit']")));
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submit);
+        System.out.println("▶ Simulator Submit clicked (" + state + ")");
+        Thread.sleep(2500);
+    }
+
+    /**
+     * Confirms the simulator's "Status captured successfully" panel and that
+     * the shown Transaction State matches the expected one (e.g. CHARGED).
+     */
+    public boolean isSimulatorStatusCaptured(String expectedState) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(20))
+                    .until(ExpectedConditions.textToBePresentInElementLocated(
+                            By.tagName("body"), "Status captured successfully"));
+            String body = driver.findElement(By.tagName("body")).getText();
+            boolean ok = body.toUpperCase().contains(expectedState.toUpperCase());
+            System.out.println((ok ? "✅" : "⚠")
+                    + " Simulator status captured; expected state '"
+                    + expectedState + "' present=" + ok);
+            return ok;
+        } catch (Exception e) {
+            System.out.println("⚠ isSimulatorStatusCaptured: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** Waits for the gateway to redirect back to a Footprints domain. */
+    public boolean waitForReturnToFootprints() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(40))
+                    .until(ExpectedConditions.urlContains("footprintseducation.in"));
+            System.out.println("✅ Returned to Footprints — " + driver.getCurrentUrl());
+            return true;
+        } catch (Exception e) {
+            System.out.println("⚠ Did not return to Footprints — current URL: "
+                    + driver.getCurrentUrl());
+            return false;
+        }
+    }
 }
