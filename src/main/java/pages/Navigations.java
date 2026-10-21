@@ -219,6 +219,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // SETTINGS → SYSTEM LOGS → DAILY OBSERVER DATA
+    // ═══════════════════════════════════════════════
+    public void goToDailyObserverData() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.DAILY_OBSERVER_DATA_URL);
+        System.out.println("✅ Navigated to: Daily Observer Data");
+        Thread.sleep(1500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → REFUND LIST
     // Navigates directly via URL — no sub-menu link
     // needed since the screen URL is known. Used by

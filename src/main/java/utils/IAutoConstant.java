@@ -36,6 +36,10 @@ public final class IAutoConstant {
     public static final String CREDITS_ISSUED_URL =
             "https://test-franchise.footprintseducation.in/issue_credits";
 
+    // Settings → System Logs → Daily Observer Data
+    public static final String DAILY_OBSERVER_DATA_URL =
+            "https://test-franchise.footprintseducation.in/daily_observer_data";
+
 
     // ═══════════════════════════════════════════════
     // LOGIN CREDENTIALS
