@@ -66,6 +66,10 @@ public class APIs {
     public static final String ADMISSIONS_BASE_URL =
             "https://test-admissions.footprintseducation.in/api/";
 
+    // V2 server (PHP 8.5 upgrade) — APIs are moving here feature by feature
+    public static final String ADMISSIONS_V2_BASE_URL =
+            "https://test-admissionsv2.footprintseducation.in/api/";
+
     public static final String EVENTS_BASE_URL =
             "https://test-events.footprintseducation.in/";
 
@@ -521,9 +525,10 @@ public class APIs {
     // ═══════════════════════════════════════════════
     // TIME EXTENSION — getAllPendingRequests
     //
-    // URL : {{Base_URL}}Financialprocess/getAllPendingRequests/
+    // URL : {{Base_URL_V2}}Financialprocess/getAllPendingRequests/
     //       ?key=F@@tpr!nt$ChargeBeeUpdate$&chid_id=<child_id>&ckey=B47C56483AAE7373
-    // Use : Same physical endpoint as Center Shift/Extended Daycare. Confirmed via
+    // Use : Same endpoint as Center Shift/Extended Daycare, but Time Extension calls
+    //       the V2 server (PHP 8.5 upgrade). Confirmed via
     //       real captured examples (doc: "Start Time Extension Service Request")
     //       that "chid_id" IS the correct param for this endpoint in the Time
     //       Extension context (unlike Extended Daycare, where "child_id" was
@@ -535,10 +540,10 @@ public class APIs {
                 + "&chid_id=" + childId
                 + "&ckey=B47C56483AAE7373";
         System.out.println("▶ Time Extension: getAllPendingRequests");
-        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+        System.out.println("   URL: " + ADMISSIONS_V2_BASE_URL + endpoint);
 
         Response response = given()
-                .baseUri(ADMISSIONS_BASE_URL)
+                .baseUri(ADMISSIONS_V2_BASE_URL)
                 .when()
                 .get(endpoint)
                 .then()
@@ -553,7 +558,7 @@ public class APIs {
     // ═══════════════════════════════════════════════
     // TIME EXTENSION — Process Request (Approve → Processed)
     //
-    // URL : http://test-admissions.footprintseducation.in/api/childservices/
+    // URL : https://test-admissionsv2.footprintseducation.in/api/childservices/
     //       processTimeExtentionRequest?child_id=<child_id>&ckey=3E529969372D
     // Use : Run after clicking Approve on the Customer Request screen.
     //       Response JSON: {"status":"ok","message":"Time Extension request processed"}
@@ -564,10 +569,10 @@ public class APIs {
                 + "?child_id=" + childId
                 + "&ckey=3E529969372D";
         System.out.println("▶ Time Extension: Process Request");
-        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+        System.out.println("   URL: " + ADMISSIONS_V2_BASE_URL + endpoint);
 
         Response response = given()
-                .baseUri(ADMISSIONS_BASE_URL)
+                .baseUri(ADMISSIONS_V2_BASE_URL)
                 .when()
                 .get(endpoint)
                 .then()

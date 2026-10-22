@@ -734,6 +734,36 @@ Expected: `{"status":"ok","message":"Time Extension request processed"}`
 - Whether Time Extension is enabled at the relevant center for the given admission IDs (SC001_TC_001's config step is a
   prerequisite, not in our automated scope).
 
+### V2 base URL (2026-10-22, user): Time Extension APIs now use the V2 server
+
+The backend is moving to a new server with PHP 8.5. Time Extension's two APIs now call
+`APIs.ADMISSIONS_V2_BASE_URL` = `https://test-admissionsv2.footprintseducation.in/api/` (same paths, params and ckeys):
+`getTimeExtensionPendingRequests()` and `processTimeExtensionRequest()`. Every other feature still uses
+`ADMISSIONS_BASE_URL` (V1) — the shared `getAllPendingRequests` endpoint was switched ONLY in the Time Extension method.
+Reachability checked with curl for child 68823 (nothing pending): "There are no pending requests!" /
+"No Data found to Process Time Extention Request", both HTTP 200. The 6/6 run below was still on V1; the suite has not
+yet been re-run on V2.
+- **V2 run (2026-10-22): 6/6 PASSED on fresh child 48019** (Vihaan Kakran; pre-check: Active, no addons, no customer
+  requests). Both API calls hit `test-admissionsv2…/api/` and behaved exactly like V1: Start req 168216 and Stop req
+  168217 → "Time Extension request processed"; addon "Time Extension ( 1500.00)" added then removed; prorated invoice
+  Daycare Fee 410.17 + SGST 36.92 + CGST 36.92 + Roundoff -0.01 (identical to the V1 run). No V2-specific bugs.
+  `TE_CHILD_ID` = 48019 now (has a completed Start + Stop). Children rejected on Oct 22: **70242** (has a Pending Child Pause Nov 1–30 by Rohit
+  Shukla — `getAllPendingRequests` would also push it to Processing) and **70311** (status PAUSE, Oct 22 – Nov 20).
+
+### Run (2026-10-22): 6/6 PASSED on child 68823
+
+`mvn test -Dsurefire.suiteXmlFiles=TimeExtensiontestng.xml`, as Jaydeep Kar, server date Oct 22 (matches the local date
+the tests use). A read-only pre-check first showed 68823 Active, Addons "Not Available", and NO customer requests.
+
+- Start (req 168214): Pending/NA → `getAllPendingRequests` (`chid_id`) → Approve (native confirm "Prorated Invoice will
+  be charged from WEF 2026-10-22.") → Processing/Approved → `processTimeExtentionRequest` → "Time Extension request
+  processed" → Approved/Approved. Addons "Time Extension ( 1500.00)"; prorated invoice Daycare Fee 410.17 + SGST 36.92 +
+  CGST 36.92 + Roundoff -0.01.
+- Stop (req 168215): same chain (native confirm "Are you sure you want to approve the request?.") → Approved; Addons
+  back to "Not Available".
+- 68823 now has a completed Start + Stop. It is likely reusable on a later day (no pending request, no addon) — re-check
+  its grid before reusing.
+
 ## Requirements — Withdraw Child Service Request (`ServiceRequest_WithdrawChildTest.java`)
 
 Source: `TC_ServiceRequests_Withdraw.xlsx` (sheet `TC_Withdraw`). 7 test cases selected for automation (SC004_TC_001

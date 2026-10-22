@@ -83,7 +83,7 @@ import java.util.Map;
 public class ServiceRequest_TimeExtensionTest extends BaseTest {
 
     // ── TEST DATA ────────────────────────────────────────────────────────
-    private static final String TE_CHILD_ID = "68823";
+    private static final String TE_CHILD_ID = "48019";
     private static final String START_DATE = LocalDate.now().toString();
     // processTimeExtentionRequest only processes a Stop request dated for the
     // CURRENT day — a future date leaves it stuck as "No Data found to Process
