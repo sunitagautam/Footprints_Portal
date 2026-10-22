@@ -3290,8 +3290,10 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
 
 ## Requirements — Daily Observer Data (`DailyObserverDataTest.java`)
 
-Screen: Settings → System Logs → Daily Observer Data (`https://test-franchise.footprintseducation.in/daily_observer_data`).
-No test-case sheet was supplied. The user asked to explore the screen and automate it (2026-10-21). Scenarios are derived
+Screen: Settings → System Logs → Daily Observer Data (
+`https://test-franchise.footprintseducation.in/daily_observer_data`).
+No test-case sheet was supplied. The user asked to explore the screen and automate it (2026-10-21). Scenarios are
+derived
 from the live screen. Runs as Rakesh (no user switch). Files: `pages/Settings/SystemLogs/DailyObserverDataPage.java`,
 `testScripts/SettingsTests/SystemLogs/DailyObserverDataTest.java`, `DailyObserverDatatestng.xml`; additive
 `IAutoConstant.DAILY_OBSERVER_DATA_URL` + `Navigations.goToDailyObserverData()`.
@@ -3301,37 +3303,41 @@ from the live screen. Runs as Rakesh (no user switch). Files: `pages/Settings/Sy
 - **Header:** "Add Observer Data" (`a.popdown_medium`, `pop_daily_observer_data?pop=yes`), "Run Billing Cron" /
   "Run Non-Billing Cron" (`button.run-cron-btn[data-type=billing|non_billing]`).
 - **Filter form `#daily_observer`** (posts back to the same page and keeps the chosen values):
-  - Observer Type `#observer_type` (text) and Query Search `#query_search` (text).
-  - Data Type `#observer_data_type` [All, Billing, Non-Billing]; Category `#observer_category` [All, Alert, Log].
-  - Frequency `#observer_occur_on` [All, Daily, Alternate, Mon–Fri, Weekly, Monthly, Quarterly, Random, Sunday…Saturday,
-    Custom Date, Custom Range]; Status `#daily_status` [All, Active, Inactive]; Exec Status `#executed_status`
-    [All, Success, Failed].
-  - Filter button `#btn_submit`. A hidden `#to_email` (test_357@…) is the recipient for Execute.
-  - No-result filter → "No data available in table"; search box no match → "No matching records found".
+    - Observer Type `#observer_type` (text) and Query Search `#query_search` (text).
+    - Data Type `#observer_data_type` [All, Billing, Non-Billing]; Category `#observer_category` [All, Alert, Log].
+    - Frequency
+      `#observer_occur_on` [All, Daily, Alternate, Mon–Fri, Weekly, Monthly, Quarterly, Random, Sunday…Saturday,
+      Custom Date, Custom Range]; Status `#daily_status` [All, Active, Inactive]; Exec Status `#executed_status`
+      [All, Success, Failed].
+    - Filter button `#btn_submit`. A hidden `#to_email` (test_357@…) is the recipient for Execute.
+    - No-result filter → "No data available in table"; search box no match → "No matching records found".
 - **Table** `#DataTables_Table_0` (`.observer_data`): 20 per page, default order = hidden "Observer ID" column desc
   (newest first). Columns: Observer Type | (Observer ID, hidden) | Query | Data Type | Category | Frequency | Status |
   Created | Last Executed | Next Execution | Exec Status | Action. The row class is `tr-<observerId>`.
-  - Action: Execute (`i[title=Execute]` → `executequery(<id>)`) and Update (`a[title=Update]` →
-    `pop_daily_observer_data?pop=yes&observer_id=<base64 id>`).
-  - Download = DataTables CSV `daily_observer_data.csv`, which includes the hidden Observer ID column.
+    - Action: Execute (`i[title=Execute]` → `executequery(<id>)`) and Update (`a[title=Update]` →
+      `pop_daily_observer_data?pop=yes&observer_id=<base64 id>`).
+    - Download = DataTables CSV `daily_observer_data.csv`, which includes the hidden Observer ID column.
 - **Add / Update modal** (`#popdown-dialog`, form `#frm_observer_data`). **Its field ids duplicate the filter form's
   (`observer_type`, `observer_data_type`), so scope every locator to `#popdown-dialog`.**
-  - Fields: Observer Type* `#observer_type`; Query* `textarea#query_original` (hint "Placeholders: __START_DATE__,
-    __END_DATE__, __START_DATETIME__, __END_DATETIME__, __BILLING_DB__"); Data Type* `#observer_data_type` (default
-    Non-Billing); Category* `#data_category` (default Alert); Frequency* `#observer_occur_on_opt` (16 options, default
-    Daily); Status* `#data_status` (default Active); Schedule Active `#observer_is_active` ("Yes – include in cron run" /
-    "No – skip even if Active").
-  - Custom Schedule `#observer_custom_schedule` shows only for Custom Date / Custom Range, with hints
-    `JSON format: {"dates":["2026-06-01","2026-09-01"]}` / `JSON format: {"start_date":"2026-06-01","end_date":
+    - Fields: Observer Type* `#observer_type`; Query* `textarea#query_original` (hint "Placeholders: __START_DATE__,
+      __END_DATE__, __START_DATETIME__, __END_DATETIME__, __BILLING_DB__"); Data Type* `#observer_data_type` (default
+      Non-Billing); Category* `#data_category` (default Alert); Frequency* `#observer_occur_on_opt` (16 options, default
+      Daily); Status* `#data_status` (default Active); Schedule Active `#observer_is_active` ("Yes – include in cron
+      run" /
+      "No – skip even if Active").
+    - Custom Schedule `#observer_custom_schedule` shows only for Custom Date / Custom Range, with hints
+      `JSON format: {"dates":["2026-06-01","2026-09-01"]}` / `JSON format: {"start_date":"2026-06-01","end_date":
     "2026-12-31","interval_days":7}`.
-  - Validation (jQuery validate): "Observer type is required.", "Query is required.", "Custom schedule JSON is
-    required.", "Invalid JSON. Example: …".
-  - Submit `#btn_save_data` ("Submit" / "Update"). It has no confirm(). It POSTs `api/observerdata/add_update_observer_data/`
-    (query base64-encoded into hidden `#query`), then `flash_message` into `.success-msg` and reloads after 1.5 s.
+    - Validation (jQuery validate): "Observer type is required.", "Query is required.", "Custom schedule JSON is
+      required.", "Invalid JSON. Example: …".
+    - Submit `#btn_save_data` ("Submit" / "Update"). It has no confirm(). It POSTs
+      `api/observerdata/add_update_observer_data/`
+      (query base64-encoded into hidden `#query`), then `flash_message` into `.success-msg` and reloads after 1.5 s.
 - **Execute:** native confirm "Are you sure want to execute this Query?" → POST `api/observerdata/execute_query/`
   (query_id, to_email); the result shows in a blockUI overlay on the row (`.blockMsg`).
 - **Run Cron:** native confirm "Run Billing Observer Cron now?" / "Run Non-Billing Observer Cron now?" → POST
-  `api/observerdata/getBillingObserverData|getNonBillingObserverData/?force_daily=1`. It runs every active observer, so the
+  `api/observerdata/getBillingObserverData|getNonBillingObserverData/?force_daily=1`. It runs every active observer, so
+  the
   test only runs it with `-DrunObserverCron=true`.
 
 - **Live messages:** Add → "New observer Query added successfully."; Update → "Observer Data updated successfully."
@@ -3341,20 +3347,32 @@ from the live screen. Runs as Rakesh (no user switch). Files: `pages/Settings/Sy
 
 ### 🐛 Bugs found (2026-10-21)
 
-1. **RESOLVED during the session (2026-10-21 ~14:05): CORS on the V2 host.** Before the fix, every save/execute/cron call from this screen is blocked by CORS.** The page's global "V1→V2 API routing" prefilter
+1. **RESOLVED during the session (2026-10-21 ~14:05): CORS on the V2 host.** Before the fix, every save/execute/cron
+   call from this screen is blocked by CORS.** The page's global "V1→V2 API routing" prefilter
    rewrites the browser AJAX to `https://test-admissionsv2.footprintseducation.in/api/observerdata/...`, which sends no
-   `Access-Control-Allow-Origin` header. Console: "Access to XMLHttpRequest at '…admissionsv2…/execute_query/' from origin
+   `Access-Control-Allow-Origin` header. Console: "Access to XMLHttpRequest at '…admissionsv2…/execute_query/' from
+   origin
    'https://test-franchise…' has been blocked by CORS policy". The V1 host (`test-admissions…`) answers normally.
-   - The POST is a simple request, so **the server still processes it**. Only the response is blocked.
-   - Add/Update: the record IS saved, but no message is shown and the modal stays open. Users click Submit again →
-     duplicates (seen: my exploration created "QA Auto Observer 60548" twice; the grid has many duplicate "Test
-     Observer" rows from 15–21 Oct).
-   - Execute: the overlay says "Request failed (error). Check server logs." even though the query runs.
+    - The POST is a simple request, so **the server still processes it**. Only the response is blocked.
+    - Add/Update: the record IS saved, but no message is shown and the modal stays open. Users click Submit again →
+      duplicates (seen: my exploration created "QA Auto Observer 60548" twice; the grid has many duplicate "Test
+      Observer" rows from 15–21 Oct).
+    - Execute: the overlay says "Request failed (error). Check server logs." even though the query runs.
 2. **"Invalid JSON. Example: undefined"** — the message's example is built once at page load (Frequency = Daily), so it
    never shows the Custom Date / Custom Range example.
-3. **Stale hidden Custom Schedule blocks Submit silently.** Choose Custom Date, type invalid JSON, switch back to Daily:
-   the field is hidden but still validated (`validJson` is not conditional), so Submit does nothing and no error is
-   visible.
+3. **Stale hidden Custom Schedule blocks Submit silently — CONFIRMED again 2026-10-22.** Fill ALL mandatory fields,
+   choose Custom Date, type invalid JSON, switch back to Daily, Submit: no save request, no message, no visible error, no
+   record (only a hidden "Invalid JSON. Example: undefined" label). A brief withdrawal earlier on 2026-10-22 was wrong:
+   the user's manual check had entered VALID JSON, which does not reproduce it. `tc023` was rewritten to fill every
+   field and assert that Submit either sends the save or shows a visible error (Status Inactive + Schedule Active No, so
+   a record saved after the fix never runs). Screenshot `screenshots/diag_SC004_TC006.png`.
+   Reproduced manually by the user on 2026-10-22 with invalid JSON `abc`.
+   - Bug 2 re-confirmed live 2026-10-22: Custom Date(s) + `abc` + Submit shows the red "Invalid JSON. Example:
+     undefined" (screenshot `screenshots/diag_Custom_Date.png`). It appears only for INVALID JSON.
+
+**Bug reports (2026-10-22), reported to dev by the user — JIRA IDs not yet supplied:**
+`~/Desktop/QA_Documents/Bug Evidence/Bug_DailyObserver_InvalidJsonExampleUndefined.md` (bug 2, SC004_TC005) and
+`Bug_DailyObserver_HiddenScheduleBlocksSubmit.md` (bug 3, SC004_TC006), screenshots in `DailyObserver_*/`.
 
 ### Test data
 
@@ -3364,10 +3382,12 @@ from the live screen. Runs as Rakesh (no user switch). Files: `pages/Settings/Sy
 - Records created so far: "QA Auto Observer 60548" (×2, exploration), #200 "QA Auto Observer 9147", #201 "QA Auto
   Observer 55433", #202 "QA Auto Observer 183126". There is no delete action on the screen. Each full run adds one.
 
-### Status (2026-10-21): 23 tests, 21 expected to pass
+### Status (2026-10-22): 23 tests, 21 expected to pass
 
 TC_001–TC_016 and TC_018–TC_022 pass. TC_017 (bug 2) and TC_023 (bug 3) assert the correct behaviour and fail until dev
 fixes them.
+`QUERY` is now `SELECT accept,COUNT(*) FROM billing_policy_acceptance GROUP BY accept;` — the grid adds a space after
+commas, so TC_018/TC_019 compare queries via `normalizeQuery()`. Records #206 and #207 were added on 2026-10-22.
 
 ### Test-case document (2026-10-21)
 

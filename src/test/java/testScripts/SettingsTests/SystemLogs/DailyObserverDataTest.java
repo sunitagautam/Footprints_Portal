@@ -38,7 +38,7 @@ import java.util.List;
 // ═══════════════════════════════════════════════════════════════
 public class DailyObserverDataTest extends BaseTest {
 
-    private static final String QUERY = "SELECT 1 AS x";
+    private static final String QUERY = "SELECT accept,COUNT(*) FROM billing_policy_acceptance GROUP BY accept;";
     private static final String QUERY_SEARCH_TEXT = "wp_pods_admission_forms";
 
     private static final List<String> COLUMNS = Arrays.asList("Observer Type", "Query", "Data Type", "Category",
@@ -425,7 +425,7 @@ public class DailyObserverDataTest extends BaseTest {
         newObserverId = observerPage.getObserverIdOfFirstRowMatching(newObserverType);
         Reporter.log("   New observer id: " + newObserverId + " | " + observerPage.getRowTextById(newObserverId), true);
         Assert.assertFalse(newObserverId.isEmpty(), "❌ New observer not in the grid");
-        Assert.assertEquals(observerPage.getCellById(newObserverId, "Query"), QUERY, "❌ Query");
+        Assert.assertEquals(normalizeQuery(observerPage.getCellById(newObserverId, "Query")), normalizeQuery(QUERY), "❌ Query");
         Assert.assertEquals(observerPage.getCellById(newObserverId, "Data Type"), "Non-Billing", "❌ Data Type");
         Assert.assertEquals(observerPage.getCellById(newObserverId, "Category"), "Log", "❌ Category");
         Assert.assertEquals(observerPage.getCellById(newObserverId, "Frequency"), "Daily", "❌ Frequency");
@@ -457,7 +457,7 @@ public class DailyObserverDataTest extends BaseTest {
         Assert.assertEquals(observerPage.getModalTitle(), "Update Observer Data", "❌ Modal title");
         Assert.assertEquals(observerPage.getModalFieldValue("observerID"), id, "❌ Hidden observer id");
         Assert.assertEquals(observerPage.getModalFieldValue("observer_type").trim(), type, "❌ Observer Type pre-fill");
-        Assert.assertEquals(observerPage.getModalFieldValue("query_original").replaceAll("\\s+", " ").trim(), query, "❌ Query pre-fill");
+        Assert.assertEquals(normalizeQuery(observerPage.getModalFieldValue("query_original")), normalizeQuery(query), "❌ Query pre-fill");
         Assert.assertEquals(observerPage.getModalSelectedText("data_status"), status, "❌ Status pre-fill");
         Assert.assertEquals(observerPage.getModalSubmitLabel(), "Update", "❌ Button label");
         Reporter.log("   Pre-fill OK for #" + id, true);
@@ -568,25 +568,40 @@ public class DailyObserverDataTest extends BaseTest {
     @Test(priority = 23, description = "TC_023 — Hidden Custom Schedule JSON does not silently block Submit")
     public void tc023_hiddenScheduleDoesNotBlockSubmit() throws InterruptedException {
         Reporter.log("▶ TC_023 — Hidden invalid JSON after switching back to Daily", true);
+        // ✅ All mandatory fields filled; Inactive + Schedule Active = No, so a saved record never runs in the cron
+        String type = "QA Auto Hidden Schedule " + (System.currentTimeMillis() % 1000000);
         observerPage.clickAddObserver();
+        observerPage.enterModalObserverType(type);
+        observerPage.enterModalQuery("SELECT 1");
+        observerPage.selectModalDataType("non_billing");
+        observerPage.selectModalCategory("Log");
+        observerPage.selectModalStatus("Inactive");
+        observerPage.selectModalScheduleActive("0");
         observerPage.selectModalFrequency("Custom_Date");
         observerPage.enterCustomSchedule("not json");
         observerPage.selectModalFrequency("Daily");
-        // ✅ Mandatory fields left EMPTY on purpose — nothing can be saved
+        Assert.assertFalse(observerPage.isCustomScheduleVisible(), "❌ Custom Schedule should hide for Daily");
         observerPage.startAjaxCapture();
         observerPage.clickModalSubmit();
-        Thread.sleep(1000);
-        List<String> all = observerPage.getAllModalErrors();
-        Reporter.log("   Validation labels: " + all, true);
-        observerPage.closeModal();
-        Assert.assertFalse(all.stream().anyMatch(e -> e.startsWith("observer_custom_schedule") && e.endsWith("(hidden)")),
-                "❌ Hidden Custom Schedule field still fails validation for Frequency = Daily — the user sees no error and Submit does nothing");
+        String msg = observerPage.waitForModalMessage(8);
+        List<String> visible = observerPage.getVisibleModalErrors();
+        List<String> ajax = observerPage.getCapturedAjax();
+        Reporter.log("   Message: '" + msg + "' | Visible errors: " + visible + " | All errors: "
+                + observerPage.getAllModalErrors() + " | Save request: " + ajax, true);
+        // 🐛 Found 2026-10-21, re-confirmed 2026-10-22: no save request, no message, no visible error
+        Assert.assertTrue(!ajax.isEmpty() || !visible.isEmpty(),
+                "❌ Submit does nothing — hidden Custom Schedule still fails validation for Frequency = Daily and no error is visible");
         Reporter.log("✅ TC_023 PASSED", true);
     }
 
     // ═══════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════
+    // ✅ The grid adds a space after commas in the Query cell — compare queries without spacing differences
+    private String normalizeQuery(String query) {
+        return query.replaceAll("\\s*,\\s*", ",").replaceAll("\\s+", " ").trim();
+    }
+
     private void assertColumnAll(String header, String expected) {
         List<String> values = observerPage.getColumnValues(header);
         Reporter.log("   " + observerPage.getInfoText() + " | " + header + " values: " + new java.util.TreeSet<>(values), true);
