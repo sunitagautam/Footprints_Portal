@@ -71,7 +71,7 @@ public class DailyObserverDataPage {
     private WebElement filterBtn;
 
     // ═══════════════════════════════════════════════
-    // TABLE (DataTables, 20 per page, default order = hidden
+    // TABLE (DataTables, 10 per page, default order = hidden
     // Observer ID column desc → newest first)
     // ═══════════════════════════════════════════════
     @FindBy(id = "DataTables_Table_0")
@@ -212,7 +212,7 @@ public class DailyObserverDataPage {
         return driver.findElement(By.id("DataTables_Table_0_info")).getText().trim();
     }
 
-    // ✅ Total from "Showing 1 to 20 of 186 entries" (0 when empty)
+    // ✅ Total from "Showing 1 to 10 of 201 entries" (0 when empty)
     public int getTotalEntries() {
         String info = getInfoText().replace(",", "");
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("of (\\d+) entries").matcher(info);

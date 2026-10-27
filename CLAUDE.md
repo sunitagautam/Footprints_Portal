@@ -3341,7 +3341,7 @@ from the live screen. Runs as Rakesh (no user switch). Files: `pages/Settings/Sy
       [All, Success, Failed].
     - Filter button `#btn_submit`. A hidden `#to_email` (test_357@…) is the recipient for Execute.
     - No-result filter → "No data available in table"; search box no match → "No matching records found".
-- **Table** `#DataTables_Table_0` (`.observer_data`): 20 per page, default order = hidden "Observer ID" column desc
+- **Table** `#DataTables_Table_0` (`.observer_data`): **10 per page** (was 20 until the 2026-10-26 deploy; the change is intended per the user), default order = hidden "Observer ID" column desc
   (newest first). Columns: Observer Type | (Observer ID, hidden) | Query | Data Type | Category | Frequency | Status |
   Created | Last Executed | Next Execution | Exec Status | Action. The row class is `tr-<observerId>`.
     - Action: Execute (`i[title=Execute]` → `executequery(<id>)`) and Update (`a[title=Update]` →
@@ -3411,6 +3411,13 @@ from the live screen. Runs as Rakesh (no user switch). Files: `pages/Settings/Sy
   `-DobserverType` reuse an existing own record for TC_019/TC_020.
 - Records created so far: "QA Auto Observer 60548" (×2, exploration), #200 "QA Auto Observer 9147", #201 "QA Auto
   Observer 55433", #202 "QA Auto Observer 183126". There is no delete action on the screen. Each full run adds one.
+
+### Status (2026-10-26): 23/23 PASS after dev fixes
+
+The full suite was run after dev deployed the fixes for bugs 2 and 3. TC_017 and TC_023 now pass, so both bugs are verified
+fixed. The same deploy changed the grid to 10 rows per page; the user confirmed this is intended. TC_012 was updated to
+expect 10 rows ("Showing 11 to" on page 2) and passes. The workbook has an Iteration 3 (26-Oct): all 27 automated TCs
+PASS, and SC001_TC002 / SC003_TC002 expected results now say 10 per page.
 
 ### Status (2026-10-22): 23 tests, 21 expected to pass
 

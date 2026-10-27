@@ -232,22 +232,22 @@ public class DailyObserverDataTest extends BaseTest {
     }
 
     // ════════════════════════════════════════════════════════════════════
-    //  TC_012 — Pagination (20 per page)
+    //  TC_012 — Pagination (10 per page)
     // ════════════════════════════════════════════════════════════════════
-    @Test(priority = 12, description = "TC_012 — Pagination, 20 records per page")
+    @Test(priority = 12, description = "TC_012 — Pagination, 10 records per page")
     public void tc012_pagination() throws InterruptedException {
         Reporter.log("▶ TC_012 — Pagination", true);
         int total = observerPage.getTotalEntries();
         Reporter.log("   Total entries: " + total, true);
-        if (total <= 20) throw new SkipException("Only " + total + " entries — pagination not testable");
-        Assert.assertEquals(observerPage.getVisibleRowCount(), 20, "❌ Page 1 should show 20 rows");
+        if (total <= 10) throw new SkipException("Only " + total + " entries — pagination not testable");
+        Assert.assertEquals(observerPage.getVisibleRowCount(), 10, "❌ Page 1 should show 10 rows");
         Assert.assertFalse(observerPage.isPreviousPageEnabled(), "❌ Previous should be disabled on page 1");
         observerPage.clickNextPage();
         Reporter.log("   " + observerPage.getInfoText(), true);
-        Assert.assertTrue(observerPage.getInfoText().contains("Showing 21 to"), "❌ Page 2 info");
+        Assert.assertTrue(observerPage.getInfoText().contains("Showing 11 to"), "❌ Page 2 info");
         Assert.assertTrue(observerPage.isPreviousPageEnabled(), "❌ Previous should be enabled on page 2");
         observerPage.clickPreviousPage();
-        Assert.assertTrue(observerPage.getInfoText().contains("Showing 1 to 20"), "❌ Back to page 1");
+        Assert.assertTrue(observerPage.getInfoText().contains("Showing 1 to 10"), "❌ Back to page 1");
         Reporter.log("✅ TC_012 PASSED", true);
     }
 
