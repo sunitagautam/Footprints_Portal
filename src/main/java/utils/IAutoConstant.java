@@ -47,6 +47,8 @@ public final class IAutoConstant {
             "https://test-franchise.footprintseducation.in/add_corporate_offer";
     public static final String ADMISSION_INVITES_URL =
             "https://test-franchise.footprintseducation.in/corporate_admission_invites";
+    public static final String ADMISSION_RECORDS_URL =
+            "https://test-franchise.footprintseducation.in/corporate_admissions";
 
 
     // ═══════════════════════════════════════════════

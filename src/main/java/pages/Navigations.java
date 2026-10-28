@@ -256,6 +256,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → ADMISSION RECORDS
+    // ═══════════════════════════════════════════════
+    public void goToAdmissionRecords() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ADMISSION_RECORDS_URL);
+        System.out.println("✅ Navigated to: Admission Records");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → REFUND LIST
     // Navigates directly via URL — no sub-menu link
     // needed since the screen URL is known. Used by

@@ -3854,3 +3854,77 @@ Leads for the Admission Request loop: 3–64 (user, 2026-10-28).
 Details link — not a bug, Q12; test fixed). Workbook: TC_AdmissionInvites now 24 TCs (TC_024 added), Q8–Q11 closed, Q12
 open; Test Summary 66 TCs / 62 pass / 2 fail / 1 NE / 1 in progress.
 
+### Admission Records (SC_003) — automation (2026-10-28, as Rakesh)
+
+The source test cases are older than the screen (user, 2026-10-28: "these testcases are older and many changes happens on
+screen from last 6 months … whatever new you explore please add in testcases too"). They were updated to the live screen,
+and everything new found while exploring became a new test case.
+
+Files: `pages/Franchise/CorporateTieups/AdmissionRecordsPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/AdmissionRecordsTest.java` (19 tests), `AdmissionRecordstestng.xml`;
+additive `IAutoConstant.ADMISSION_RECORDS_URL` + `Navigations.goToAdmissionRecords()`.
+
+**Confirmed live (2026-10-28):**
+
+- **Menu / heading:** "Franchise > Corporate Tieups > Admission Records" (`corporate_admissions`), heading `h2` "Corporate
+  Admission Records".
+- **Filter form `#frm_invoice_report`** (posts back, keeps values):
+  - `#sr_corporate_offer` (select2) and `#sr_corporate_company`, both "--SELECT--" first.
+  - Dates: `#sr_joining_from` / `_to` and `#sr_billing_from` / `_to` (pickadate, shown "dd Mon yyyy").
+  - `#sr_program` [All, Full Day, Half Day, Half Day 2, Half Day 3, After School, Extended Preschool, Evening Program].
+  - `#sr_status` [All, **Active** (default), Attrition].
+  - City `select[name='city_filter_list[]']` and Center `#center_selection` ("All Center"), both bootstrap-multiselect.
+    Their onChange calls `$.uniform.update`, which is undefined on this page, so select without triggering onChange.
+  - `#exclude_inhouse` / `#exclude_onsite`, both **ticked** by default. Filter button `#btn_submit`.
+- **Table** `table.dataTable` (`#DataTables_Table_0`), client side:
+  - It shows **at most 500 rows** ("of 500 entries"). The button **"Download All <N> Records"** exports every matching record
+    (default N = 3041). With few matches the button reads just "Download".
+  - 20 per page; search placeholder "Filter these admissions".
+  - Visible columns: Child Name | Offer Title | Length | Admission Date | Employment Details.
+  - 35 hidden "never" columns, incl. **Child ID** (first; link `account_statement?child_id=<id>`, target _blank), Center,
+    Center Region, Company, Status, Joining Date (yyyy-MM-dd), Next Monthly/Yearly Billing Date, Employer, Employee
+    Email, Employee Code. Read them through DataTables by header text.
+  - Child Name → `pop_child_info?pop=yes&child_id=<id>` (Child Information popup).
+- **Download file:** `corporate_admission<dd_Mon_yyyy>.csv`, e.g. `corporate_admission28_Oct_2026.csv`. It **starts with a
+  blank line**, then 39 columns (the spec's 35 + Center Region, Center City, Father Address, Mother Address).
+- **Edit Invite Details:** `admission_invite_details?pop=yes&invite_id=<id>` → popup `#frm_edit_invite` "Edit Invitation
+  Details":
+  - Fields `#edit_employee_code`, `#edit_employee_email`, `#edit_employer`; button `#update_invite` "Update Invite".
+  - Validation: "Required!" ×3, "Invalid Email!".
+  - Then confirm "Are you sure want to edit Invitation?" → POST `api/corporate/editAdmissionInvitation/` → reload →
+    "Record updated successfully".
+- **Status = Active** also lists "Joining - Class Approval" and "Pause". **All** adds Admission Request, Joining Pipeline,
+  Attrition.
+
+**Test data:** TC_009 changes one record's Employee Code to `<code>-QA` and restores it, so the record ends unchanged.
+It skips records whose employer is "QA Auto Employer". On 28-Oct it used child 73662: 321046 → 321046-QA → 321046.
+
+**Status (28-Oct): 18 pass, TC_011 fails (Q13 — Child ID hidden), TC_013 skipped (needs a CD user).**
+
+**Q13–Q17 closed (user, 2026-10-28):** Q13 Child ID is shown in the downloaded file, not on screen (TC_011 now asserts it
+is hidden); Q14 use Billing range Sep–Oct 2026 (TC_002); Q15 test data, leave it; Q16 "Active" = every status except
+Attrition; Q17 the screen shows max 500 records — the note "* Max 500 records are shown. Please restrict your search
+criteria." is shown (TC_018 asserts it) — and the download has all data; the 5 children with QA invite details: leave it.
+Re-run: 19 tests → 18 pass, TC_013 skipped.
+
+**🐛 Bug (Low, 28-Oct, not yet reported):** with real clicks, ticking a City leaves the button on "No Filters" and throws
+`Uncaught TypeError: Cannot read properties of undefined (reading 'update')` ($.uniform not loaded); the Center list does
+not narrow by city. After Filter the data is correct (Hyderabad → 299, all Telangana). Report:
+`Bug Evidence/Bug_AdmissionRecords_CityFilterNotShownAfterSelect.md` + `AdmissionRecords_CityFilterJsError/`.
+Workbook: TC_015 Fail; Test Summary 85 TCs / 79 pass / 3 fail / 2 NE / 1 in progress; defects 2 Medium + 2 Low.
+
+**Workbook sheet `TC_AdmissionRecords`:**
+- 19 TCs: SC_003_TC_001–014 updated + **TC_015–019 new** (City filter, Center filter, Status values, 500-row grid vs
+  Download All, Child Information popup).
+- Iteration 1: 16 Pass, 2 On Hold (TC_002 Billing step — Q14; TC_011 — Q13), 1 Not executed (TC_013).
+- Queries:
+
+  | Query | Topic |
+  |---|---|
+  | Q13 | Child ID hidden |
+  | Q14 | Which date the Billing filter uses (matching rows have mixed billing dates) |
+  | Q15 | Exclude Onsite vs onsite-named centres |
+  | Q16 | Active lists Pause / Joining - Class Approval |
+  | Q17 | 500-row grid; 5 Sep-2026 children (75607, 75550, 75582, 75610, 75621) show the 28-Oct QA invites' employment details in the CSV — likely a test-DB invite-id clash |
+
+- Test Summary: 85 TCs / 78 pass / 2 fail / 2 blocked / 2 NE / 1 in progress.
