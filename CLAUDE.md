@@ -3433,3 +3433,289 @@ commas, so TC_018/TC_019 compare queries via `normalizeQuery()`. Records #206 an
 `SC008_TC002`. Iteration 1: 25 PASS, 2 FAIL (SC004_TC005 "Example: undefined", SC004_TC006 hidden schedule),
 14 NOT EXECUTED. QueryLogs Q1–Q6 (SELECT-only query restriction, access right, duplicates, Execute on Inactive, no
 Delete, running the crons on UAT).
+14 NOT EXECUTED. QueryLogs Q1–Q6 (SELECT-only query restriction, access right, duplicates, Execute on Inactive, no
+Delete, running the crons on UAT).
+
+## Requirements — Franchise → Corporate Tie-ups (started 2026-10-26, exploration in progress, NOT yet automated)
+
+Source: `~/Downloads/TC_Corporate Tie-ups.xlsx` — sheet `TC_TieUp Details` (235 TCs, SC_001–SC_013) + `TC_Co-Pay` (7 TCs).
+Task (user): explore each screen against its test cases, convert them into `TC_Template_Enanched_13Oct.xlsx`, add
+missing test cases found while exploring, then automate. Decisions (2026-10-26): start with **Tie-ups Details (SC_001,
+32 TCs)**, go screen by screen; explore **read-only** (ask before any create/update/pay/void); keep the existing
+`SC_001_TC_001` IDs; page classes per screen in `pages.Franchise.CorporateTieups` named `Tieup_DetailsPage.java`,
+`AdmissionInvitesPage.java`, … (user's names); tests in `testScripts.FranchiseTests.CorporateTieups`.
+
+| Scenario | Screen | TCs |
+|---|---|---|
+| SC_001 | Tie-ups Details (`corporate_offers`, `add_corporate_offer`) | 32 |
+| SC_002 | Admission Invites | 20 |
+| SC_003 | Admission Records | 14 |
+| SC_004 | Pending Co-Pay Setup | 8 |
+| SC_005 | Corporate Invoice | 17 |
+| SC_006 | Corporate Company | 10 |
+| SC_007 | Tie-Ups Plans & Pricing | 21 |
+| SC_008 | Co-Pay Migration Data | 7 |
+| SC_009 | Tie-up Expiry Migration + `sendExpiryReminder` / `processTieupExpiryMigration` / `processTieupRenewal` | 40 |
+| SC_010 | Account Statement → Billing Setup | 4 |
+| SC_011–012 | Corporate Credit Issued / Adjust Corporate Credits | 49 |
+| SC_013 | Corporate Admission Record | 13 |
+
+### User switch (2026-10-26)
+
+- **RESOLVED (user, 2026-10-27):** her rights had been changed on test, and the switch works again. Tie-ups tests stay
+  on Rakesh.
+- Planned user **Shivali Gupta**: the switch confirm ("…change login as Shivali Gupta (EP-10779), Assistant Manager?")
+  is accepted, but the browser lands on `login_scripts/login.php?pop=yes` showing **"Unauthorised Access"** and the
+  session stays **Rakesh Singh**. Switching to Jaydeep Kar works. This also affects every suite using
+  `getUserForScreen("Corporate Account Statement")`. Pending the user's answer.
+- Rows' Action icons differ by user: Rakesh sees Update, Tieup History Log, View Offer, Admission Request; Jaydeep sees
+  only View Offer (info) + Admission Request.
+
+### Confirmed live — Tie-ups Details list (`corporate_offers`), as Rakesh, read-only
+
+- Heading "Corporate Tie-ups" + "125 tie-ups"; button "Add New Corporate Offer".
+- Filters: Center `#sr_center_id` (first option "All"), Status `#sr_status` [--All Status--, Active, Expired] —
+  **defaults to Active**; Filter `#btn_submit`; a "Clear" link.
+- DataTable `#datatable-offers-list`, 10 per page by default (`[10,20,50,100]` "per page"), Download button, search box
+  "Filter these entries", info "Showing 1–10 of 125 entries".
+- Visible columns: Tie-up Title | Centers List | Expiry Date | Status | **Last Updated** | **Contact Details** | Actions.
+  Hidden (CSV-only) columns: Tie-up Title, Centers List, Company Name, Fee Payer, Annual feePayment Plan, Discount,
+  Program Available, Contact Details, **Monthly Guarantee Type / Amount / Admission**. The spec lists neither Last
+  Updated nor Contact Details nor the Monthly Guarantee columns.
+- Tie-up Title info icon = hover popover (`label[data-popup=popover-header-2][data-trigger=hover]`): Fee Type, Tieup Type,
+  Monthly Guarantee Type/Amount/Admission, Pause Credits Applicable, Refund Applicable, …
+- Centers List shows the first centre + a "**+N more**" link (`a.open-centers-modal`), not "View More" as in the spec.
+- Actions: Update `a[href^='add_corporate_offer?offer_id=<base64>']`; Tieup History Log
+  `view_history?pop=yes&offer_id=<id>` (not in the spec); View Offer `view_corporate_offer?pop=yes&offer_id=<base64>`
+  (`icon-info22`); Admission Request `admission_request?pop=yes&offer_id=<base64>` (`icon-user-plus`). All three popups
+  are `popdown_big`.
+- The list loads via `api/corporate/listCorporateOffer/` + `getAllPlansWithCentersList/` (still V1 server).
+
+### Confirmed live — Add form (`add_corporate_offer`), read-only (nothing submitted)
+
+- Field ids: `offer_title_id`, `company_id`, `corporate_payment_plan` [--Select--|V1|V2], `sel_registration_fee`,
+  `registration_fee_payer`, `transport_payer`, `kit_payer`, **`kit_price_override`** ("Kit Price (blank = standard
+  price)"), `offer_monthly_chargebee_id`, `monthly_fee_payer`, `sel_annual`, `offer_annual_chargebee_id`,
+  `annual_fee_payer`, programs `chk_<program>_<n>` + `sel_<program>_<n>`, centres `chk_center_<id>` (271) +
+  `chk_all_center`, `user_comments`, `start_date`, `end_date`, `offer_status` [Active|Expired], `fee_type`
+  [Center Fee|Fixed Fee], `tieup_type` [Co-Pay|Corporate Pay|Employee Pay|Onsite], **`mg_type`** ("Monthly Guarantee
+  Type" [Annual|Monthly]), `pause_applicable`/`refund_applicable`/`transfer_applicable`/`program_change` [Yes|No],
+  three contact blocks (`contact_*`, `secondary_contact_*`, `escalation_contact_*`), `authorisation` [By Employer|
+  Employment Proof], `key_account_manager`, `business_development_manager`, **`max_age`** ("Max Age Allowed*"),
+  `doc_type_file` (Contract File*), submit `create_offer`.
+- Payer dropdowns read "Waive-off" (spec: "Waive Off").
+- Plan behaviour: V1 and V2 both show a per-program fee dropdown (`sel_<program>_<n>`); **V2 hides Annual Fee, Annual
+  Fee Offer and Annual Fee Payer**. With **no plan selected the Annual section is still visible** — the spec (SC_001_TC_014)
+  says it should be hidden; to confirm with the user before calling it a bug.
+- No jQuery validator is attached to the form, so the empty-Submit validation (SC_001_TC_015) can only be checked by
+  clicking Submit — not done yet (read-only).
+
+### Exploration pass 2 (2026-10-26, as Rakesh — user: "use Rakesh, ok to click submit once")
+
+- **Empty Submit on Add form** (one click, nothing saved — still 125 tie-ups): "This field is required." for Tie-up
+  Title, Company, Registration/Transport/Study Material/Monthly/Annual Fee Payer, Centers, Start Date, Fee Type, Tieup
+  Type, Contact Name, Authorisation, Max Age Allowed; Programs "Please select at least one program."; Status "Please
+  select offer status"; Contract File "Contract file is required." (spec: "Contract Tie-up File Required"). Contact
+  Phone `9876543` → "Please enter at least 10 characters."; Contact Email `test@` → "Please enter a valid email
+  address."; a 15-digit Secondary Contact Phone showed NO max-length error (query Q3). No XHR was sent.
+- Waive-off disables Monthly Fee Offer / Annual Fee Offer (`disabled=true`); Registration Fee stays enabled.
+- Popups: "+N more" → `#modal-centers-list` "Applicable Centers (N)"; View Offer → "Corporate Tie-up Details"
+  (Basic Info, Contract & Fee, Applicability, Fee Components + "Calculate Fee", Contact & Files + "Download Contract",
+  Comments); Tieup History Log → "Tieup History Log (<title>)" columns Updated On | Updated By | Update Details, details
+  in a hover popover "Log Details" (Changed By, Date, Reason for Change, Changes old → new); Admission Request →
+  "Add New Admission Request", `#lead_id` + Fetch Details, then `invite_parent_type`, `centers_available`,
+  `payment_plan_avail`, `program_offered`, `admission_request_date` (pickadate), `admission_request_comment`,
+  `employee_code`, `employee_email`, `employer`.
+- Status "Expired" filter showed 129 entries; Clear resets to Center All + Status Active.
+- Update page adds `mg_amount` / `mg_sheet` (shown when Monthly Guarantee Type is set), mandatory **Reason for
+  Change*** `#update_reason`, button `#update_offer` "UPDATE". Add form has a BACK button.
+- Download: the DataTables Download button was not exercised yet (the click hit another "Download All Children"
+  button) — verify during automation.
+
+### Test-case document (2026-10-26)
+
+`~/Desktop/QA_Documents/Testcases Scripts/TC_Corporate_Tieups.xlsx` (template `TC_Template_Enanched_13Oct.xlsx`,
+styles copied from `TC_Daily_Observer_Data.xlsx`, format verified unchanged): SC_001 only so far — 42 TCs / 114 step
+rows; SC_001_TC_001–032 converted and updated to the live screen, **SC_001_TC_033–042 new** (Clear, default Status,
+Tieup History Log, Reason for Change, Monthly Guarantee, Max Age, Kit Price, Waive-off on Add, Action icons by rights,
+Contact Details). Status columns left blank (not executed); exploration observations are in Actual Result /
+Comments. QueryLogs Q1–Q4. Builder script: scratchpad `build_tieups.py` (session-only). Further screens go into the
+same workbook. The temporary exploration class `TieupExploreTmp.java` has been deleted (2026-10-27).
+**Sheet naming (user, 2026-10-27): one test-case sheet per screen, `TC_<Screen>` — `TC_TieupDetails`,
+`TC_AdmissionInvites`, …** The template's "Testcases" sheet was renamed to `TC_TieupDetails`; no formula used the name.
+
+### Automation — Tie-ups Details (2026-10-27): 28/28 PASSED, as Rakesh
+
+The user said "use Rakesh" (Q2) and "start automation".
+
+| File | Contents |
+|---|---|
+| `pages/Franchise/CorporateTieups/Tieup_DetailsPage.java` | page object |
+| `testScripts/FranchiseTests/CorporateTieups/Tieup_DetailsTest.java` | 28 tests |
+| `CorporateTieupstestng.xml` | suite |
+
+Additive helpers: `IAutoConstant.CORPORATE_OFFERS_URL` / `ADD_CORPORATE_OFFER_URL` and
+`Navigations.goToTieupDetails()` / `goToAddCorporateOffer()`.
+
+**Scope: only cases that save nothing.** Automated:
+
+- TC_001–010, 015, 019–021, 027, 033–035, 040–042 in full;
+- partly: TC_011 / TC_012 (steps 1–2), TC_014 (Q1, logged only), TC_025 / TC_026 (Update form, never submitted), TC_028
+  (steps 1–2), TC_037 (steps 1–2), TC_038 (through TC_015).
+
+TC_041 switches to Jaydeep Kar, so it runs last (priority 99).
+
+Not automated yet, because they would save tie-ups or send admission requests on UAT and need the user's OK: TC_011–013
+step 3, TC_016–018, 022–024, 029–032, 036. Iteration 1 in the workbook: 22 Pass, 7 In Progress, 13 Not executed.
+
+**Confirmed live (2026-10-27):**
+
+- **Menu labels:** "Franchise > Corporate Tieups > Tieup Details" (`menuData`; the spec says "Tie Ups Details").
+- **Validation errors:** `<label id="<field>-error" class="text-danger" for="<field>">`.
+- **Empty Submit also requires** `centers_id[]`, `contact_name`, `contact_phone`, `contact_email`. Phone and email are
+  **either/or** (`corporateoffer.js`: each is required only when the other is empty).
+- **Q3 partly answered:** Contact Phone with 15 digits shows "Please enter no more than 13 characters.". Secondary
+  Contact Phone is not rechecked.
+- **UAT "API Debug (Test)" panel** `#api-debug-panel` is fixed at the bottom and intercepts the SUBMIT click.
+  `hideApiDebugPanel()` hides it.
+- **Centers List cells:** "+N more" is `&nbsp;+N&nbsp;more` inside `a.open-centers-modal`, whose `data-centers` holds the
+  full JSON list. The column can be folded by the responsive layout, so it is clicked via JS.
+- **Download** is `corporate_offer.csv` (one header row, multi-line cells). Its header includes Company Name, Fee Payer and
+  Monthly Guarantee Type / Amount / Admission.
+- **Status filter counts:** Active 125, Expired 129, --All Status-- 254. Every run checks these counts (nothing is ever
+  saved).
+- **Lead 179508** (TC_028 step 3) returns no lead details. A current Lead ID is needed (`-DtieupLeadId=`).
+- **Chrome stability:** Chrome auto-updated from 155 to 156 mid-session. 3 of 8 runs lost the browser ("invalid session
+  id" / "browser has closed the connection") on different tests, with no crash report. Re-runs passed, so treat this as
+  environment instability, not a test defect.
+
+### Save tests (2026-10-27, user: "go ahead, use lead ID 179508") — 12 pass, 1 fail, 1 skipped
+
+`Tieup_DetailsTest` priorities 50–90:
+
+| Test | Covers |
+|---|---|
+| tc050 | create V1 (TC_011, TC_016, TC_037) |
+| tc051 | View Offer: contract + Monthly Guarantee |
+| tc052 | create V2, Evening Program with no fee (TC_012 / TC_013) |
+| tc053 | create with no plan (TC_014) |
+| tc054 | same company twice (TC_030) |
+| tc055 | Remove contract (TC_017) |
+| tc056 | file validation (TC_018) |
+| tc060 | Reason for Change + history + Last Updated (TC_036 / TC_022) |
+| tc061 | KAM / BDM (TC_032) |
+| tc062 | payers (TC_026) |
+| tc063 | V1 → V2 (TC_024) |
+| tc064 | V2 → V1 (TC_023) |
+| tc070 | admission request (TC_029) |
+
+**Test data:**
+
+- Each run creates "QA Auto Tieup V1 / V2 / NoPlan <ddMMHHmm>" on **Demo Company + Demo Center (centre id 100)** only.
+- **They stay ACTIVE** (user, 2026-10-27: "always create active tieups as its a test environment"). The former
+  `tc090_cleanupExpireCreatedTieups` step that expired them was removed.
+- V1/V2/NoPlan 27101611, V1 27101609 and RemoveFile 27101630 had been expired by the earlier runs. The bugs were
+  reported, so all five were **set back to Active** on 2026-10-27 (reason "QA: reactivated - test tie-ups stay
+  Active").
+- Contract files (Testnote.pdf, test.png, a 9 MB pdf) are generated per run in the temp dir; nothing binary is in the repo.
+- Created and expired on 2026-10-27: V1/V2/NoPlan 27101611 and V1 27101609.
+
+**Confirmed live:**
+
+- **Messages:**
+  - Add → "Corporate tie-up offer added successfully!"
+  - Update → "Corporate tie-up offer updated successfully!"
+  - Both return to `corporate_offers`.
+  - Empty reason → "Reason for change is required when updating tie-up details."
+- **Contract file** (`#document_url`, bootstrap-fileinput):
+  - A valid pdf/doc/docx/pptx ≤ 8 MB uploads at once through `common/upload.php` to S3 `uploads/corporate_tieup/`; the
+    path goes into `#doc_type_file`.
+  - Wrong type → "Please select correct file type" (spec: "File Upload Error").
+  - Over 8 MB → "File should be less than 8 MB" (spec: "Invalid File"). Both show in `#contract_file_error`.
+- **Dates:** `start_date` is pickadate, set via `picker.set('select', …)`.
+- **Programs:** checkbox `chk_<program>_<n>`, fee select `sel_<program>_<n>` (e.g. `chk_full_day_3`,
+  `chk_evening_program_6`).
+- **View Offer** shows payer "Parent" as **EMPLOYEE**.
+
+**🐛 Bug candidate — TC_017 (not yet reproduced manually / reported):**
+
+- After uploading a contract and clicking **Remove**, the caption clears, but `#doc_type_file` keeps the S3 path.
+- Submit therefore does not show "Contract file is required.", so the removed file would still be saved.
+- `tc055` asserts the spec'd behaviour and fails until fixed.
+
+**Queries:**
+
+- **Q5:** the hidden list/CSV "Fee Payer" column shows "Registration fee: Parent" for the V2 / NoPlan tie-ups, although
+  View Offer and the Update form show Corporate (checked read-only).
+- **Q6:** every update logs changes nobody made ("Security Deposit Fee: 0 → Removed", "Monthly Guarantee Amount: 2500.00
+  → 2500").
+
+**TC_028 step 3 + TC_029 — PASSED (2026-10-27) with lead 1** (user: "use lead ID 1 or 2"; 179508 and lead 2 return
+`lead_detail: null` from `POST https://test-crm.footprintseducation.in/api/lead_records/getLeadDetails`).
+`LEAD_ID` now defaults to 1; override with `-DtieupLeadId=`.
+
+- **Fetch Details:** Abhishek Tiwari | abhishek.tiwari@fpeducation.in | 7503882851.
+- **`tc070_sendAdmissionRequest`:** runs on this run's V2 tie-up, with Father, Demo Center, the first plan, the first
+  program, tentative date +15, Employee FP-101.
+  - Result: "Successfully requested for admission." (POST `api/Corporateinvitation/setAdmissionInvitationRequest`).
+  - Admission Invites (filtered by the lead's email, status All) then lists invite **17286**: Father | QA Auto Tieup V2
+    27101733 | Requested | Tentative 11 Nov, 2026.
+  - New page object `pages/Franchise/CorporateTieups/AdmissionInvitesPage.java` (filter form `#frm_invite_admission`;
+    `#frm_invite1` is Send New Invitation — both reuse ids `invite_email` / `invite_phone`) + `Navigations.goToAdmissionInvites()`.
+
+**TC_038 step 3** is marked Pass: every create uses Max Age 6.
+
+**TC_039 Kit Price** (`tc057_kitPriceOverride`): 2500 is saved as 2500.00. A **blank Kit Price is stored and shown as
+"0.00"**, even on a tie-up that was never updated.
+
+- **Q7 CLOSED (user, 2026-10-27): a blank Kit Price stored as 0.00 = standard price, as per requirement.**
+- **Q1 CLOSED the same day — user's clarification:** Annual Fee + Annual Fee Payer (Corporate or Parent, with an amount)
+  can always be set. The V1 / V2 plan sections open only when that plan is selected. So the Annual section staying
+  visible and required with no Payment Plan is as per requirement.
+  **With V2 the Annual section is NOT displayed** (user, same day). This is asserted by tc012, tc052 and tc063.
+  `tc014` now asserts it is shown, and TC_014's expected result is updated.
+- Live label: "Kit Price" + `<small>(blank = standard price)</small>`.
+
+**Retest on fix (user, 2026-10-27: "bugs once fixed by developer then i will update you").** When the user says a bug is
+fixed, retest it by hand and in automation, then fill in Iteration 2:
+
+| Bug | Retest with |
+|---|---|
+| Removed contract still saved | TC_017 / `tc055_removeContractFile` |
+| Export Fee Payer | TC_005 + check the CSV "Fee Payer" for a V2 / no-plan tie-up |
+| History logs unchanged fields | TC_036 / `tc060` + the Log Data popover |
+
+**All queries closed (2026-10-27, user):**
+
+| Query | Resolution |
+|---|---|
+| Q1 | Annual section rules (no plan / V1 shown, V2 hidden) |
+| Q2 | Use Rakesh. Shivali Gupta's rights had been changed on test; her switch no longer shows "Unauthorised Access", so suites that switch to her should work again |
+| Q3 | Phone check = min 10 digits + a max limit (Contact Phone "no more than 13 characters"). Secondary phone accepting 15 digits is not a bug |
+| Q4 | Action icons depend on user rights |
+| Q5 / Q6 | Reported as bugs |
+| Q7 | Kit Price blank = standard price |
+
+Workbook now: **39 Pass, 2 Fail** (TC_005 and TC_017, the reported bugs), **1 Not executed** (TC_031, SDA-10410 admission
+payment breakup).
+
+TC_031 (SDA-10410, admission payment breakup) is not automated.
+
+**Bug reports written (2026-10-27) — REPORTED in JIRA by the user the same day** (IDs not yet supplied). All are in `~/Desktop/QA_Documents/Bug Evidence/`:
+
+| Report | Screenshots | Covers |
+|---|---|---|
+| `Bug_TieupDetails_RemovedContractStillSaved.md` | `TieupDetails_RemovedContractStillSaved/` | TC_017 |
+| `Bug_TieupDetails_ExportFeePayerWrong.md` | `TieupDetails_ExportFeePayerWrong/` | Q5 |
+| `Bug_TieupDetails_HistoryLogsUnchangedFields.md` | `TieupDetails_HistoryLogsUnchangedFields/` | Q6 |
+
+- **Removed contract:** reproduced end to end. Evidence tie-up "QA Auto Tieup RemoveFile 27101630" was saved after
+  Remove; View Offer still had Download Contract. It is now Expired.
+- **Export payer:** the CSV "Fee Payer" column shows "Registration fee: Parent" for **every V2 / no-plan tie-up** saved as
+  Corporate. V1 exports correctly.
+- **History log:** every update logs "Monthly Guarantee Amount 2500.00 → 2500"; the first also logged "Security Deposit
+  Fee 0 → Removed".
+- **Workbook:** TC_005 and TC_017 are Fail. Q5 / Q6 point to the bug files.
+- **NOT a bug (checked):** the Log Data popover's data and rendered HTML contain every value. One screenshot showed
+  "Changed By / Date / Reason" without values, and the cause is unproven. The user was asked to hover manually.
+

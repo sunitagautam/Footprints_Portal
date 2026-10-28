@@ -229,6 +229,33 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → TIE UPS DETAILS
+    // ═══════════════════════════════════════════════
+    public void goToTieupDetails() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.CORPORATE_OFFERS_URL);
+        System.out.println("✅ Navigated to: Tie Ups Details");
+        Thread.sleep(1500);
+    }
+
+    public void goToAddCorporateOffer() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ADD_CORPORATE_OFFER_URL);
+        System.out.println("✅ Navigated to: Add Corporate Offer");
+        Thread.sleep(2000);
+    }
+
+    // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → ADMISSION INVITES
+    // ═══════════════════════════════════════════════
+    public void goToAdmissionInvites() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ADMISSION_INVITES_URL);
+        System.out.println("✅ Navigated to: Admission Invites");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → REFUND LIST
     // Navigates directly via URL — no sub-menu link
     // needed since the screen URL is known. Used by

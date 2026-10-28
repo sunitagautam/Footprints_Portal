@@ -40,6 +40,14 @@ public final class IAutoConstant {
     public static final String DAILY_OBSERVER_DATA_URL =
             "https://test-franchise.footprintseducation.in/daily_observer_data";
 
+    // Franchise → Corporate Tie-ups → Tie Ups Details (list) / Add Corporate Offer
+    public static final String CORPORATE_OFFERS_URL =
+            "https://test-franchise.footprintseducation.in/corporate_offers";
+    public static final String ADD_CORPORATE_OFFER_URL =
+            "https://test-franchise.footprintseducation.in/add_corporate_offer";
+    public static final String ADMISSION_INVITES_URL =
+            "https://test-franchise.footprintseducation.in/corporate_admission_invites";
+
 
     // ═══════════════════════════════════════════════
     // LOGIN CREDENTIALS
