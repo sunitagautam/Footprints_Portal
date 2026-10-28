@@ -3846,9 +3846,11 @@ Leads for the Admission Request loop: 3–64 (user, 2026-10-28).
   Accel India offers are ProEves-type Co-Pay tie-ups (user, 2026-10-28), so this offer is the right one. Send New
   Invitation never opens a breakup popup (inline `#breakup` box for every Co-Pay offer, ProEves included — checked live);
   the popup opens only from a Requested Co-Pay invite's email icon.
-- **Q12 (open): some invites get no Lead Details link.** 17296 and 17298 have none; 17292/17295/17297/17299 do. The
-  success message still says the lead was created. `tc018` fails when the expired invite has no Lead Details link.
+- **Q12 closed — NOT a bug (user, 2026-10-28):** an invitation sent from Send New Invitation is a direct invitation and
+  need not be linked to a lead ID, so Lead Details may be missing (17296, 17298 had none; 17292/17295/17297/17299 had
+  it). `tc018` now only requires Edit / Resend / Expire to be gone after expiry; Lead Details is optional.
 
-**Full run 2026-10-28:** 24 tests, 22 pass, TC_008 skipped (no non-QA Requested invite left), TC_018 failed (Q12 —
-invite 17298 had no Lead Details link). Workbook: TC_AdmissionInvites now 24 TCs (TC_024 added), Q8–Q11 closed, Q12
+**Full run 2026-10-28:** 24 tests, 22 pass, TC_008 skipped (no non-QA Requested invite left), TC_018 failed (invite 17298 had no Lead
+Details link — not a bug, Q12; test fixed). Workbook: TC_AdmissionInvites now 24 TCs (TC_024 added), Q8–Q11 closed, Q12
 open; Test Summary 66 TCs / 62 pass / 2 fail / 1 NE / 1 in progress.
+

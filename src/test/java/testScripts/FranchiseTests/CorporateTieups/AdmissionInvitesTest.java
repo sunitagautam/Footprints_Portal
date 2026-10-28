@@ -730,7 +730,9 @@ public class AdmissionInvitesTest extends BaseTest {
         List<String> actions = invitesPage.getActionTitles(newInviteId);
         Reporter.log("   Status " + status + " | actions " + actions, true);
         Assert.assertEquals(status, "Expired", "❌ Status after Expire");
-        Assert.assertEquals(actions, Arrays.asList("Lead Details"), "❌ Only Lead Details should remain");
+        // ✅ A direct invitation (Send New Invitation) need not be linked to a lead (user, 2026-10-28), so Lead Details
+        //    is optional; Edit / Resend / Expire must be gone
+        Assert.assertTrue(actions.stream().allMatch("Lead Details"::equals), "❌ Only Lead Details may remain: " + actions);
         Reporter.log("✅ SC_002_TC_018 PASSED", true);
     }
 
