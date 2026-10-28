@@ -10,8 +10,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import pages.Navigations;
 import pages.Onboarding.LoginPage;
-import pages.Settings.EmailView_Page;
-import pages.Settings.UserRightsPage;
+import pages.Settings.SystemLogs.EmailView_Page;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Support.FinancialUpdates.CreditIssued_Page;
 import utils.BaseTest;
 import utils.IAutoConstant;
@@ -54,11 +54,27 @@ public class CreditIssued_Testcases extends BaseTest {
 
     private static final DateTimeFormatter ISSUED_FORMAT =
             DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm:ss", Locale.ENGLISH);
-
+    // ════════════════════════════════════════════════════════════════════
+    //  SC002_TC_001 (per credit type) — happy flow for every credit type
+    //  except "Credits - Security" (excluded per user). The app does NOT
+    //  validate type↔invoice mapping, so each row picks the invoice the
+    //  way Support would manually — by the invoice's booking head
+    //  (confirmed by user, 2026-10-06): Tuition → Preschool Fee, Book →
+    //  Book Set, Transport → Transport Charges (child 50875 — T/ invoices
+    //  are Convenience Fee, not transport), Convenience → Convenience Fee,
+    //  Annual → Annual Preschool Fee, Registration → Registration Fee,
+    //  every other type → Preschool Fee. Line items match the type so the
+    //  page's keyword guard (apron/bag/shirt/kit/book/convenience) passes.
+    // ════════════════════════════════════════════════════════════════════
+    private static final String TRANSPORT_CHILD_ID = "50875";
+    private static final String TRANSPORT_CHILD_NAME = "Gyanvi Mittal";
+    // ✅ Child with Late Stay / Delay Penalty / Extended DayCare invoices
+    //    (same child as OneTime Charges). Exact invoice numbers per user.
+    private static final String CHARGES_CHILD_ID = "46195";
+    private static final String CHARGES_CHILD_NAME = "Nayansh Kaushik";
     // ✅ Set by SC002_TC_001, used by the Link / Revoke tests
     private static String newCreditId = "";
     private static String issuedInvoiceNo = "";
-
     Navigations navigations;
     UserRightsPage userRightsPage;
     CreditIssued_Page creditPage;
@@ -295,26 +311,6 @@ public class CreditIssued_Testcases extends BaseTest {
         Assert.assertEquals(invoice, issuedInvoiceNo, "❌ Invoice Reference mismatch");
         Reporter.log("✅ SC002_TC_001 PASSED", true);
     }
-
-    // ════════════════════════════════════════════════════════════════════
-    //  SC002_TC_001 (per credit type) — happy flow for every credit type
-    //  except "Credits - Security" (excluded per user). The app does NOT
-    //  validate type↔invoice mapping, so each row picks the invoice the
-    //  way Support would manually — by the invoice's booking head
-    //  (confirmed by user, 2026-10-06): Tuition → Preschool Fee, Book →
-    //  Book Set, Transport → Transport Charges (child 50875 — T/ invoices
-    //  are Convenience Fee, not transport), Convenience → Convenience Fee,
-    //  Annual → Annual Preschool Fee, Registration → Registration Fee,
-    //  every other type → Preschool Fee. Line items match the type so the
-    //  page's keyword guard (apron/bag/shirt/kit/book/convenience) passes.
-    // ════════════════════════════════════════════════════════════════════
-    private static final String TRANSPORT_CHILD_ID = "50875";
-    private static final String TRANSPORT_CHILD_NAME = "Gyanvi Mittal";
-
-    // ✅ Child with Late Stay / Delay Penalty / Extended DayCare invoices
-    //    (same child as OneTime Charges). Exact invoice numbers per user.
-    private static final String CHARGES_CHILD_ID = "46195";
-    private static final String CHARGES_CHILD_NAME = "Nayansh Kaushik";
 
     @DataProvider(name = "creditTypes")
     public Object[][] creditTypes() {

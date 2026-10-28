@@ -1,11 +1,11 @@
-package testScripts.SettingsTests;
+package testScripts.SettingsTests.SystemLogs;
 
 import org.testng.Assert;
 import org.testng.Reporter;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import pages.Navigations;
-import pages.Settings.EmailView_Page;
+import pages.Settings.SystemLogs.EmailView_Page;
 import utils.BaseTest;
 
 // ═══════════════════════════════════════════════════════════════

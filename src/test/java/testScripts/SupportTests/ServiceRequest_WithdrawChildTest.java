@@ -6,7 +6,7 @@ import org.testng.Assert;
 import org.testng.Reporter;
 import org.testng.annotations.*;
 import pages.Navigations;
-import pages.Settings.UserRightsPage;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Support.FinancialReports.AccountStatementPage;
 import pages.Support.RecentCustomerRequestsPage;
 import pages.Support.Regular_ServiceRequests;

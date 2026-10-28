@@ -5,7 +5,7 @@ import org.testng.Reporter;
 import org.testng.annotations.*;
 import pages.Navigations;
 import pages.Onboarding.LoginPage;
-import pages.Settings.UserRightsPage;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Support.FinancialUpdates.OneTimeChargesPage;
 import utils.BaseTest;
 import utils.IAutoConstant;

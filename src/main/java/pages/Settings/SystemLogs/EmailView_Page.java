@@ -1,4 +1,4 @@
-package pages.Settings;
+package pages.Settings.SystemLogs;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;

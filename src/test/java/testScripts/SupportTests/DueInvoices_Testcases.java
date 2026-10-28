@@ -12,7 +12,7 @@ import org.testng.Assert;
 import org.testng.Reporter;
 import org.testng.annotations.*;
 import pages.Navigations;
-import pages.Settings.SMSView_Page;
+import pages.Settings.SystemLogs.SMSView_Page;
 import pages.Support.CustomerPortal_PayDueInvoices;
 import pages.Support.FinancialReports.AccountStatementPage;
 import utils.APIs;

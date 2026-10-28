@@ -7,7 +7,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Navigations;
-import pages.Settings.UserRightsPage;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Support.AdmissionMigrationRequest;
 import pages.Support.RecentCustomerRequestsPage;
 import utils.APIs;
@@ -78,7 +78,10 @@ public class AdmissionMigration_Testcases extends BaseTest {
             LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()).toString();
 
     private static final String SCREEN_CORPORATE = "Corporate Account Statement";
-
+    // Populated by sc016_tc004_fullFlowRegularToCorporate, consumed by
+    // sc016_tc005_oldAttritionNewChild / sc016_tc019_billingCancelDate.
+    private static String newChildIdFromRegularToCorporate;
+    private static String newChildIdFromCorporateToRegular;
     // ═══════════════════════════════════════════════
     // PAGE OBJECTS
     // ═══════════════════════════════════════════════
@@ -86,11 +89,6 @@ public class AdmissionMigration_Testcases extends BaseTest {
     UserRightsPage userRightsPage;
     Navigations navigations;
     RecentCustomerRequestsPage recentRequestsPage;
-
-    // Populated by sc016_tc004_fullFlowRegularToCorporate, consumed by
-    // sc016_tc005_oldAttritionNewChild / sc016_tc019_billingCancelDate.
-    private static String newChildIdFromRegularToCorporate;
-    private static String newChildIdFromCorporateToRegular;
 
     // ═══════════════════════════════════════════════
     // BEFORE CLASS

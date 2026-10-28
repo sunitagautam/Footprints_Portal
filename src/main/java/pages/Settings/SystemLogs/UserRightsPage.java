@@ -1,4 +1,4 @@
-package pages.Settings;
+package pages.Settings.SystemLogs;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -14,21 +14,23 @@ import java.time.Duration;
 
 public class UserRightsPage {
 
+    // Current Rights table #assigned_rights (all rows are in the DOM); a
+    // row's first cell holds the right title. Confirmed live 2026-10-15.
+    private static final String FIND_ASSIGNED_ROW_JS =
+            "return [...document.querySelectorAll('#assigned_rights tbody tr')]"
+                    + ".find(r=>r.cells[0]&&r.cells[0].textContent.trim()===arguments[0])||null;";
     WebDriver driver;
-    WebDriverWait wait;
 
     // ═══════════════════════════════════════════════
     // PAGE ELEMENTS
     // ═══════════════════════════════════════════════
-
+    WebDriverWait wait;
     // ✅ Select2 container — exact id from HTML
     @FindBy(id = "select2-user_picker-container")
     private WebElement select2Container;
-
     // ✅ Verify Screen Access — input type="submit" id="submit"
     @FindBy(id = "submit")
     private WebElement verifyScreenAccessBtn;
-
     // ✅ Remind Me Later — name="remind_me_later" type="submit"
     @FindBy(name = "remind_me_later")
     private WebElement remindMeLaterBtn;
@@ -265,12 +267,6 @@ public class UserRightsPage {
         Thread.sleep(3000);
         return alertText;
     }
-
-    // Current Rights table #assigned_rights (all rows are in the DOM); a
-    // row's first cell holds the right title. Confirmed live 2026-10-15.
-    private static final String FIND_ASSIGNED_ROW_JS =
-            "return [...document.querySelectorAll('#assigned_rights tbody tr')]"
-                    + ".find(r=>r.cells[0]&&r.cells[0].textContent.trim()===arguments[0])||null;";
 
     public boolean hasRight(String userId, String rightTitle) throws InterruptedException {
         driver.get(IAutoConstant.MANAGE_USER_RIGHTS_URL + userId);

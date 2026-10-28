@@ -10,7 +10,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Navigations;
-import pages.Settings.UserRightsPage;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Support.Corporate_ServiceRequests;
 import pages.Support.FinancialReports.AccountStatementPage;
 import pages.Support.RecentCustomerRequestsPage;

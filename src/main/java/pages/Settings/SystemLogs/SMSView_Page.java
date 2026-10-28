@@ -1,4 +1,4 @@
-package pages.Settings;
+package pages.Settings.SystemLogs;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -34,7 +34,7 @@ public class SMSView_Page {
     // ═══════════════════════════════════════════════
     public SMSView_Page(WebDriver driver) {
         this.driver = driver;
-        this.wait   = new WebDriverWait(driver,
+        this.wait = new WebDriverWait(driver,
                 Duration.ofSeconds(IAutoConstant.EXPLICIT_WAIT));
         PageFactory.initElements(driver, this);
     }
