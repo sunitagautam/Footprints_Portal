@@ -3719,3 +3719,136 @@ TC_031 (SDA-10410, admission payment breakup) is not automated.
 - **NOT a bug (checked):** the Log Data popover's data and rendered HTML contain every value. One screenshot showed
   "Changed By / Date / Reason" without values, and the cause is unproven. The user was asked to hover manually.
 
+### Admission Invites (SC_002) — automation (started 2026-10-27, as Rakesh)
+
+Files:
+
+- `pages/Franchise/CorporateTieups/AdmissionInvitesPage.java`
+- `testScripts/FranchiseTests/CorporateTieups/AdmissionInvitesTest.java` (23 tests)
+- `AdmissionInvitestestng.xml`
+
+Additive: `IAutoConstant.ADMISSION_INVITES_URL`, `Navigations.goToAdmissionInvites()`, and
+`EmailView_Page.openEmailByBodyAndRecipient(subject, bodyFilter, rowText)`.
+
+**Confirmed live (2026-10-27):**
+
+- **Forms:** `#frm_invite1` (Send New Invitation) and `#frm_invite_admission` (filters, posts back) share the ids
+  `invite_email`, `invite_phone` and `invite_offer_id`, so every locator is scoped to its form.
+- **Default filters:** Invite Status = **Requested**; Tie-Up Types multiselect has **nothing ticked** ("No Filters").
+  - Tie-Up Types offers only Employee Pay / Corporate Pay / Co-pay (the spec also lists All and Onsite).
+  - Status options: All / Requested / Invited / Used / Expired.
+  - Counts on 27-Oct: All 7,989; Used 6,080; Expired 1,907; Requested 2; Invited 0.
+- **Table:** 20 rows per page (spec: 10). Columns: Parent Type | Offer Title | Invite Email | Invite Phone |
+  Requested Date | Requested By | Invited Date | Invited By | Invite Status | Tentative Admission Date | Action. A hidden
+  Invite ID column comes first; `tr[data-id]`, and the row class is the tie-up type.
+  - Download is `admission_invited.csv` (Invite ID + 9 columns).
+  - Legend "Past 72 Hours Admission Requested" (red) / "Past 48 Hours …" (orange). Old Requested rows get
+    `style="color: red;"`.
+- **Send New Invitation:**
+  - Validation: "Required!" (Type, Email, Phone, Offer); "Invalid Email!"; "Invalid Phone!" (under 10).
+  - The Phone field stops typing at 10 digits and accepts no letters.
+  - Employee Official Email shows the default "Please enter a valid email address.".
+  - A Co-Pay offer (page JS `coPayTieups`) needs Co-Pay Breakup: "Breakup deatils is required!" (sic). Breakup is
+    read-only for other offers.
+  - Select Center lists the chosen offer's centres (QA tie-up → [Demo Center]).
+  - Confirm "Are you sure want to send admission Invitation?" → POST `api/corporate/SendCorporateDiscountInvite/` →
+    reload. Message: "The email with the invite link has been successfully sent to <email>and The lead with the given
+    email and phone has been successfully created" (no space before "and"). The invite is created **Invited** with
+    no Requested Date.
+  - A second send for the same email → "Invite link already sent out to <email> on 27 October, 2026" (no duplicate).
+- **Row actions:**
+
+  | Status | Actions |
+  |---|---|
+  | Requested | Edit Invitation, Expire invitation, Send Invitation Email, Lead Details |
+  | Invited | Edit Invitation, **Resend invitation**, Expire invitation, Lead Details |
+  | Used / Expired | Lead Details only |
+
+  - **Send Invitation Email:** confirm "Are you sure want to send admission Invitation?" → "Email has been sent
+    successfully to <email>" → **Invited**.
+  - **Expire:** no confirm → "Admission Invitation Link expired successfully" → **Expired**.
+  - **Edit Invitation:** popup `#frm_edit_invite` (`edit_*` ids); confirm "Are you sure want to edit Invitation?" →
+    `editCorporateInvitation` → "Record updated successfully". Wait for the popup script to bind `#update_invite`
+    before clicking.
+  - **Lead Details:** `/prt_lead_detail?eid=…` → "Lead Details (#<lead>)".
+- **Every save reloads the page** (flash message from a cookie). Confirms are captured in `sessionStorage` so they
+  survive the reload.
+- **Emails on test** are all logged **To qa@footprintseducation.in**; the real recipient is only in the body.
+  - Invite email: Subject **"Admission Invite Email"** — "You have been invited for admission at Footprints under
+    corporate tie-up benefits with <Company>. … online_form?ckey=… Please note, this link will expire in next **3
+    days**" (spec: 30 days — query).
+- **"Email Pending Invites" button is NOT on the page for Rakesh** — TC_008 skips; access or requirement to ask the
+  user.
+
+**Test data:**
+
+- New invitations go to `qa.auto.inv<ddMMHHmm>@footprintseducation.in`, phone `98<ddMMHHmm>`, on the first "QA Auto
+  Tieup V2 …" offer (Demo Company / Demo Center).
+- **Requested invites need a lead:** one invite per lead email. The class raises an Admission Request from Tieup Details,
+  trying leads 3, 4, 5 … 40 (user: "use lead IDs 3, 4, 5, so on"). A lead with no email or an existing invite is
+  skipped.
+  - With email on test CRM: 6 (used 27-Oct → invite 17290), 25, 27–34. Lead 1 is used (invite 17286).
+- Invites created on 27-Oct:
+
+  | Invite | How | State |
+  |---|---|---|
+  | 17287 | new invitation | Expired by TC_018 |
+  | 17288 | new invitation | Invited |
+  | 17291 | new invitation | Invited |
+  | 17286 | lead 1 request | Invited |
+  | 17290 | lead 6 request | Invited |
+
+**Status (28-Oct): clean full run, 22 passed + 1 skipped (TC_008).**
+
+- The lead loop now fetches leads one after another in a single Admission Request popup, and reopens it only after a
+  send. The 27-Oct run lost Chrome after ~40 page loads.
+- 28-Oct data:
+  - Lead 6 was skipped ("already sent").
+  - **Lead 25** (test.kidsmother@gmail.com) → invite **17293** (Requested → edited → Invited).
+  - New invitation **17292** → Expired by TC_018.
+  - **Leads with email still unused: 27–34.**
+
+**Workbook sheet `TC_AdmissionInvites`** (28-Oct; same layout, styles, freeze panes and validations as
+`TC_TieupDetails`; builder `build_invites.py` in the session scratchpad):
+
+- 23 TCs / 58 rows: SC_002_TC_001–020 converted + **TC_021–023 new** (Co-Pay breakup, Center by offer, 48/72-h colours).
+- Iteration 1: **21 Pass, 1 In Progress** (TC_011 step "Used" needs a parent's admission form), **1 Not executed**
+  (TC_008).
+- QueryLogs **Q8** (no Email Pending Invites button), **Q9** (link expiry 3 days vs 30), **Q10** (message spacing /
+  "deatils" typo), **Q11** (Tie-Up Types has no All / Onsite).
+- Test Summary now combines both screens: 65 TCs, 60 pass, 2 fail, 2 NE, 1 in progress. The defect table has the 3
+  reported bugs (2 Medium, 1 Low).
+- ⚠ An earlier script had written execution counts into the DEFECT SEVERITY table's "Round 1 / TOTAL" rows; fixed. Any
+  summary update must change only the TEST EXECUTION SUMMARY rows (rows 6–13).
+
+**Queries Q8–Q11 closed (user, 2026-10-28):**
+
+| Query | Resolution |
+|---|---|
+| Q8 | There is no Email Pending Invites button. TC_008 = filter Invite Status Requested → click the row's email icon (Send Invitation Email) |
+| Q9 | The invite link expires in 3 days (TC_004 asserts 3) |
+| Q10 | The success message shows the invite/lead email. For a Co-Pay tie-up the breakup is filled first (e.g. "Parent payable: 5000, Corporate payable: 4000"; amounts vary) |
+| Q11 | 3 tie-up types (Co-Pay, Employee Pay, Corporate Pay); nothing ticked by default is fine |
+
+Leads for the Admission Request loop: 3–64 (user, 2026-10-28).
+
+**Confirmed live (2026-10-28):**
+
+- **Co-Pay Requested invite → email icon** (`a.send_invite[data-type=Co-Pay]`) opens `#view-breakup-modal` "Co-Pay Tieup
+  Breakup Details": `textarea#breakup_details` + Confirm (`sendAdmissionInvite(<id>)`). An empty breakup shows "Breakup
+  deatils is required!". Then the usual confirm → "Email has been sent successfully to <email>" → Invited.
+- **Send New Invitation on a Co-Pay offer:** the breakup goes in `#frm_invite1 #breakup` (free text). It is not shown
+  on the grid or in Edit Invitation; per the spec it appears on Pending Co-Pay Setup / Co-Pay Migration Data.
+- **TC_008** uses the first Requested invite NOT on a QA tie-up (one the user creates), and skips when there is none.
+  Used: 17294 (ProEves, Co-Pay) → Invited.
+- **TC_024 (new)** sends a Co-Pay invite on the first Co-Pay offer (Accel India -Koramangala(Full day)-V1; no QA Co-Pay
+  tie-up exists). Created 17296, 17297, 17299 (Invited).
+  Accel India offers are ProEves-type Co-Pay tie-ups (user, 2026-10-28), so this offer is the right one. Send New
+  Invitation never opens a breakup popup (inline `#breakup` box for every Co-Pay offer, ProEves included — checked live);
+  the popup opens only from a Requested Co-Pay invite's email icon.
+- **Q12 (open): some invites get no Lead Details link.** 17296 and 17298 have none; 17292/17295/17297/17299 do. The
+  success message still says the lead was created. `tc018` fails when the expired invite has no Lead Details link.
+
+**Full run 2026-10-28:** 24 tests, 22 pass, TC_008 skipped (no non-QA Requested invite left), TC_018 failed (Q12 —
+invite 17298 had no Lead Details link). Workbook: TC_AdmissionInvites now 24 TCs (TC_024 added), Q8–Q11 closed, Q12
+open; Test Summary 66 TCs / 62 pass / 2 fail / 1 NE / 1 in progress.

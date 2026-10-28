@@ -238,4 +238,32 @@ public class EmailView_Page {
             return "";
         }
     }
+
+    // ✅ Filters by Subject (may be "") + Body (#body), then opens the first row whose
+    //    text contains the recipient address. Returns the email body text ("" when none).
+    //    Opened through the row's pop_email_view_data_modal link (direct URL works).
+    public String openEmailByBodyAndRecipient(String subjectKeyword, String bodyFilter, String recipient)
+            throws InterruptedException {
+        driver.get(IAutoConstant.EMAIL_VIEW_URL);
+        Thread.sleep(4000);
+        WebElement subject = driver.findElement(By.id("subject"));
+        subject.clear();
+        subject.sendKeys(subjectKeyword);
+        WebElement body = driver.findElement(By.id("body"));
+        body.clear();
+        body.sendKeys(bodyFilter);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", driver.findElement(By.id("btn_submit")));
+        Thread.sleep(5000);
+        for (WebElement r : driver.findElements(By.cssSelector("#DataTables_Table_0 tbody tr"))) {
+            String t = r.getText();
+            if (!t.toLowerCase().contains(recipient.toLowerCase())) continue;
+            List<WebElement> link = r.findElements(By.cssSelector("a[href*='pop_email_view_data_modal']"));
+            if (link.isEmpty()) continue;
+            System.out.println("▶ Email row: " + t.replaceAll("\\s+", " "));
+            driver.get(link.get(0).getAttribute("href"));
+            Thread.sleep(2500);
+            return driver.findElement(By.tagName("body")).getText();
+        }
+        return "";
+    }
 }
