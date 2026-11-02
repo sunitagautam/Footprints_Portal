@@ -4020,3 +4020,82 @@ additive `IAutoConstant.ADMISSION_COUNT_URL`, `Navigations.goToCorporateAdmissio
 **Status (02-Nov):** 13 pass + TC_014 fail (bug). Sheet `TC_CorporateAdmissionCount` (after TC_AdmissionRecords): 14 TCs,
 13 Pass, 1 Fail; Q26–Q31 closed. Test Summary: 119 TCs / 111 pass; defects 2 Medium + 3 Low.
 Sheet builder: `sheet_lib.py` + `build_count.py` in the session scratchpad (Test Summary written by row number).
+
+## Requirements — Teacher Payout Report (`Teacher_Payout_report_detailTest.java`, started 2026-11-02)
+
+Screen: `https://test-franchise.footprintseducation.in/teacher_payout_report_details?filter_center_id=34&date_filter=Current+Quarter&...`.
+It is not linked in any menu yet (direct URL only, user 2026-11-02). The developer's guide
+(`~/Downloads/Teacher_Payout_Report_User_Guide.docx`) says "Children > Reports" — QueryLogs Q1.
+No test sheet: the cases come from live exploration plus that guide. Runs as Rakesh (no user switch). Read-only report.
+
+Files:
+
+| File | Contents |
+|---|---|
+| `pages/Teacher_Payout_report_detailPage.java` | page object; root `pages` package because no menu module yet (user's name) |
+| `testScripts/Teacher_Payout_report_detailTest.java` | 45 tests, SC001_TC001 – SC009_TC001 |
+| `TeacherPayoutReporttestng.xml` | suite |
+
+Additive: `IAutoConstant.TEACHER_PAYOUT_REPORT_URL`, `Navigations.goToTeacherPayoutReport(queryString)`.
+Workbook: `~/Desktop/QA_Documents/Testcases Scripts/TC_Teacher_Payout_Report.xlsx` (template `TC_Template_Enanched_13Oct.xlsx`,
+sheet `TC_TeacherPayoutReport`, 49 TCs, QueryLogs Q1–Q9).
+
+### Confirmed live (2026-11-02)
+
+- **Filters:** form `#frm_tpr` (GET):
+  - Centre `#filter_center_id`: "-- Select COCO Centre --" + 22 COCO centres.
+  - `#date_filter`: Current Quarter (default), Current Month, Last Month, Last Quarter, Last 3 Months, Custom Date Range.
+  - `#date_from` / `#date_to`: pickadate, readonly, shown only for Custom; set via `picker.set('select', …)`.
+  - Instant filters (client side, URL rewritten): Teacher `#fTeacher`, Room `#fRoom`, threshold `#fThr` (1–100, step 0.1).
+  - Go: `#btn_tpr_submit`.
+  - Autosubmit (reload): `select[name=saturday]` [off|on], `select[name=not_marked]` [absent|skip].
+- **Tabs:** `#p-report`, `#p-charts`, `#p-children` (badge `#kidsCount`), `#p-how`.
+- **Report tab:**
+  - Notice `#notice`: "Period in progress: counted <from> to <yesterday> (up to yesterday)…".
+  - KPI tiles `#kpis .tpr-tile`; working-days equation `#eq`; holidays `#hol`.
+  - Roll-up `#tTeacher`: drill buttons `button.lnk[data-t=<teacher>][data-m=n|ok|no|p|a|pz|nm|nr]`; the drill list is
+    `#drill`.
+  - Attrition `#tMatrix`: `data-m=left`, `data-r=<reason>`.
+- **Children tab:**
+  - Table `#tKids tr.krow[data-id]`. The Result cell is CSS-uppercased, so read it with textContent.
+  - Result labels: `label-success` / `label-danger` / `label-default`.
+  - Tags: Full period / Joined <d Mon> / Left <d Mon> / Paused <n> d.
+  - Search `#fSearch`; sort `#fSort` [pa (default), pd, n, t].
+  - CSV `#bCsv` → `Teacher_Payout_Report_<Centre>_<from>_to_<to>.csv`. The CSV ignores the search box.
+- **How it is calculated tab:** calculator `#wJoin` / `#wAbs` / `#wPz` → `#wOut`; worked example `#examples`.
+- **Messages:**
+
+  | Input | Message |
+  |---|---|
+  | From after To | "The report could not be loaded. From date cannot be after To date." |
+  | Today / future dates | "…Select dates before today. Today and future dates are not allowed." |
+  | URL threshold 150 | "…Threshold must be a number between 1 and 100. \"150\" is not allowed." |
+  | On-screen threshold 0 / 101 / -5 | "Threshold must be a number between 1 and 100." |
+  | Custom range, no dates (UI) | "Select both From and To dates for a custom date range." (`.filter-error`) |
+  | Custom range, empty date in URL | "…Select a valid From and To date for the custom date range." |
+  | No centre + Go | "Select a centre." |
+  | No params / non-COCO or unknown centre id | "Select a COCO centre and a date range, then press Go." |
+
+- **Arithmetic** (checked on every child): Working days = Paused + Expected + No record. Expected = Present + Absent +
+  Not marked (`not_marked=skip`: Present + Absent). Teacher Attendance % = Present ÷ (Present + Absent + Not marked).
+- **Stable data:** Oct 2026 (35 children, no attrition) and Jul–Sep 2026 (34 children, 3 left, varied %) for Sector 93.
+- **Chrome stability:** Chrome drops the session after ~45 loads. `ensureBrowserAlive()` (@BeforeMethod, also inside the
+  centre loop) relaunches and logs in again.
+
+### Status (2026-11-02): 45/45 automated PASS
+
+No defects. Open queries:
+
+| Query | Topic |
+|---|---|
+| Q1 | Menu / access right |
+| Q2 | COCO-only message for non-COCO users |
+| Q3 | Two wordings for missing dates |
+| Q4 | Calculator accepts absent > working days / negative |
+| Q5 | Who is paid for "Unassigned" |
+| Q6 | Custom = preset dates reverts to the preset |
+| Q7 | CSV name uses the future To date |
+| Q8 | "Joined 1 Oct" counted as joined |
+| Q9 | Users needed for SC001_TC007 / TC008 and SC009_TC002 |
+
+SC001_TC006 (menu) is On Hold.

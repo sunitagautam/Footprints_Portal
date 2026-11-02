@@ -286,6 +286,20 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // TEACHER PAYOUT REPORT — direct URL (not linked in any menu yet)
+    // queryString: e.g. "filter_center_id=34&date_filter=Current+Quarter&..."
+    //              (empty → the blank "Select a COCO centre" view)
+    // ═══════════════════════════════════════════════
+    public void goToTeacherPayoutReport(String queryString) throws InterruptedException {
+        closeModalIfOpen();
+        String url = utils.IAutoConstant.TEACHER_PAYOUT_REPORT_URL
+                + (queryString == null || queryString.isEmpty() ? "" : "?" + queryString);
+        driver.get(url);
+        System.out.println("✅ Navigated to: Teacher Payout Report " + (queryString == null ? "" : queryString));
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → REFUND LIST
     // Navigates directly via URL — no sub-menu link
     // needed since the screen URL is known. Used by
