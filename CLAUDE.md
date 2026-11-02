@@ -4099,3 +4099,33 @@ No defects. Open queries:
 | Q9 | Users needed for SC001_TC007 / TC008 and SC009_TC002 |
 
 SC001_TC006 (menu) is On Hold.
+
+### Parent Company Report (SC_015) — automation (2026-11-02, as Rakesh)
+
+Requirement (user, 2026-11-02): all **active** children mapped to their parent's company; right
+View_Corporate_Admission_Count; search + export; City and Center multi-select filters; columns Company Name, Counts
+(tooltip), Child Name, Father/Mother Name, Parent Company, Center, Program, Admission Date, Status. Query: `current_status =
+'Active' and test_child != '1' and center_id != '100'`. On test **every parent company is "Dummy"** (user).
+
+Files: `pages/Franchise/CorporateTieups/ParentCompanyReportPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/ParentCompanyReportTest.java` (14 tests), `ParentCompanyReporttestng.xml`;
+additive `IAutoConstant.PARENT_COMPANY_REPORT_URL`, `Navigations.goToParentCompanyReport()`.
+
+**Confirmed live:**
+
+- **Heading:** "Existing Children Parent Company Report". Form `#frm_parent_company_report`: City
+  `city_filter_list[]`, Center `#center_selection` (both multiselect, "No Filters"), **Filter `#btn_submit`**.
+- **Table `#parent_company_report_table`:** Company Name | Counts | Action (eye →
+  `pop_existing_company_children?pop=yes&company_name=&city_filter_list=&center_selection=`, title "Active Children Details
+  (<company>)"). Download `existing_children_parent_company_report.csv` ("Company Name","Counts").
+- **Popup:** Child ID | Child Name | Father Name | Father Company | Mother Name | Mother Company | Center | Program |
+  Admission Date | Status; 10 per page; search; all Active.
+- **Counts:** Dummy 10679 = popup 10,679. Hyderabad 586 = popup 586 (24 centres). Koramangala 85. Demo Center → no data.
+- **Jaydeep Kar:** not in his menu; URL → "Sorry! You are not authorise to access this screen."
+
+**Low bugs (user confirmed, to report):** no Counts tooltip (`Bug_ParentCompanyReport_NoCountsTooltip.md`), popup not
+exportable (`Bug_ParentCompanyReport_PopupNoExport.md`), popup date yyyy-mm-dd (added to `Bug_AdmissionCount_DateFormat.md`).
+Evidence `Bug Evidence/ParentCompanyReport/`. TC_010–TC_012 fail until fixed.
+
+**Status (02-Nov):** 11 pass + 3 fail (bugs). Sheet `TC_ParentCompanyReport` (after TC_CorporateInvoice): 14 TCs, 11 Pass,
+3 Fail; Q32–Q35. Test Summary 133 TCs / 122 pass; defects 2 Medium + 5 Low. **Not committed yet.**
