@@ -266,6 +266,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → CORPORATE ADMISSION COUNT
+    // ═══════════════════════════════════════════════
+    public void goToCorporateAdmissionCount() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ADMISSION_COUNT_URL);
+        System.out.println("✅ Navigated to: Corporate Admission Count");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // FRANCHISE → CORPORATE TIE-UPS → CORPORATE INVOICE
     // ═══════════════════════════════════════════════
     public void goToCorporateInvoice() throws InterruptedException {

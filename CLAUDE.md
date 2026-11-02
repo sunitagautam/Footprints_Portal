@@ -3977,3 +3977,46 @@ Records, since uninvoiced children are not on this screen).
 **Status (28-Oct):** 20 pass + TC_010 skipped. Workbook sheet `TC_CorporateInvoice`: 20 TCs, 19 Pass, 1 NE; Q18–Q25 (Q21
 ownership / blank offers and Q25 new admission open). TC_013 invoice number inside the PDF was checked manually by the
 user (no PDF library). Test Summary: 105 TCs / 98 pass.
+
+### Menu now has 10 screens (Rakesh, 2026-11-02) — automate every one (user)
+
+Tieup Details, Admission Invites, Admission Records, **Corporate Admission Count** (`tieup_admission_count`, new),
+Corporate Invoice, **Parent Company Report** (`existing_children_parent_company_report`, new), Corporate Company,
+Tieup Plans and Pricing, Tie-up Expiry Migration Admissions, Corporate Credits Issued. New screens have no source test
+cases — write them from the user's requirement + the live screen (scenario IDs continue: SC_014 = Corporate Admission
+Count, SC_015 = Parent Company Report). The user wants questions instead of assumptions (2026-11-02: "don't assume or
+guess").
+
+### Corporate Admission Count (SC_014) — automation (2026-11-02, as Rakesh)
+
+Requirement (user, 2026-11-02): admissions report by corporate offer and company, optional searchable Center filter; one
+row per offer + company with an Admission Count (no child count, no center column); offer, company and count are links
+to a popup of the individual admissions; popup rows = clicked count and honour the center; right
+**View_Corporate_Admission_Count**; existing masking rules.
+
+Files: `pages/Franchise/CorporateTieups/CorporateAdmissionCountPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/CorporateAdmissionCountTest.java` (14 tests), `CorporateAdmissionCounttestng.xml`;
+additive `IAutoConstant.ADMISSION_COUNT_URL`, `Navigations.goToCorporateAdmissionCount()`.
+
+**Confirmed live:**
+
+- **Heading:** "Tieup Admission Count" + help text "Corporate admissions by offer and company. Click an offer, company or
+  count to see the admissions."
+- **Filter form `#frm_tieup_admission_count`:** `#offer_id`, `#company_id`, `#center_id` (select2, "All Centers"),
+  `#offer_status` [--SELECT--, Active, **All** (default), Expired]; `#btn_submit` Filter.
+- **Table `#tieup_admission_count_table`:** 20 per page; Offer Title | Company Name | Offer Status | Admission Count.
+  263 rows / 7,277 admissions; 140 rows with count 0 (listed by design, link opens empty).
+  - Links go to `pop_tieup_admission_list?pop=yes&offer_id=&company_id=&center_id=` (popdown_xl_large).
+  - Download is `tieup_admission_count.csv`.
+- **Popup:** "<Company> · <N> admission(s) <Offer>"; Admission ID | Child Name | Center | Admission Date | Status (Active +
+  Attrition both counted; columns are enough — no phone/email). Empty → "No admissions found for this offer and company."
+- **Center Koramangala:** links carry center_id=64; popups list only Koramangala.
+- **Jaydeep Kar** has no right: not in menu; direct URL → "Sorry! You are not authorise to access this screen." (TC_013,
+  switches user, runs last).
+- **Bug (Low, user to report):** popup Admission Date is yyyy-mm-dd — `Bug Evidence/Bug_AdmissionCount_DateFormat.md` +
+  `AdmissionCount_DateFormat/`. TC_014 fails until fixed.
+- **Performance point:** `GetTieupAdmissionCount` 4,845 ms "slow" — `Bug Evidence/Perf_AdmissionCount_SlowLoad.md`.
+
+**Status (02-Nov):** 13 pass + TC_014 fail (bug). Sheet `TC_CorporateAdmissionCount` (after TC_AdmissionRecords): 14 TCs,
+13 Pass, 1 Fail; Q26–Q31 closed. Test Summary: 119 TCs / 111 pass; defects 2 Medium + 3 Low.
+Sheet builder: `sheet_lib.py` + `build_count.py` in the session scratchpad (Test Summary written by row number).
