@@ -3928,3 +3928,52 @@ Workbook: TC_015 Fail; Test Summary 85 TCs / 79 pass / 3 fail / 2 NE / 1 in prog
   | Q17 | 500-row grid; 5 Sep-2026 children (75607, 75550, 75582, 75610, 75621) show the 28-Oct QA invites' employment details in the CSV — likely a test-DB invite-id clash |
 
 - Test Summary: 85 TCs / 78 pass / 2 fail / 2 blocked / 2 NE / 1 in progress.
+
+### Screen order (user, 2026-10-28)
+
+Follow Rakesh's Franchise → Corporate Tieups menu: Tieup Details, Admission Invites, Admission Records, Corporate Invoice,
+Corporate Company, Tieup Plans and Pricing, Tie-up Expiry Migration Admissions, Corporate Credits Issued.
+**Pending Co-Pay Setup (SC_004) is skipped**: it is not in Rakesh's menu, and `pending_copay_setup` shows "Sorry! You are
+not authorise to access this screen." even after `Copay_Update_Access` was added.
+
+### Corporate Invoice (SC_005) — automation (2026-10-28, as Rakesh)
+
+Files: `pages/Franchise/CorporateTieups/CorporateInvoicePage.java`,
+`testScripts/FranchiseTests/CorporateTieups/CorporateInvoiceTest.java` (21 tests), `CorporateInvoicetestng.xml`; additive
+`IAutoConstant.CORPORATE_INVOICE_URL`, `Navigations.goToCorporateInvoice()`, `APIs.raiseCoPayInvoice(childId)`.
+Rakesh got `Update_Corporate_Invoice` from the user on 28-Oct (Update button).
+
+**Confirmed live (2026-10-28):**
+
+- **Filter form `#frm_invoice_report`:**
+  - `#sr_child_id` (text), `#sr_corporate_offer` (select2), `#sr_center_id[]` / `#sr_ownership[]` (multiselect; Ownership
+    values COCO / FOFO = Franchise / Corporate = Onsite).
+  - `#sr_invoice_from` / `_to` (pickadate) — the **created** date; default 1st of last month → today.
+  - `#sr_invoice_status` [--SELECT--, Paid, **Payment Due** (default), Void]; `#btn_submit` Filter, `#btn_reset` Clear.
+- **Table `#datatable-invoice`:** 10 per page, client side, **max 1000 rows** (intended); "Download All <N> Records"
+  exports all → `corporate_invoice<dd_Mon_yyyy>.csv` (incl. Company Name and Invoice ID — correct).
+  - Child ID and Invoice Description are hidden columns.
+  - The last column is **"Action"** with Update_Corporate_Invoice, "Download" without it, and **"Voided On"** for Void.
+  - Row actions: PDF `PDFDownload(url, id)` (XHR blob → `invoice_C<id>.pdf`); `.btn-update` (base64 `data-corporate-invoice`);
+    `.void_credits_button_<id>`. Paid rows show only Download.
+- **Void:** `#modal_void_invoice_pop` "Void Invoice (#<child id>)" (Child Name, Invoice Amount, `#void_reason`).
+  - Empty → "Reason required".
+  - Submit → confirm "This will void invoice, Are you sure want to do it?" → "Invoice voided successfully".
+- **Update payment:** `#modal_form_update` "Update Invoice Payment"; fields `#payment_date` (pickadate, last month → today),
+  `#payment_amount` (pre-filled with the amount due), `#payment_comments`.
+  - Messages come one at a time: "Payment date required" → "Payment amount required" → "Comments required".
+  - **No confirm** → "Invoice Updated Successfully" → Paid, Amount Due 0.00.
+  - The child's Account Statement shows "Payment received on <dd Month, yyyy> … Manual Payment Updated <comments> <amount>".
+  - A paid invoice gets its final number (PI/65606 → P/001/2627/8367). Corporate invoices show "(Corporate)" there.
+- **`raiseCoPayInvoice`** answers `{"status":"ok","response":"No Pending Co-pay Admission Invoices"}` for every child that
+  already has admission invoices.
+
+**Test data (user approved):** tc014 voids, and tc011 marks paid, one Payment Due invoice with the Void icon per run
+(sort the Action column so those rows come first; 155 rows without Void are a data issue). 28-Oct: voided 65711, 65601;
+paid 65606 (child 40513), 65694 (child 41801). TC_010 skips until the user creates a new co-pay admission after the data
+fix — run with `-DcopayChildId=<id>` (default offer "Indeed - Bangalore Region"; children are also taken from Admission
+Records, since uninvoiced children are not on this screen).
+
+**Status (28-Oct):** 20 pass + TC_010 skipped. Workbook sheet `TC_CorporateInvoice`: 20 TCs, 19 Pass, 1 NE; Q18–Q25 (Q21
+ownership / blank offers and Q25 new admission open). TC_013 invoice number inside the PDF was checked manually by the
+user (no PDF library). Test Summary: 105 TCs / 98 pass.

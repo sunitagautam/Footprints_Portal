@@ -1003,4 +1003,29 @@ public class APIs {
                 .replace("&lt;", "<")
                 .replace("&gt;", ">");
     }
+
+    // ═══════════════════════════════════════════════
+    // CORPORATE TIE-UPS — Generate prorated Co-Pay admission invoices
+    //
+    // URL : {{Base_URL}}admissionprocess/raiseCoPayInvoice/?child_id=<child_id>   (no ckey in the spec)
+    // Use : SC_005_TC_010 (Corporate Invoice). Creates the annual invoice, the prorated monthly invoice and a
+    //       transport invoice if an addon is set. Spec response: "Co-pay Proforma Invoices Generated successfully".
+    // ═══════════════════════════════════════════════
+    public static Response raiseCoPayInvoice(String childId) {
+        String endpoint = "admissionprocess/raiseCoPayInvoice/?child_id=" + childId;
+        System.out.println("▶ Corporate Tie-ups: raiseCoPayInvoice");
+        System.out.println("   URL: " + ADMISSIONS_BASE_URL + endpoint);
+
+        Response response = given()
+                .baseUri(ADMISSIONS_BASE_URL)
+                .when()
+                .get(endpoint)
+                .then()
+                .extract()
+                .response();
+
+        System.out.println("✅ raiseCoPayInvoice — Status: " + response.getStatusCode());
+        System.out.println("   Response: " + response.getBody().asString());
+        return response;
+    }
 }

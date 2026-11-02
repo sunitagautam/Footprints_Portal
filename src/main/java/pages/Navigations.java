@@ -266,6 +266,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → CORPORATE INVOICE
+    // ═══════════════════════════════════════════════
+    public void goToCorporateInvoice() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.CORPORATE_INVOICE_URL);
+        System.out.println("✅ Navigated to: Corporate Invoice");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → REFUND LIST
     // Navigates directly via URL — no sub-menu link
     // needed since the screen URL is known. Used by
