@@ -340,6 +340,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → TIEUP PLANS AND PRICING
+    // ═══════════════════════════════════════════════
+    public void goToTieupPlansPricing() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.TIEUP_PLANS_PRICING_URL);
+        System.out.println("✅ Navigated to: Tieup Plans and Pricing");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // FRANCHISE → CORPORATE TIE-UPS → CORPORATE CREDITS ISSUED
     // ═══════════════════════════════════════════════
     public void goToCorporateCredits() throws InterruptedException {

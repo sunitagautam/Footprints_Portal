@@ -4377,3 +4377,38 @@ due case). `sc003_tc007` (two-window stale save) still expects a rejection — n
 - The save message differs from the sheet.
 - Vyom's History pill shows the raw "DAY_4".
 - Attendance shows "Attempt 2 / 1".
+
+### Tieup Plans and Pricing (SC_007) — automation (2026-11-03, as Rakesh)
+
+Files: `pages/Franchise/CorporateTieups/TieupPlansPricingPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/TieupPlansPricingTest.java` (17 tests), `TieupPlansPricingtestng.xml`;
+additive `IAutoConstant.TIEUP_PLANS_PRICING_URL`, `Navigations.goToTieupPlansPricing()`.
+
+**Confirmed live (2026-11-03):**
+
+- Heading "Tie Up Admission Financial Information Report", "<N> admissions"; notes 1)–6) in `.clx-note-box` beside the
+  filter. Select Offer `#offer_filter` (select2; its onchange is `this.form.submit()` — set the value and submit the form).
+  "Only Doubtful Records" `#doubtful_row` (checked by default) is a client-side DataTables filter on the last column
+  (Something_Wrong = "Doubtful"). Apply New Fee Structure `#apply_fee_structure` appears once an offer is chosen.
+- Table `#datatable_child_financial_info` (responsive, stateSave, 10 per page, 10/20/50/100): Child Id … Doubtful Reason,
+  Something_Wrong (22 columns). Red name (`text-danger`) = plan not set. Download Report `#download_emp_list_s` posts
+  `#dwd_plan_pricing` → `Tie_Up_Children_Financial_Information_Report_<d_MMMM_yyyy>.csv` (27 columns).
+- Only 2 offers had doubtful records on 03-Nov: Accel India -Koramangala(Full day)-V1 (2) and QA Auto Tieup V2 27101611
+  (offer 275, Update URL `add_corporate_offer?offer_id=Mjc1`; children 75594, 75607, 75621 via the invite-id clash).
+- **Center Fee tie-ups are not listed** (0 admissions) — by design (user, Q42).
+- Onsite on a non-onsite centre → "An Onsite tie-up can only be linked to onsite center(s). Please uncheck the following
+  non-onsite center(s) before saving: Demo Center."
+- Coupon change (Annual Fee Offer 5% → 10%) makes the children Doubtful; back to 5% clears it.
+- Apply: confirm "The 'Co-Pay' tie-up fee structure will not be updated from here.\r\n\r\nDo you really want to make changes
+  to your billing plans? It will go into effect from the next billing date." → POST `api/franchisesupport/applyTieUpLatestPlan/`
+  → "Contract Plan updated, it will be effective from next billing date." → reload. Child History: "Contract Updated
+  <user> · <datetime> Fee updated to the latest contractual terms under Contract:<offer>". No email on Apply; tie-up edits
+  send "Tie-up Details Updated – <title>" (status Failed on test: AWS sending paused).
+- **Apply on 03-Nov removed the monthly plans of 75594 / 75607 / 75621** (the QA tie-up has no fee for Half Day / Extended
+  Preschool); 75621 stays Doubtful ("Annual billing plan not setup on tie-up contractual term - 5"). Expected for the tie-up
+  configuration (user, Q43).
+
+**Test data (user, 2026-11-03):** edits and Apply ONLY on QA Auto Tieup V2 27101611; each edit is restored in a `finally`
+(Fixed Fee, Corporate Pay, payers Corporate, Annual Fee Offer 5% Discount).
+
+**Status (03-Nov):** 17/17 pass. Sheet `TC_TieupPlansPricing`: 21 TCs, all Pass; Q42–Q44 closed. Test Summary 176 / 162 pass.
