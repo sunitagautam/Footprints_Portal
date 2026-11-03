@@ -57,6 +57,8 @@ public final class IAutoConstant {
             "https://test-franchise.footprintseducation.in/existing_children_parent_company_report";
     public static final String CORPORATE_COMPANY_URL =
             "https://test-franchise.footprintseducation.in/corporate_company";
+    public static final String CORPORATE_CREDITS_URL =
+            "https://test-franchise.footprintseducation.in/issue_corporate_credits";
     // Teacher Payout Report — direct URL only (not linked in any menu yet, 2026-11-02)
     public static final String TEACHER_PAYOUT_REPORT_URL =
             "https://test-franchise.footprintseducation.in/teacher_payout_report_details";

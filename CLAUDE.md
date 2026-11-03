@@ -4170,3 +4170,40 @@ Evidence `Bug Evidence/ParentCompanyReport/`. TC_010–TC_012 fail until fixed.
 
 **Status (02-Nov):** 11 pass + 3 fail (bugs). Sheet `TC_ParentCompanyReport` (after TC_CorporateInvoice): 14 TCs, 11 Pass,
 3 Fail; Q32–Q35. Test Summary 133 TCs / 122 pass; defects 2 Medium + 5 Low. **Not committed yet.**
+
+### Corporate Credits Issued (SC_011) — automation (2026-11-03, as Rakesh)
+
+Files: `pages/Franchise/CorporateTieups/CorporateCreditsIssuedPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/CorporateCreditsIssuedTest.java` (19 tests), `CorporateCreditsIssuedtestng.xml`;
+additive `IAutoConstant.CORPORATE_CREDITS_URL`, `Navigations.goToCorporateCredits()`. Rights: View_Corporate_Invoice (screen)
++ **Override_Corporate_Payer** (Issue Credits button + Action column) — assigned to Rakesh on 02-Nov-2026.
+
+**Confirmed live (2026-11-03):**
+
+- **Filter form `#dateform`** (posts back): From / To `input[name=date_from|date_to]` (pickadate, both id `select_date`, max today,
+  default last month → today); Center `#center_selection` (select2, "All Center"); Status `#status` [All, Pending, Successful,
+  Failed]; Filter `input[name=submit_credit_date]`; Clear link. The applied filter is in `window.pageDownloadFilters`.
+  **More than 31 days** (e.g. 01 Oct → 02 Nov) → red "Cannot select more than 31 days data" and the default range comes back;
+  31 days is accepted.
+- **Table `#DataTables_Table_0`**, 10 per page, order Issued Date Time desc: Child Name | Amount | Type | Description |
+  Issued By | Invoice Reference | Issued Date Time (UTC) | Update Status | Action, plus hidden Child Id, Issued Date, Invoice
+  Line Item, Father/Mother Name/Email/Phone. Download Report = `Credits_Issued_Report_dd_MM_yyyy.csv` (17 columns, no Bank).
+- **Issue Credits** `pop_issue_corporate_credits` → "Add Corporate Credits": `#child_id` + `#btn_child_details` → `#child_name`;
+  `#credit_type_item` [Downgrade Credits, Credits - Tuition Fee, Credits - Annual Fee]; `#credit_invoice_ref` (child's **due**
+  corporate invoices only); `#credit_amount`; `#invoice_line_items`; `#credit_comments`; `#apply_credit`. Messages one at a time:
+  Child ID required! → Please select credit type! → Select Invoice Reference! → Credit Amount required! → Credit Line Item
+  required! → Comments required!. Confirm "Are you sure you want to Issue Credit?" → POST `api/corporate/issueCorporateCredits`
+  → "Corporate Credits issued successfully!" → reload. Regular child (68192) → "Invoices not found." / "Invoice Not found!".
+- **Link Invoice Reference** `corporate_invoice_reference?pop=yes&credit_id=` — current invoice preselected, due + paid invoices;
+  empty → "Select Invoice Reference!"; no confirm → "Corporate Credit invoice reference updated successfully.".
+- **Revoke Credit** `revoke_corporate_credit?pop=yes&credit_id=` — only on credits issued this month; `#credit_revoke_reason`,
+  `#btn_submit_reason`; empty → "Revoke Reason is Missing!"; no confirm → "Corporate Credit revoked successfully"; the credit
+  disappears from the grid.
+
+**Test data (user, 2026-11-03):** child **37261** (Zayd Bin Zumar), Rs 100. Each run issues a Credits - Tuition Fee credit on
+the first due invoice, re-links it to another due invoice, then revokes it. Credits 399–401 were issued and revoked on 03-Nov.
+
+**Status (03-Nov):** 19/19 pass. Sheet `TC_CorporateCreditsIssued`: 22 TCs (SC_011_TC_001–018 + new 038–041), 19 Pass,
+3 in progress (TC_009 page 2 — only 4 credits; TC_013 center shift credits; TC_015 partially adjusted). Open queries Q36
+(credits 395/396 identical), Q37 (Adjust Corporate Credits TC_019–037 — no menu item), Q38 (grid time UTC), Q39 (Issue lists
+due invoices only), Q40, Q41. Test Summary 155 TCs / 141 pass.
