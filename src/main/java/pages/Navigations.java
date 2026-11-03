@@ -268,6 +268,18 @@ public class Navigations {
     // ═══════════════════════════════════════════════
     // FRANCHISE → CORPORATE TIE-UPS → CORPORATE ADMISSION COUNT
     // ═══════════════════════════════════════════════
+    // ═══════════════════════════════════════════════
+    // CHILDREN → UPDATES → PAYMENT / ATTENDANCE RETENTION
+    // queryString: e.g. "filter=closed&from_date=2026-10-01" (null/empty = default view)
+    // ═══════════════════════════════════════════════
+    public void goToAttendanceRetention(String queryString) throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ATTENDANCE_RETENTION_URL
+                + (queryString == null || queryString.isEmpty() ? "" : "?" + queryString));
+        System.out.println("✅ Navigated to: Attendance Retention");
+        Thread.sleep(2000);
+    }
+
     public void goToCorporateAdmissionCount() throws InterruptedException {
         closeModalIfOpen();
         driver.get(utils.IAutoConstant.ADMISSION_COUNT_URL);
