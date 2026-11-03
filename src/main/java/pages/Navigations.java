@@ -272,6 +272,14 @@ public class Navigations {
     // CHILDREN → UPDATES → PAYMENT / ATTENDANCE RETENTION
     // queryString: e.g. "filter=closed&from_date=2026-10-01" (null/empty = default view)
     // ═══════════════════════════════════════════════
+    public void goToPaymentRetention(String queryString) throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.PAYMENT_RETENTION_URL
+                + (queryString == null || queryString.isEmpty() ? "" : "?" + queryString));
+        System.out.println("✅ Navigated to: Payment Retention");
+        Thread.sleep(2000);
+    }
+
     public void goToAttendanceRetention(String queryString) throws InterruptedException {
         closeModalIfOpen();
         driver.get(utils.IAutoConstant.ATTENDANCE_RETENTION_URL

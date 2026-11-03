@@ -4207,3 +4207,173 @@ the first due invoice, re-links it to another due invoice, then revokes it. Cred
 3 in progress (TC_009 page 2 — only 4 credits; TC_013 center shift credits; TC_015 partially adjusted). Open queries Q36
 (credits 395/396 identical), Q37 (Adjust Corporate Credits TC_019–037 — no menu item), Q38 (grid time UTC), Q39 (Issue lists
 due invoices only), Q40, Q41. Test Summary 155 TCs / 141 pass.
+
+## Requirements — Children → Updates: Attendance Retention + Payment Retention (received 2026-11-03, NOT yet automated)
+
+Sources (both already executed manually, Iteration 1 mostly PASS):
+- `~/Downloads/TC_Attendance_Retention_Trigger.xlsx` — sheet `TC_Attendance_Retention`, SDA-13172, 44 TCs SC001–SC014.
+  Known bug: SC001_TC003 (holiday/weekend in the 12-school-day window) FAIL, SDA-13393.
+- `~/Downloads/TC_Payment_Retention.xlsx` — sheet `Payment Retention`, SDA-13426, 66 TCs SC001–SC012.
+
+Planned files (one per screen): `pages/Children/Updates/AttendanceRetentionPage.java` /
+`PaymentRetentionPage.java`, `testScripts/ChildrenTests/Updates/AttendanceRetentionTest.java` /
+`PaymentRetentionTest.java`, suites `AttendanceRetentiontestng.xml` / `PaymentRetentiontestng.xml`.
+
+### Attendance Retention (Children → Updates → Attendance Retention)
+
+- **Rule:** a case opens at 5 unexplained absences (Absent / Not Marked) in a rolling 12-school-day window. Holidays and
+  weekends are skipped. Excluded: Test / Paused / Attrition children, Demo / Onsite / Inhouse centres, Emergency Daycare /
+  Summer Camp. One open case per child. A 10-day cooldown applies after a case is closed by a person.
+- **APIs** (`{{Base_URL}}attendanceretention/...`):
+  - `detectNewTriggers?SkipTimeCheck=1&dev=1&as_of_date=&admission_id=&dry_run=1` (nightly; opens cases).
+  - `advanceLadder?as_of_date=&dev=1&SkipTimeCheck=1&admission_id=` (morning; auto-close, auto-strike "No CD Action",
+    sends messages).
+  - `logRetentionCall?current_step_code=ATTEMPT_2&task_id=&call_status=Not_Picked` (write).
+  - `getRetentionTaskDetail?task_id=&dev=1` (returns `escalated_ticket_id`).
+- **List:**
+  - Status filter Due Today (default) / Upcoming / Escalated / Closed; Centre filter; Closed-tab From/To on Resolved
+    date; Search; header badge "X DUE TODAY".
+  - Columns: Child, Centre, Step/Attempt, Status, Trigger, Next Due (Closed: Resolved), Action (Log Call + History).
+  - Closed statuses: Closed By CD / Support Resolved / Child Status Changed.
+  - Log Call is disabled on Upcoming. A CD sees only History on Escalated.
+- **Log Retention Call popup** "Log Retention Call - <Child>":
+  - Read-only: Centre, Step/Attempt, Absences, Window, Absent On dates, Sibling info panel, Updated By.
+  - Outcome* (Not Picked / Received). When Received, Action* (Reschedule / Close case) appears.
+  - Spoke With: optional, Father / Mother / Other per UI vs FSD Father / Mother / Guardian / Other (Q3 open).
+  - Notes are required only for Close case.
+  - Confirm dialog → "Retention call updated successfully.".
+  - Stale submit → "This task was already updated, please refresh.".
+  - Not Picked or Reschedule = a strike (next attempt). The 3rd strike escalates to Parent Support (ESCALATION is a
+    terminal step). Support resolves with a mandatory note → "Support Resolved".
+- **History popup** "Call History": a table with # / Outcome / Action / Spoke With / Notes / Logged At. An inline "Add
+  note / Save" shows only on empty "No CD Action" rows. The Support Notes section appears only when Support notes exist.
+- **Rights:** `View_Attendance_Retention` (scoped by centre access), `Update_Attendance_Retention_Call`.
+- **Global switch** `attendance_retention_enabled`: "Attendance retention is disabled (global).".
+
+### Payment Retention (Children → Updates → Payment Retention List, `payment_retention_list`)
+
+- **Scope:** an unpaid Daycare / Preschool invoice raised on the 1st, for an Active or Paused child. Excluded: trial,
+  corporate-paid, extended-daycare-only, voided, amount ≤ 1, Test / Demo / Inhouse / Emergency Daycare / Summer Camp /
+  Attrition. The old `payment_reminders` cron skips in-scope invoices.
+- **Plan:**
+
+  | Day | Action |
+  |---|---|
+  | 1 | Invoice email + WhatsApp |
+  | 3 / 4 | Reminders |
+  | 5 (evening) | CD attendance task if Present ≤ 1 and Absent/NM ≥ 1 and reminder_step ≥ 2 |
+  | 6 / 7 | Reminders (Version A with a Day-5 case / Version B without) |
+  | 8 | Escalation to Support + FreshDesk ticket |
+  | 9 / 10 | Advance the same case |
+  | 11 | Non-payment attrition |
+
+  Auto-close: Payment_Received / Invoice_Voided / Child_Status_Changed. Pause keeps the case open. A dispute skips
+  steps.
+- **Jobs:** `checkInvoicesInScope`, `sendInvoiceRaisedWhatsApp`, `processPaymentReminders` (06:00–11:59),
+  `processPaymentTasks` slot=evening (18:00–23:59) / slot=morning (06:00–11:59); params `SkipTimeCheck=1`,
+  `invoice_id`, `as_of_date`, `dry_run=1`, `skip_send=1`. The exact URL path / base is not yet confirmed.
+- **List:**
+  - Tabs: Due today (default; uses server date, not as_of_date), Upcoming, Escalated, Closed.
+  - Filters: Centre (searchable), Child ID (exact match), date range (opened date; Closed = closed date), search box.
+  - Columns: Child (+ #admission_id), Centre, Attendance Day 1–5 P/A counts, Amount due (+ invoice date; the invoice
+    number is NEVER shown), Last outcome pill, Status (Open (CD) / Escalated (Support) / Closed + resolution), Due on /
+    Closed on.
+  - Action: Log Call + History when due and not logged; Logged + History when logged; History only for upcoming or
+    closed cases.
+- **Log Payment Call popup:**
+  - Read-only context: Updated By; Case summary (Day N – owner, attendance counts, due date); Invoice panel (no invoice
+    number); DAY_5 guidance "This call is about {Child}'s attendance only. Don't raise payment."; Previous notes.
+  - Inputs: Call Status* (Answered / No Answer); Outcome* (Resolved / Unresolved), shown only for Answered; Call With*
+    (Father / Mother / Guardian / Other); Remarks (optional).
+  - Confirm → "Updated successfully!!". A logged outcome does NOT change the step or status.
+  - Duplicate → "An outcome is already logged for this task".
+  - Stale → "This task was already updated, please refresh".
+- **History popup:** rows show day/step, outcome, call with, remarks, logged by and date/time. A system "No action" row
+  reads "No outcome logged by <role> for Day N" and has "Add note" (Update right only; `updatePaymentCallNote`).
+- **Rights:** `View_Payment_Retention`, `Update_Payment_Retention_Call` (rights, not roles).
+- **Open queries in the sheet:** Q1–Q7 (Day-11 wording, earlier-month invoices, FreshDesk retry, Due today vs
+  as_of_date, approved WhatsApp text, ladder order, API right enforcement).
+
+**Decisions (user, 2026-11-03):** run as **Rakesh** (no user switch). Phase 1 = UI (list, filters, columns, popups,
+validations, rights, History); Phase 2 = cron/API chains, after a separate OK. Tests MAY log calls (Log Call → Save) on
+any Due Today case on UAT.
+
+### Confirmed live + automation status (2026-11-03, as Rakesh)
+
+**Files:**
+
+- Pages: `pages/Children/Updates/PaymentRetentionPage.java`, `AttendanceRetentionPage.java`.
+- Tests: `testScripts/ChildrenTests/Updates/PaymentRetentionTest.java`, `AttendanceRetentionTest.java`.
+- Suites: `PaymentRetentiontestng.xml`, `AttendanceRetentiontestng.xml`.
+- Additive: `IAutoConstant.PAYMENT_RETENTION_URL` / `ATTENDANCE_RETENTION_URL`,
+  `Navigations.goToPaymentRetention(query)` / `goToAttendanceRetention(query)`.
+
+**Payment Retention (live):**
+
+- Menu "Children > Updates > Payment Retention"; heading h2 "Payment Retention"; count "N Due / Current".
+- Help note (a blue box): "Due / Current: Day-5 CD calls and Day 8–10 Support calls due today or earlier. Upcoming … With
+  Support … Date range filters by case opened date (Closed tab: closed date). Log Call opens once a step is due and
+  takes one outcome per step."
+- Tab labels: "Due / Current", Upcoming, "With Support" (= escalated), Closed. Default From = 1st of the month, so the
+  Oct cases show only with `from_date=2026-01-01`.
+- Filter + Clear. Child ID is an exact match. From > To gives no rows and no error.
+- 8 columns: Child | Centre | Attendance (Day 1–5) | Amount Due | Last Outcome | Status | Due | Action. Status values:
+  "Open (CD)", "With Support", and "Paid" (closed).
+- Log call popup "Log call — <child>":
+  - Pills "Day 5 — CD attendance call" + "Centre Director".
+  - Context: Attendance (Day 1–5) / Due / Invoice date / Amount due / Invoice due date. No invoice number, **no "Updated
+    By" field**.
+  - Errors: "Please select the call status." / "Please select the outcome." / "Please select who you spoke with.".
+  - Confirm: "Save this call outcome? Only one outcome can be logged per task." → **"Call outcome saved."** (sheet:
+    "Updated successfully!!") → reload.
+  - The POST goes to the V1 host, `test-admissions…/api/paymentretention/logPaymentCall`.
+- History popup "Call history — <child>": columns Step | Outcome ("Answered — Resolved" / "No Answer" / "No action" /
+  "Closed") | Call with | Remarks / note | Logged at. No-action rows read "No outcome logged by CD for DAY_5." with a Save
+  box. A closed case shows "Auto-closed (Payment_Received): Invoice paid.".
+
+**Attendance Retention (live):**
+
+- Heading "Attendance Retention Call List". Status Due Today / Upcoming / Escalated / Closed; Centre; From / To
+  (pickadate, empty by default); **Apply**. Badge "N Due Today".
+- Columns: Child | Centre | Step / Attempt | Status | Trigger | Next Due | Action. The Closed tab keeps "Next Due" (it
+  shows the resolved date).
+- Upcoming Log Call is disabled with title "Not due until yyyy-MM-dd".
+- History "Call History — <child> (#id)": # | Outcome | Action | Spoke With | Notes | Logged At; Support Notes
+  "[dd Mon yyyy, hh:mm AM · Name] note".
+- Data on 03-Nov: Upcoming 43216 Samay Shah (task 1320, due 04 Nov, shows "Attempt 2 / 1"); Closed 27990 (task 1296,
+  Support Resolved). **No Due Today / Escalated case, so the Log Retention Call popup was not reachable (Phase 2).**
+
+**Runs:**
+
+| Suite | Pass | Fail | Skip | Notes |
+|---|---|---|---|---|
+| Payment | 12 | 2 | 1 | SC003_TC007 skipped: no fresh due case left |
+| Attendance | 7 | 0 | 1 | SC005_TC001 skipped: no due case |
+
+**Saves made on 03-Nov (all 7 Payment due cases are now "Logged"):**
+
+| Child | Task | Outcome |
+|---|---|---|
+| Vyom Roy 54537 | 1328 | Answered — Resolved, Mother |
+| Laksh Mishra 73875 | 1329 | No Answer, Guardian, HTML / Hindi / emoji remarks |
+| Vedant 69073 | 1326 | No Answer, Other |
+
+**NOT bugs (user, 2026-11-03) — do not report:** the three candidates below (second outcome on the same step,
+emoji saved as "????", raw "DAY_4" / "DAY_5" step codes in History). `sc003_tc004` (emoji only logged) and `sc003_tc007b` (second
+outcome must save and add one History row) were updated to treat this as correct; compiled, not yet re-run (no fresh
+due case). `sc003_tc007` (two-window stale save) still expects a rejection — never run, behaviour unconfirmed.
+
+**Former bug candidates (closed as not bugs):**
+
+1. **Second outcome accepted for the same step.** Vedant 69073 (task 1326, DAY_5) already had "Answered — Unresolved"
+   (09 Oct), yet the list still offered Log Call, and a 2nd outcome saved ("Call outcome saved."). History now shows it
+   as step **"0"**. `sc003_tc007b` fails.
+2. **Emoji in Remarks saved as "????"** (Hindi and HTML are fine; no script runs). Likely a utf8 (not utf8mb4) column.
+   Re-check manually, since ChromeDriver typing can be unreliable for emoji. `sc003_tc004` fails.
+
+**Queries:**
+
+- No "Updated By" field in the Payment popup.
+- The save message differs from the sheet.
+- Vyom's History pill shows the raw "DAY_4".
+- Attendance shows "Attempt 2 / 1".
