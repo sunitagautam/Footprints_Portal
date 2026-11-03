@@ -296,6 +296,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → CORPORATE COMPANY
+    // ═══════════════════════════════════════════════
+    public void goToCorporateCompany() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.CORPORATE_COMPANY_URL);
+        System.out.println("✅ Navigated to: Corporate Company");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // TEACHER PAYOUT REPORT — direct URL (not linked in any menu yet)
     // queryString: e.g. "filter_center_id=34&date_filter=Current+Quarter&..."
     //              (empty → the blank "Select a COCO centre" view)

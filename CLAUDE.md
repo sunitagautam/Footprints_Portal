@@ -3978,6 +3978,47 @@ Records, since uninvoiced children are not on this screen).
 ownership / blank offers and Q25 new admission open). TC_013 invoice number inside the PDF was checked manually by the
 user (no PDF library). Test Summary: 105 TCs / 98 pass.
 
+### Corporate Company (SC_006) — automation IN PROGRESS (stopped 2026-10-28 evening, resume here)
+
+Files (uncommitted): `pages/Franchise/CorporateTieups/CorporateCompanyPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/CorporateCompanyTest.java` (10 tests), `CorporateCompanytestng.xml`; additive
+`IAutoConstant.CORPORATE_COMPANY_URL`, `Navigations.goToCorporateCompany()`.
+
+**Confirmed live (2026-10-28):**
+
+- **Heading:** h5 "Corporate Company". Button "Add Corporate Company" (`add_corporate_company?pop=yes`, popdown).
+- **Filter form `#corporate_company`:** `#company_name` (text); `#company_city` [All + 18]; `#company_state` [All + 12];
+  `#company_status` [All, Active, Inactive]; Search `#btn_submit`; **no Clear**.
+- **Dropdown data quality:** cities include "Rajasthan", "Basal", lowercase "kolkata"; states include both "Gujarat" and
+  "Gujrat", plus lowercase "bengal".
+- **Table** `table.dataTable`, 10 per page, 131 → 132 rows: Company Name | Company ID (hidden) | City | State | Status |
+  Company Created ("September 22nd, 2026, 10:33 AM") | Action (Update `add_corporate_company?pop=yes&company_id=<base64>`,
+  not sortable). Search box has no placeholder.
+- **Download:** `corporate_company.csv` (client side), 6 columns (no Action).
+- **Add / Update popup (`#popdown-dialog`):**
+  - Fields: `#new_company_name`, `#new_company_address` (textarea), `#company_city_id` / `#company_state_id` (with
+    OTHER → `#other_city` / `#other_state` text), `#new_company_status` [Active (default), Inactive].
+  - Button `#btn_save_data`: Submit / Update.
+  - Empty submit → "Company name is required." / "Company address is required." / "Company city is required." / "Company
+    state is required." (nothing sent).
+  - No confirm. Messages: "New Company Added Successfully." / "Company Data Updated Successfully."
+
+**Test data (user, 2026-10-28: one QA company, reused):** "QA Auto Company" (id 132, Noida, Uttar Pradesh, Active) was
+added once. TC_008 never submits the same name again; TC_010 edits its address each run.
+
+**Run (28-Oct):** 9 pass; **TC_002 fails — Status = Active does not filter** (lists all 132 incl. the 2 Inactive: Sobek
+Auto India #50, Tata 1MG Healthcare #48; Inactive filter works).
+
+**Open, ask the user tomorrow:**
+- Report as bugs (Low)? (1) Active status filter ignored; (2) Created time "October 28th, 2026, 13:01 PM" (24-hour hour
+  with PM) for QA Auto Company.
+- Whether a duplicate company name should be blocked (TC_008 deliberately does not test it).
+- Then: build sheet `TC_CorporateCompany` (same builder pattern as `build_invoice.py`; Test Summary by row number 7/13
+  and 19/25) and commit Corporate Invoice and Corporate Company, one commit per screen.
+
+**Next screens after Corporate Company:** Tieup Plans and Pricing (SC_007), Tie-up Expiry Migration Admissions (SC_009),
+Corporate Credits Issued (SC_011–012).
+
 ### Menu now has 10 screens (Rakesh, 2026-11-02) — automate every one (user)
 
 Tieup Details, Admission Invites, Admission Records, **Corporate Admission Count** (`tieup_admission_count`, new),
