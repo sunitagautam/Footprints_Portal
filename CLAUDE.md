@@ -3978,10 +3978,10 @@ Records, since uninvoiced children are not on this screen).
 ownership / blank offers and Q25 new admission open). TC_013 invoice number inside the PDF was checked manually by the
 user (no PDF library). Test Summary: 105 TCs / 98 pass.
 
-### Corporate Company (SC_006) — automation IN PROGRESS (stopped 2026-10-28 evening, resume here)
+### Corporate Company (SC_006) — automation (2026-10-28, sheet + TC_011 on 2026-11-04, as Rakesh)
 
-Files (uncommitted): `pages/Franchise/CorporateTieups/CorporateCompanyPage.java`,
-`testScripts/FranchiseTests/CorporateTieups/CorporateCompanyTest.java` (10 tests), `CorporateCompanytestng.xml`; additive
+Files: `pages/Franchise/CorporateTieups/CorporateCompanyPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/CorporateCompanyTest.java` (11 tests), `CorporateCompanytestng.xml`; additive
 `IAutoConstant.CORPORATE_COMPANY_URL`, `Navigations.goToCorporateCompany()`.
 
 **Confirmed live (2026-10-28):**
@@ -4006,18 +4006,18 @@ Files (uncommitted): `pages/Franchise/CorporateTieups/CorporateCompanyPage.java`
 **Test data (user, 2026-10-28: one QA company, reused):** "QA Auto Company" (id 132, Noida, Uttar Pradesh, Active) was
 added once. TC_008 never submits the same name again; TC_010 edits its address each run.
 
-**Run (28-Oct):** 9 pass; **TC_002 fails — Status = Active does not filter** (lists all 132 incl. the 2 Inactive: Sobek
-Auto India #50, Tata 1MG Healthcare #48; Inactive filter works).
+**Bugs (written up 03-Nov-2026):** all in `Bug Evidence/`.
+- `Bug_CorporateCompany_ActiveFilterIgnored.md` (Low): Status = Active still lists all 134 incl. the 2 Inactive (Sobek Auto
+  India #50, Tata 1MG Healthcare #48). TC_002 fails until fixed.
+- `Bug_CorporateCompany_CreatedTime24hPM.md` (Low): 21 companies show a 24-hour hour with PM ("13:01 PM"); midnight "00:00 AM".
+  TC_012, not automated.
+- `Bug_CorporateCompany_DuplicateNameAllowed.md` (Medium): duplicate names must be blocked (user), but adding "QA Auto
+  Company" again created **id 134**. No delete on the screen, so dev must remove it. `tc011_duplicateNameBlocked` fails
+  (it asserts exactly one QA Auto Company before submitting, so it adds no further duplicates while 134 exists).
 
-**Open, ask the user tomorrow:**
-- Report as bugs (Low)? (1) Active status filter ignored; (2) Created time "October 28th, 2026, 13:01 PM" (24-hour hour
-  with PM) for QA Auto Company.
-- Whether a duplicate company name should be blocked (TC_008 deliberately does not test it).
-- Then: build sheet `TC_CorporateCompany` (same builder pattern as `build_invoice.py`; Test Summary by row number 7/13
-  and 19/25) and commit Corporate Invoice and Corporate Company, one commit per screen.
-
-**Next screens after Corporate Company:** Tieup Plans and Pricing (SC_007), Tie-up Expiry Migration Admissions (SC_009),
-Corporate Credits Issued (SC_011–012).
+**Status (04-Nov):** 9 pass, TC_002 + TC_011 fail (bugs). Sheet `TC_CorporateCompany` (after TC_ParentCompanyReport): 12 TCs
+(SC_006_TC_001–010 + new TC_011 duplicate name, TC_012 created-time format), 9 Pass, 3 Fail; Q51 (City / State list values).
+Test Summary 217 TCs / 199 pass; defects 3 Medium + 8 Low.
 
 ### Menu now has 10 screens (Rakesh, 2026-11-02) — automate every one (user)
 

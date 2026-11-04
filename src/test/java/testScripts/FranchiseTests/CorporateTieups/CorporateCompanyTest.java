@@ -333,4 +333,31 @@ public class CorporateCompanyTest extends BaseTest {
         Assert.assertEquals(companyPage.getPopupValue("new_company_address"), address, "❌ Address not updated");
         Reporter.log("✅ SC_006_TC_010 PASSED", true);
     }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  SC_006_TC_011 (new) — Duplicate company name is not allowed
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 32, description = "SC_006_TC_011 — Duplicate company name is blocked", dependsOnMethods = "tc008_addCompany")
+    public void tc011_duplicateNameBlocked() throws InterruptedException {
+        Reporter.log("▶ SC_006_TC_011 — Add '" + QA_COMPANY + "' again (duplicate names not allowed — Sunita Gautam, 03-Nov-2026)", true);
+        long before = companyPage.getColumnValues("Company Name").stream().filter(n -> n.equalsIgnoreCase(QA_COMPANY)).count();
+        Assert.assertEquals(before, 1, "❌ Expected exactly one '" + QA_COMPANY + "' before the test");
+        companyPage.clickAddCompany();
+        companyPage.enterPopupField("new_company_name", QA_COMPANY);
+        companyPage.enterPopupField("new_company_address", "Duplicate-name check (QA automation)");
+        companyPage.selectPopup("company_city_id", "Noida");
+        companyPage.selectPopup("company_state_id", "Uttar Pradesh");
+        companyPage.selectPopup("new_company_status", "Active");
+        companyPage.startCapture(true);
+        companyPage.clickPopupSubmit();
+        String msg = companyPage.waitForMessage();
+        Reporter.log("   Message: " + msg + " | errors " + companyPage.getPopupErrors(), true);
+        Thread.sleep(3000);
+        reopen();
+        long after = companyPage.getColumnValues("Company Name").stream().filter(n -> n.equalsIgnoreCase(QA_COMPANY)).count();
+        Reporter.log("   '" + QA_COMPANY + "' rows: " + before + " → " + after, true);
+        Assert.assertEquals(after, 1, "❌ Duplicate company saved (" + after + " rows named '" + QA_COMPANY + "')");
+        Assert.assertFalse(msg.toLowerCase().contains("added successfully"), "❌ Duplicate accepted: " + msg);
+        Reporter.log("✅ SC_006_TC_011 PASSED", true);
+    }
 }
