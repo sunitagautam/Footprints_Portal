@@ -245,7 +245,7 @@ public class CorporateInvoiceTest extends BaseTest {
         }
         List<String> cols = new ArrayList<>();
         for (String c : header.split(",")) cols.add(c.replace("\"", "").trim());
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("dd_MMM_yyyy", Locale.ENGLISH));
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("d_MMM_yyyy", Locale.ENGLISH));
         Reporter.log("   File: " + csv.getName() + " | records " + rows + " (button " + expected + ") | columns " + cols, true);
         Assert.assertEquals(csv.getName().replaceAll(" \\(\\d+\\)", ""), "corporate_invoice" + today + ".csv", "❌ File name");
         Assert.assertTrue(cols.containsAll(CSV_COLUMNS), "❌ CSV columns: " + cols);
