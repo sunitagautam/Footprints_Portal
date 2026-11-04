@@ -139,4 +139,35 @@ public class SMSView_Page {
         if (m2.find()) return m2.group(1);
         return "";
     }
+
+    // ═══════════════════════════════════════════════
+    // LATEST SMS ROW BY SMS TYPE (added 2026-11-04 for Pickup Authorization; additive)
+    // SMS View columns: SMS DATE | SMS NUMBER | SMS TEXT | SMS TYPE | SMS STATUS (newest first, dates in UTC).
+    // Pickup OTPs (centre OTP and parent card / daily OTP) have SMS TYPE "Pickup Authorization" and text
+    // "Your One Time Password (OTP) is 466466. This OTP will be valid for next 5 mins.- Footprints".
+    // Returns the whole row text of the newest row of that type on page 1, or "" when none.
+    // ═══════════════════════════════════════════════
+    public String getLatestRowTextBySmsType(String smsType) {
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//table//tbody//tr[1]")));
+        for (WebElement row : driver.findElements(By.xpath("//table//tbody//tr"))) {
+            List<WebElement> cells = row.findElements(By.tagName("td"));
+            // textContent, not getText(): in a narrow window the responsive table hides the SMS TYPE column
+            // the table has a hidden ID column, so the SMS TYPE cell is matched by text, not by index
+            for (WebElement cell : cells) {
+                if (cell.getAttribute("textContent").trim().equalsIgnoreCase(smsType)) {
+                    return row.getAttribute("textContent").replaceAll("\\s+", " ").trim();
+                }
+            }
+        }
+        return "";
+    }
+
+    /** First run of exactly {@code digits} digits after "OTP" in the text (e.g. 6 for pickup OTPs). */
+    public static String extractOtp(String text, int digits) {
+        if (text == null) return "";
+        Matcher m = Pattern.compile("OTP\\)?\\s*(?:is)?\\s*(\\d{" + digits + "})\\b").matcher(text);
+        if (m.find()) return m.group(1);
+        Matcher m2 = Pattern.compile("\\b(\\d{" + digits + "})\\b").matcher(text);
+        return m2.find() ? m2.group(1) : "";
+    }
 }

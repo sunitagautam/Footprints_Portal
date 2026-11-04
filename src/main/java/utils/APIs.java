@@ -1028,4 +1028,87 @@ public class APIs {
         System.out.println("   Response: " + response.getBody().asString());
         return response;
     }
+
+    // ═══════════════════════════════════════════════
+    // VISITOR PICKUP (Parent App APIs, SDA-13303 / SDA-13881) — used as test-data setup for
+    // Children → Updates → Pickup Authorization. In real life the parent does these steps in the app.
+    // All are POST {{Base_URL}}visitorpickup/<method>/ as form-data; no ckey.
+    // ═══════════════════════════════════════════════
+    public static final String VISITOR_PICKUP = "visitorpickup/";
+
+    private static Response visitorPickupPost(String method, java.util.Map<String, String> fields, java.io.File photo) {
+        System.out.println("▶ POST " + ADMISSIONS_BASE_URL + VISITOR_PICKUP + method + "/ " + fields);
+        io.restassured.specification.RequestSpecification spec = given().baseUri(ADMISSIONS_BASE_URL);
+        for (java.util.Map.Entry<String, String> e : fields.entrySet()) {
+            spec = spec.multiPart(e.getKey(), e.getValue());
+        }
+        if (photo != null) spec = spec.multiPart("visitor_photo", photo, "image/jpeg");
+        Response response = spec.when().post(VISITOR_PICKUP + method + "/").then().extract().response();
+        System.out.println("   " + response.getStatusCode() + " " + response.getBody().asString());
+        return response;
+    }
+
+    private static java.util.Map<String, String> pickupFields(String childId, String parentEmail) {
+        java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+        m.put("child_id", childId);
+        m.put("parent_email", parentEmail);
+        return m;
+    }
+
+    public static Response getVisitorPickupCards(String childId, String parentEmail) {
+        return visitorPickupPost("getVisitorPickupCards", pickupFields(childId, parentEmail), null);
+    }
+
+    /** cardType = Permanent | Temporary; relation = Grandfather/Grandmother/Uncle/Aunt/Family Friend/Other. */
+    public static Response saveVisitorPickupCard(String childId, String parentEmail, String cardType,
+                                                 String visitorName, String relation, java.io.File photo) {
+        java.util.Map<String, String> m = pickupFields(childId, parentEmail);
+        m.put("card_type", cardType);
+        m.put("visitor_name", visitorName);
+        m.put("relation_to_child", relation);
+        return visitorPickupPost("saveVisitorPickupCard", m, photo);
+    }
+
+    /** Schedules a Temporary card; pickupDate = yyyy-MM-dd (or a comma list). */
+    public static Response activateVisitorPickup(String childId, String parentEmail, String cardId, String pickupDate) {
+        java.util.Map<String, String> m = pickupFields(childId, parentEmail);
+        m.put("card_id", cardId);
+        m.put("pickup_date", pickupDate);
+        return visitorPickupPost("activateVisitorPickup", m, null);
+    }
+
+    /** purpose = add | renew. The OTP is read from SMS View (as Rakesh). */
+    public static Response sendPickupCardOtp(String childId, String parentEmail, String cardId, String purpose) {
+        java.util.Map<String, String> m = pickupFields(childId, parentEmail);
+        m.put("card_id", cardId);
+        m.put("purpose", purpose);
+        return visitorPickupPost("sendPickupCardOtp", m, null);
+    }
+
+    public static Response verifyPickupCardOtp(String childId, String parentEmail, String otpToken, String otpCode) {
+        java.util.Map<String, String> m = pickupFields(childId, parentEmail);
+        m.put("otp_token", otpToken);
+        m.put("otp_code", otpCode);
+        return visitorPickupPost("verifyPickupCardOtp", m, null);
+    }
+
+    public static Response sendDailyAuthorisationOtp(String childId, String parentEmail, String requestId) {
+        java.util.Map<String, String> m = pickupFields(childId, parentEmail);
+        m.put("request_id", requestId);
+        return visitorPickupPost("sendDailyAuthorisationOtp", m, null);
+    }
+
+    public static Response verifyDailyAuthorisationOtp(String childId, String parentEmail, String otpToken, String otpCode) {
+        java.util.Map<String, String> m = pickupFields(childId, parentEmail);
+        m.put("otp_token", otpToken);
+        m.put("otp_code", otpCode);
+        return visitorPickupPost("verifyDailyAuthorisationOtp", m, null);
+    }
+
+    /** Parent cancels a scheduled date (request_id). */
+    public static Response deactivateVisitorPickup(String childId, String parentEmail, String requestId) {
+        java.util.Map<String, String> m = pickupFields(childId, parentEmail);
+        m.put("request_id", requestId);
+        return visitorPickupPost("deactivateVisitorPickup", m, null);
+    }
 }

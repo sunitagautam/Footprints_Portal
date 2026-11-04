@@ -51,6 +51,10 @@ public final class IAutoConstant {
             "https://test-franchise.footprintseducation.in/corporate_admissions";
     public static final String PAYMENT_RETENTION_URL =
             "https://test-franchise.footprintseducation.in/payment_retention_list";
+    public static final String PICKUP_AUTHORIZATION_URL =
+            "https://test-franchise.footprintseducation.in/pickup_authorization";
+    public static final String ATTENDANCE_UPDATES_URL =
+            "https://test-franchise.footprintseducation.in/attendance_updates";
     public static final String ATTENDANCE_RETENTION_URL =
             "https://test-franchise.footprintseducation.in/attendance_retention_call_list";
     public static final String ADMISSION_COUNT_URL =

@@ -288,6 +288,21 @@ public class Navigations {
         Thread.sleep(2000);
     }
 
+    public void goToPickupAuthorization(String queryString) throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.PICKUP_AUTHORIZATION_URL
+                + (queryString == null || queryString.isEmpty() ? "" : "?" + queryString));
+        System.out.println("✅ Navigated to: Pickup Authorization");
+        Thread.sleep(2000);
+    }
+
+    public void goToAttendanceUpdates() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ATTENDANCE_UPDATES_URL);
+        System.out.println("✅ Navigated to: Attendance Updates");
+        Thread.sleep(2000);
+    }
+
     public void goToCorporateAdmissionCount() throws InterruptedException {
         closeModalIfOpen();
         driver.get(utils.IAutoConstant.ADMISSION_COUNT_URL);
@@ -370,6 +385,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → ADJUST CORPORATE CREDITS
+    // ═══════════════════════════════════════════════
+    public void goToAdjustCorporateCredits() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ADJUST_CORPORATE_CREDITS_URL);
+        System.out.println("✅ Navigated to: Adjust Corporate Credits");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → REFUND LIST
     // Navigates directly via URL — no sub-menu link
     // needed since the screen URL is known. Used by
@@ -381,16 +406,6 @@ public class Navigations {
         driver.get(utils.IAutoConstant.REFUND_LIST_URL);
         System.out.println("✅ Navigated to: Refund List");
         Thread.sleep(1500);
-    }
-
-    // ═══════════════════════════════════════════════
-    // FRANCHISE → CORPORATE TIE-UPS → ADJUST CORPORATE CREDITS
-    // ═══════════════════════════════════════════════
-    public void goToAdjustCorporateCredits() throws InterruptedException {
-        closeModalIfOpen();
-        driver.get(utils.IAutoConstant.ADJUST_CORPORATE_CREDITS_URL);
-        System.out.println("✅ Navigated to: Adjust Corporate Credits");
-        Thread.sleep(2500);
     }
 
     // ═══════════════════════════════════════════════
