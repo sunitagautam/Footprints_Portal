@@ -4171,6 +4171,42 @@ Evidence `Bug Evidence/ParentCompanyReport/`. TC_010–TC_012 fail until fixed.
 **Status (02-Nov):** 11 pass + 3 fail (bugs). Sheet `TC_ParentCompanyReport` (after TC_CorporateInvoice): 14 TCs, 11 Pass,
 3 Fail; Q32–Q35. Test Summary 133 TCs / 122 pass; defects 2 Medium + 5 Low. **Not committed yet.**
 
+**Pending Co-Pay Setup requirement (user, 2026-11-02):** pending break-up update list of Co-Pay admissions; right
+`Copay_Update_Access`; list of Co-Pay admissions with a Rs 1 plan (monthly or annual, any payer) or with invites whose
+breakup flag is not updated, admission date after 3 days; filters Offer, Center; columns Child ID, Child Name, Center, Offer
+title, Program, Plan, Joining Date, Actions (Update Subscription Plan); Download CSV. Still not in Rakesh's menu.
+
+### Pending Co-Pay Setup (SC_004) — automation (2026-11-03, as Rakesh)
+
+Files: `pages/Franchise/CorporateTieups/PendingCoPaySetupPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/PendingCoPaySetupTest.java` (9 tests), `PendingCoPaySetuptestng.xml`; additive
+`IAutoConstant.PENDING_COPAY_SETUP_URL`, `Navigations.goToPendingCoPaySetup()` (direct URL). Rakesh has `Copay_Update_Access`.
+
+**Confirmed live (2026-11-03):**
+
+- Heading "Pending Co-Pay Setup Admissions". Filters `#sr_offer_id` ("--Select--") and `#sr_center_id` ("All") + Filter; search; Download
+  `pending_copay_setup.csv` (7 columns, no Actions); 10 per page, default order Child Id ascending. Columns: Child Id | Child Name | Center |
+  Offer Title | Program | Plan | Joining Date (yyyy-mm-dd) | Actions (`Update Subscription Plan`). 21 children on 03-Nov.
+- **Update popup** "Co-Pay Plan Subscription Setup Update (#<id>)": notes 1) / 2), child details incl. Breakup Details; sections For Registration
+  Fee (`#registration_fee` pre-filled with the centre fee, `#registration_fee_payer` Parent / Corporate), For Parent Payer
+  (`#parent_monthly_plan` preselected with the child's Rs 1 plan, "Create New Plan" = `add_new_plan` → `#parent_monthly_plan_amt`,
+  `#monthly_billing_date` month), For Corporate Payer (`#corp_monthly_plan`, `#corp_monthly_plan_amt`, `#corp_monthly_billing_date`); yearly
+  plans only for V1. Coupons `#child_monthly_coupon` / `#child_yearly_coupon` default `remove_discount`.
+- Validation: only the fields still empty show "required!" (Registration Fee payer and Parent month on 74169). No confirm → POST
+  `api/billing/updateCopayBillingSetup` (V1 host) → PNotify "Co-pay Admission Monthly/Yearly Billing Plan Updated Successfully".
+- Popups that cannot be set up: "Child admission not processed yet" (72648, 73455, 73645, 73649, 74276 — listed by design,
+  user Q49) and "Child should be of Corporate Co-Pay tieup" (74741 — the bug). Joining Date in yyyy-mm-dd is expected (user Q50).
+
+**Test data:** TC_007 set child **74169** (ProEves Short Term, V2, breakup corporate 8,998): registration fee 11,499 paid by Parent, parent
+14,301 + corporate 8,998 monthly from 01 Dec 2026; the child left the list. 74169 is used up — a fresh pending Co-Pay child with its breakup
+is needed for the next run (`-DcopaySetupChild=`); TC_007 skips otherwise.
+
+**🐛 Bug (Low):** 74741 is listed but cannot be set up — `Bug Evidence/Bug_PendingCoPay_ListedChildCannotBeSetUp.md`. TC_009 fails until fixed.
+
+**Status (04-Nov):** 8 pass + TC_009 fail (bug). Sheet `TC_PendingCoPaySetup` (after TC_CorporateAdmissionCount): 9 TCs (SC_004_TC_001–008 +
+new TC_009), 8 Pass, 1 Fail; Q49–Q50 closed (04-Nov). Test Summary 205 TCs / 190 pass; defects
+2 Medium + 6 Low.
+
 ### Corporate Credits Issued (SC_011) — automation (2026-11-03, as Rakesh)
 
 Files: `pages/Franchise/CorporateTieups/CorporateCreditsIssuedPage.java`,

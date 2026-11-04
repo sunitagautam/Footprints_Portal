@@ -350,6 +350,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → PENDING CO-PAY SETUP
+    // ═══════════════════════════════════════════════
+    public void goToPendingCoPaySetup() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.PENDING_COPAY_SETUP_URL);
+        System.out.println("✅ Navigated to: Pending Co-Pay Setup");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // FRANCHISE → CORPORATE TIE-UPS → CORPORATE CREDITS ISSUED
     // ═══════════════════════════════════════════════
     public void goToCorporateCredits() throws InterruptedException {
