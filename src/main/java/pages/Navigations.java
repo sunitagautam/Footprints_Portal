@@ -374,6 +374,16 @@ public class Navigations {
     }
 
     // ═══════════════════════════════════════════════
+    // FRANCHISE → CORPORATE TIE-UPS → ADJUST CORPORATE CREDITS
+    // ═══════════════════════════════════════════════
+    public void goToAdjustCorporateCredits() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.ADJUST_CORPORATE_CREDITS_URL);
+        System.out.println("✅ Navigated to: Adjust Corporate Credits");
+        Thread.sleep(2500);
+    }
+
+    // ═══════════════════════════════════════════════
     // SUPPORT → FINANCIAL UPDATES → CREDITS ISSUED
     // Navigates directly via URL, same as Email View /
     // Refund List.

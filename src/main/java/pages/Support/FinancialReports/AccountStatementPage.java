@@ -1706,4 +1706,12 @@ public class AccountStatementPage {
         }
         return "";
     }
+
+    // ✅ Corporate Account Summary value on a corporate child's Account Statement, e.g. "Corporate Credit Balance" → 2564.0
+    //    (rows read "Corporate Credit Balance 2,564.00 Refresh"; a zero shows as "0"). NaN when the label is not on the page
+    public double getCorporateSummaryAmount(String label) {
+        String body = String.valueOf(((JavascriptExecutor) driver).executeScript("return document.body.innerText;")).replace('\u00a0', ' ');
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote(label) + "\\s+(-?[\\d,]+(?:\\.\\d+)?)").matcher(body);
+        return m.find() ? Double.parseDouble(m.group(1).replace(",", "")) : Double.NaN;
+    }
 }

@@ -4412,3 +4412,44 @@ additive `IAutoConstant.TIEUP_PLANS_PRICING_URL`, `Navigations.goToTieupPlansPri
 (Fixed Fee, Corporate Pay, payers Corporate, Annual Fee Offer 5% Discount).
 
 **Status (03-Nov):** 17/17 pass. Sheet `TC_TieupPlansPricing`: 21 TCs, all Pass; Q42–Q44 closed. Test Summary 176 / 162 pass.
+
+### Adjust Corporate Credits (SC_011_TC_019–037) — exploration (2026-11-03, as Rakesh)
+
+Screen `corporate_invoice?type=due`, heading "Adjust Corporate Credits". It has the same filters, table and Update / Void
+actions as Corporate Invoice (`#datatable-invoice`, 169 Payment Due rows on 03-Nov). `window.pageDownloadFilters` adds
+`credit_adjust_data_required: YES`.
+
+- **Adjust icon** `a.adjust_credits_button[data-invoice][data-child-id]` (`icon-rulers`). It shows only when the child has a
+  corporate credit balance (1 row on 03-Nov). Tooltip: "Adjust Invoice #<id> From Credit Balance — Due Amount - Rs.<x> /
+  Credit Balance - Rs. <y>".
+- **Adjust flow:** confirm "This will adjust invoice if any credits lying in corporate account, Are you sure you want to do
+  it?" → POST `api/chargebeelistner/adjustCorporateCredits/` (V2 host) → `{"status":"ok","Response":"Corporate Credits
+  Adjusted"}`. The icon's own text becomes "Corporate Credits Adjusted". **No toast/flash** (spec: "Invoice adjusted
+  successfull.").
+- **Done live on 03-Nov, user-approved:** child **57826** (Devalla Veda Aaryan, Optum), invoice **66151** (PI/66151).
+  - Grid Amount Due 16,645.00 → **14,081.00** (= 16,645 − 2,564). The Void and Adjust icons are gone, and the PDF link
+    changes `irg=n` → `irg=r`.
+  - Account Statement: Corporate Credit Balance 2,564.00 → **0**; Corporate Dues 128,629 → 126,065; Corporate Credits
+    Issued stays 2,564.00. The ledger row PI/66151 still shows 16,645.00 with no credit line (the regenerated invoice
+    with the adjustment line is expected only after payment, per TC_036). The credit CN/P119/2025-26/1 (26 Jun 2025,
+    "against invoice 3957850") shows no link to PI/66151.
+- **Revert** needs the right **`Revert_Credit_Adjustment`** (Customer Support group; assigned to Rakesh on 04-Nov-2026). Without it no
+  Revert icon is shown (checked 03-Nov). With it, the adjusted row shows Download, Update and `a.revert_credit_adjustment`
+  (`icon-rotate-ccw2`, base64 `data-invoice` = {"invoice_id","child_id"}), tooltip "Revert Corporate Credit Adjustment for Unpaid
+  Invoice #<id>". Confirm "Are you sure want to revert corporate credit adjustment from invoice?" → POST (V2)
+  `api/corporatetieupplans/revertCorporateCreditAdjustmentInvoice` → `{"status":"ok","message":"Corporate Credit reversal successfully
+  completed"}` + flash "Corporate Credit reversal successfully completed.". The revert restores everything: Amount Due 16,645, Void +
+  Adjust icons, Corporate Credit Balance 2,564, Corporate Dues 1,28,629.
+- **The Invoice Status filter always stays Payment Due** on this screen (Paid / Void are reset on Filter) — Q45. Paid / voided invoices are
+  checked on Corporate Invoice.
+- Download: up to 1000 rows → client CSV `corporate_invoice.csv` (no date); more → "Download All N Records" →
+  `corporate_invoice<d_MMM_yyyy>.csv` (day NOT zero-padded, e.g. `corporate_invoice4_Nov_2026.csv`; CSV header starts with a BOM) — Q46.
+
+**Automation (04-Nov-2026): `AdjustCorporateCreditsPage` (extends `CorporateInvoicePage`), `AdjustCorporateCreditsTest`
+(19 tests), `AdjustCorporateCreditstestng.xml`; additive `IAutoConstant.ADJUST_CORPORATE_CREDITS_URL`,
+`Navigations.goToAdjustCorporateCredits()`, `AccountStatementPage.getCorporateSummaryAmount(label)`. All 19 pass.**
+
+- TC_031 / TC_032 mark one due invoice paid / void one per run (invoices with the Void icon). 04-Nov: 66147 + 65716 paid, 66146 + 65717
+  voided.
+- TC_034 → TC_037 adjust 57826 / 66151 and revert it in the same run, so the pair is reused (`-DadjustChildId`, `-DadjustInvoiceId`).
+- Sheet `TC_AdjustCorporateCredits` (after TC_CorporateCreditsIssued): 20 TCs (TC_019–037 + new TC_042 right), all Pass; Q45–Q48.
