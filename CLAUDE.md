@@ -4287,6 +4287,40 @@ is needed for the next run (`-DcopaySetupChild=`); TC_007 skips otherwise.
 new TC_009), 8 Pass, 1 Fail; Q49–Q50 closed (04-Nov). Test Summary 205 TCs / 190 pass; defects
 2 Medium + 6 Low.
 
+### Co-Pay Migration Data (SC_008) — automation (2026-11-05, as Rakesh)
+
+Files: `pages/Franchise/CorporateTieups/CoPayMigrationDataPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/CoPayMigrationDataTest.java` (10 tests), `CoPayMigrationDatatestng.xml`; additive
+`IAutoConstant.COPAY_MIGRATION_DATA_URL`, `Navigations.goToCoPayMigrationData()`.
+
+**Confirmed live (2026-11-05):**
+
+- Heading h5 "Co-Pay Migration Data". Filter form `#frm_invoice_report` (posts back): Center `#center_selection` (select2, "All
+  Center"), Status `#migration_updated` [All (default), Pending, Updated], `#exclude_inhouse` (ticked, in a hidden column), Filter
+  `#btn_submit`.
+- Table `#DataTables_Table_0` (`.dt-admission-invite`), **20 per page** (spec 10), order Child Name asc: Child Name | Length | Company
+  Name | Breakup | Payment Date | Monthly Fee ("Rs. X Diff. Rs. Y") | Existing Breakup (Monthly) | Updated Breakup (Monthly) | Update,
+  plus 8 "never" columns for the CSV. There is no Center column.
+- Download = client CSV `copay_annual_fee_migration.csv`: Child ID, Child Name, Length, Payment Date, Company Name, Breakup, Discount
+  Monthly, Discount Yearly, Parent Payer Monthly Fee, Corporate Payer Monthly Fee, Fee Amount of Center (Monthly), Diff Monthly Fee,
+  Admission Type.
+- 13 rows on 05-Nov: Pending 9, Updated 4 (= rows with an Updated Breakup: 56670, 60987, 40191, 41049 — these also show a red "its seems
+  incorrect plan set" note, Q53). Demo Center lists 40414 (Demo Ukg); Sector 122, Noida is empty.
+- **Update** `copay_migration_setup?pop=yes&child_id=&m=&cm=&y=&cy=` (popdown_xl_large) → "Co-Pay Plan Subscription Update (#id)": child
+  details + existing plans, FOR PARENT PAYER / FOR CORPORATE PAYER monthly + yearly (V1 only) plan multiselects `#parent_monthly_plan`,
+  `#parent_yearly_plan`, `#corp_monthly_plan`, `#corp_yearly_plan`, pre-filled from m / y / cm / cy. All cleared → "Select at least one
+  plan from list". Update `#btn_pop_update_migration_plan` → **no confirm** → POST (V1)
+  `api/corporate/updateCoPayNewPlan4Migration/` → `{"status":"ok","message":"Details successfully Updated"}` → `location.reload()` at
+  once (the page object keeps the reply in sessionStorage `qaCopayMigration`).
+
+**🐛 Bug (Medium, 05-Nov-2026, user: plans must change at once):** Update on **56670** (Aadvik Chandna; approved by the user) returns ok
+three times, but the Account Statement keeps parent 7,053 / corporate 7,053 monthly and corporate yearly 15,000 (parent yearly none);
+Child and Subscription History stay empty; the grid row is unchanged. `Bug Evidence/Bug_CoPayMigration_UpdateNotApplied.md` +
+`CoPayMigration_UpdateNotApplied/`. `tc007_updatePlans` fails until fixed (`-DcopayMigrationChild=` to use another child).
+
+**Status (05-Nov):** 9 pass + TC_007 fail (bug). Sheet `TC_CoPayMigrationData` (after TC_PendingCoPaySetup): 10 TCs (SC_008_TC_001–007 +
+new TC_008 Status filter, TC_009 Update popup, TC_010 no plan), 9 Pass, 1 Fail; Q52 (grid vs CSV diff for discounted children),
+Q53 (red note). Test Summary 227 TCs / 208 pass; defects 4 Medium + 8 Low.
 ### Corporate Credits Issued (SC_011) — automation (2026-11-03, as Rakesh)
 
 Files: `pages/Franchise/CorporateTieups/CorporateCreditsIssuedPage.java`,

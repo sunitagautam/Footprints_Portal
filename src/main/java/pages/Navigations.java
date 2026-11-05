@@ -374,6 +374,13 @@ public class Navigations {
         Thread.sleep(2500);
     }
 
+    public void goToCoPayMigrationData() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.COPAY_MIGRATION_DATA_URL);
+        System.out.println("✅ Navigated to: Co-Pay Migration Data");
+        Thread.sleep(2500);
+    }
+
     // ═══════════════════════════════════════════════
     // FRANCHISE → CORPORATE TIE-UPS → CORPORATE CREDITS ISSUED
     // ═══════════════════════════════════════════════
