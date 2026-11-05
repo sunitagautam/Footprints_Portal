@@ -4324,6 +4324,18 @@ the first due invoice, re-links it to another due invoice, then revokes it. Cred
 (credits 395/396 identical), Q37 (Adjust Corporate Credits TC_019–037 — no menu item), Q38 (grid time UTC), Q39 (Issue lists
 due invoices only), Q40, Q41. Test Summary 155 TCs / 141 pass.
 
+**TC_013 step 3 — center shift credit (`tc013b_centerShiftCreditNotRevocable`, 2026-11-05):**
+
+- 45924 (IBM through ProEves - Short Term) cannot be shifted: Service Request → Center Shift → "This facility is not
+  applicable for tie-up benefit admission". Nothing was created.
+- Child **62383** (Abeer Malik, Airbnb, V2, Full Day, at Sector 84, Gurgaon) is offered Delhi NCR centres only. Its shift
+  to **Sector 122, Noida, Full Day** (joining 01 Dec 2026) was submitted on 05-Nov → "A Center shift request has been
+  registered successfully." → Customer Requests: Center Shift **Pending**, WEF **Nov 30, 2026**. Not processed yet.
+- Each run moves the request one step (Pending → `getAllPendingRequests` → Processing → `cronProcessCenterShiftRequests`
+  → Approved) and skips until it is Approved; then it asserts no "Revoke Credit" on the child's corporate credits. Run it
+  on/after 30-Nov-2026. Overrides: `-DcsCreditChildId`, `-DcsCreditChildName`, `-DcsCreditCenter`.
+- The new grid row can take a few seconds to appear after submit; the test re-reads the status for up to 15 s.
+
 ## Requirements — Children → Updates: Attendance Retention + Payment Retention (received 2026-11-03, NOT yet automated)
 
 Sources (both already executed manually, Iteration 1 mostly PASS):

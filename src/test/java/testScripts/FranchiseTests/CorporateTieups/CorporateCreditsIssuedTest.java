@@ -8,6 +8,10 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.CorporateCreditsIssuedPage;
 import pages.Navigations;
+import pages.Support.FinancialReports.AccountStatementPage;
+import pages.Support.RecentCustomerRequestsPage;
+import pages.Support.Regular_ServiceRequests;
+import utils.APIs;
 import utils.BaseTest;
 
 import java.io.BufferedReader;
@@ -41,6 +45,10 @@ public class CorporateCreditsIssuedTest extends BaseTest {
     private static final String NON_CORPORATE_CHILD_ID = System.getProperty("regularChildId", "68192");
     private static final String AMOUNT = "100";
     private static final String CENTER = System.getProperty("corpCreditCenter", "Koramangala");
+    // TC_013 step 3 — center shift (user, 2026-11-04)
+    private static final String CS_CHILD_ID = System.getProperty("csCreditChildId", "62383");
+    private static final String CS_CHILD_NAME = System.getProperty("csCreditChildName", "Abeer Malik");
+    private static final String CS_CENTER = System.getProperty("csCreditCenter", "Sector 122, Noida"), CS_PROGRAM = "Full Day";
     private static final DateTimeFormatter GRID_DATE = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
 
     Navigations navigations;
@@ -383,6 +391,78 @@ public class CorporateCreditsIssuedTest extends BaseTest {
         }
         if (old == 0) throw new SkipException("No earlier-month credit in the default range");
         Reporter.log("✅ SC_011_TC_013 PASSED (" + old + " earlier-month credits checked)", true);
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    //  TC_013 step 3 — No Revoke on a center shift credit (SAVES: center shift on child 62383)
+    //  User (2026-11-05): shift 62383 to Sector 122, Noida, Full Day; submit today, process later (45924 is blocked:
+    //  "This facility is not applicable for tie-up benefit admission"). Each run moves the request one
+    //  step on (submit → getAllPendingRequests → cronProcessCenterShiftRequests) and skips until the shift is processed.
+    // ════════════════════════════════════════════════════════════════════
+    @Test(priority = 30, description = "SC_011_TC_013 — No Revoke on a center shift credit")
+    public void tc013b_centerShiftCreditNotRevocable() throws InterruptedException {
+        Reporter.log("▶ SC_011_TC_013 step 3 — center shift of " + CS_CHILD_ID + " to " + CS_CENTER + ", " + CS_PROGRAM, true);
+        RecentCustomerRequestsPage requestsPage = new RecentCustomerRequestsPage(driver);
+        String status = requestsPage.getColumnValueByRequestType(CS_CHILD_ID, "Center Shift", "Request Status");
+        Reporter.log("   Center Shift request status: '" + status + "'", true);
+
+        if (status.isEmpty()) {
+            String joining = LocalDate.now().plusMonths(1).withDayOfMonth(1).toString();
+            Regular_ServiceRequests serviceRequestPage = new Regular_ServiceRequests(driver);
+            navigations.goToAccountStatement();
+            new AccountStatementPage(driver).generateAccountStatement(CS_CHILD_ID);
+            serviceRequestPage.clickServiceRequestLink();
+            serviceRequestPage.selectServiceType("Center Shift");
+            Assert.assertTrue(serviceRequestPage.isCenterShiftFormVisible(), "❌ Center Shift form not visible");
+            serviceRequestPage.setCSEffectiveDate(joining);
+            serviceRequestPage.selectCSNewCenter(CS_CENTER);
+            Thread.sleep(1500);
+            String program = null;
+            for (org.openqa.selenium.WebElement o : new org.openqa.selenium.support.ui.Select(serviceRequestPage.cs_newProgram_dropdown).getOptions())
+                if (o.getText().trim().startsWith(CS_PROGRAM)) program = o.getText().trim();
+            Assert.assertNotNull(program, "❌ " + CS_PROGRAM + " not offered at " + CS_CENTER);
+            serviceRequestPage.selectCSNewProgram(program);
+            serviceRequestPage.checkCSCenterVisitDeclaration();
+            serviceRequestPage.submitCenterShift();
+            Thread.sleep(800);
+            String confirm = serviceRequestPage.getAlertText();
+            serviceRequestPage.acceptAlert();
+            Thread.sleep(2000);
+            String response = serviceRequestPage.getResponseMessage();
+            Reporter.log("   Submitted: joining " + joining + " | " + program + " | confirm '" + confirm + "' | " + response, true);
+            Assert.assertFalse(response.isEmpty() || response.toUpperCase().contains("ERROR"), "❌ Center Shift not submitted: " + response);
+            // the new row can take a few seconds to show on the grid
+            for (int i = 0; i < 5 && status.isEmpty(); i++) {
+                Thread.sleep(3000);
+                status = requestsPage.getColumnValueByRequestType(CS_CHILD_ID, "Center Shift", "Request Status");
+            }
+            Reporter.log("   Request status after submit: " + status, true);
+            Assert.assertEquals(status, "Pending", "❌ Center Shift not Pending after submit");
+        }
+        if (status.equalsIgnoreCase("Pending")) {
+            String body = APIs.getCenterShiftPendingToProcessing(CS_CHILD_ID).getBody().asString();
+            status = requestsPage.getColumnValueByRequestType(CS_CHILD_ID, "Center Shift", "Request Status");
+            Reporter.log("   getAllPendingRequests → " + body.substring(0, Math.min(300, body.length())) + " | status " + status, true);
+        }
+        if (status.equalsIgnoreCase("Processing")) {
+            String body = APIs.getCenterShiftProcessingToApproved(CS_CHILD_ID).getBody().asString();
+            Reporter.log("   cronProcessCenterShiftRequests → " + body, true);
+            if (body.contains("cannot be processed before"))
+                throw new SkipException("Center Shift of " + CS_CHILD_ID + " is Processing; it cannot be processed before its attrition date — rerun then");
+            status = requestsPage.getColumnValueByRequestType(CS_CHILD_ID, "Center Shift", "Request Status");
+            Reporter.log("   Status after processing: " + status, true);
+        }
+        if (!status.equalsIgnoreCase("Approved"))
+            throw new SkipException("Center Shift of " + CS_CHILD_ID + " is '" + status + "' — not processed yet");
+
+        reopen();
+        creditsPage.searchTable(CS_CHILD_NAME);
+        List<String> ids = creditsPage.getCreditIds();
+        for (String id : ids) Reporter.log("   " + id + ": " + creditsPage.getRowText(id) + " → " + creditsPage.getRowActionTitles(id), true);
+        if (ids.isEmpty()) throw new SkipException("Center Shift Approved but no corporate credit for " + CS_CHILD_NAME + " in the default range");
+        for (String id : ids)
+            Assert.assertFalse(creditsPage.getRowActionTitles(id).contains("Revoke Credit"), "❌ Revoke offered on center shift credit " + id);
+        Reporter.log("✅ SC_011_TC_013 step 3 PASSED (" + ids.size() + " center shift credit(s), no Revoke)", true);
     }
 
     // ════════════════════════════════════════════════════════════════════
