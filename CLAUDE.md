@@ -515,7 +515,8 @@ a standalone, reusable pair — **not scoped to Extended Daycare** — for any f
   feature) — `searchTable()` (the generic DataTables box) is kept only for ad-hoc diagnostic use, not feature lookups.
 - `pages/Navigations.java` gained `goToEmailView()` (direct URL, mirrors `goToSmsView()`); `utils/IAutoConstant.java`
   gained `EMAIL_VIEW_URL`.
-- `testScripts.SettingsTests.EmailView_Test` — stays on the default Rakesh login throughout (no user switch), same
+- `testScripts.SettingsTests.SystemLogs.EmailView_Test` — stays on the default Rakesh login throughout (no user switch),
+  same
   convention as `CancelRegistration_testcases`.
 - **`tc001_extendedDaycareCompletionEmailRecorded` — CONFIRMED PASSING**: found the exact live email record *"Extended
   Daycare Duration Completed - for Anaisha (#70801)"*, timestamped 22 Sep 2026 16:05 PM — matching the exact same-day
@@ -1925,7 +1926,8 @@ Account Statement. A user without the right does not see the button at all.
 **Status (2026-10-15, server date Oct 15):**
 
 - **Jaydeep Kar has the right** (user). Excel row added: `Jaydeep Kar | Cancel Registration | Cancel_Registration`.
-- Rakesh (user_id 357) had NO right. Then `tc008`'s first version **assigned `Cancel_Registration` to Rakesh**, so he has
+- Rakesh (user_id 357) had NO right. Then `tc008`'s first version **assigned `Cancel_Registration` to Rakesh**, so he
+  has
   it now. Remove it before rerunning `tc007`.
 - Assign UI (`manage_user_rights?user_id=<id>`, user-supplied DOM): search `#assign-search` → checkbox
   `input.right-checkbox[value=Cancel_Registration]` → `#right_updated_comment` (Request Reference, required) →
@@ -1935,35 +1937,35 @@ Account Statement. A user without the right does not see the button at all.
   after Rakesh got the right.
 - **`sc011_tc008_userWithCancelRegistrationRightCanCancel` PASSED (2026-10-15)** as Jaydeep on child **74181** (Joining
   Date Oct 14, 2026, inside the window):
-  - The button was visible, and the confirm read "Are you sure you want to cancel registration?".
-  - Status → **ATTRITION**; voided invoice **PI/1002474**.
-  - "Billing Cancel Date" was not found on the page this time (logged blank, not asserted).
-  - 74181 is now CONSUMED. The default for `-DcrRightChildId` is 74181; pass a fresh in-window child for the next run.
+    - The button was visible, and the confirm read "Are you sure you want to cancel registration?".
+    - Status → **ATTRITION**; voided invoice **PI/1002474**.
+    - "Billing Cancel Date" was not found on the page this time (logged blank, not asserted).
+    - 74181 is now CONSUMED. The default for `-DcrRightChildId` is 74181; pass a fresh in-window child for the next run.
 
 - **🐛 BUG (2026-10-15, reported to dev by the user): the right is NOT enforced.** `sc011_tc007` as Rakesh on child
   **74246** (JOINING PIPELINE, Joining Date Oct 14 — inside the window) FAILS: the button is visible although Rakesh has
   no `Cancel_Registration` right.
-  - The right was removed via Current Rights "×" (`button.previlige_right_id` in `#assigned_rights`; confirm "Are you
-    sure you want to Delete Right ?") and by the user. The `#rights-search` check shows "No matching records found".
-  - Reproduced on fresh logins; the user also sees it manually.
-  - Write-up: `~/Desktop/QA_Documents/Bug Evidence/Bug_CancelRegistration_RightNotEnforced.md` + screenshots in
-    `CancelRegistration_RightNotEnforced/`.
-  - `tc007` asserts the spec'd behaviour and keeps failing until fixed. 74246 is read-only there (not consumed).
-  - `tc007` removes the right from Rakesh first (`UserRightsPage.removeRight()`) if he has it.
+    - The right was removed via Current Rights "×" (`button.previlige_right_id` in `#assigned_rights`; confirm "Are you
+      sure you want to Delete Right ?") and by the user. The `#rights-search` check shows "No matching records found".
+    - Reproduced on fresh logins; the user also sees it manually.
+    - Write-up: `~/Desktop/QA_Documents/Bug Evidence/Bug_CancelRegistration_RightNotEnforced.md` + screenshots in
+      `CancelRegistration_RightNotEnforced/`.
+    - `tc007` asserts the spec'd behaviour and keeps failing until fixed. 74246 is read-only there (not consumed).
+    - `tc007` removes the right from Rakesh first (`UserRightsPage.removeRight()`) if he has it.
 
 - **Test cases (2026-10-15):** SC_011_TC_013–020 added to
   `~/Desktop/QA_Documents/Testcases Scripts/TC_CancelRegistration.xlsx`; the format was verified unchanged.
-  - Iteration 1: TC_013 Pass, TC_014 Fail (the bug), TC_016 Fail (same cause), TC_018 Pass, TC_020 Pass.
-  - TC_015 (direct URL), TC_017 step 2 and TC_019 (Days validity) are Not executed.
-  - The Document History entry and QueryLogs Q1 were added.
+    - Iteration 1: TC_013 Pass, TC_014 Fail (the bug), TC_016 Fail (same cause), TC_018 Pass, TC_020 Pass.
+    - TC_015 (direct URL), TC_017 step 2 and TC_019 (Days validity) are Not executed.
+    - The Document History entry and QueryLogs Q1 were added.
 
 - **FIXED by dev — retest PASSED (2026-10-15):**
-  - `sc011_tc007` (Rakesh, no right, 74246): the button is now hidden.
-  - Direct URL `cancel_registration?pop=yes&child_id=74246` as Rakesh without the right shows **"Sorry! You are not
-    authorise to access this screen."** with no form.
-  - Assign the right to Rakesh, then a fresh login: the button is visible. The right was removed again afterwards, so
-    Rakesh is back to no right.
-  - Iteration 2 is filled in the workbook, and QueryLogs Q1 is Closed.
+    - `sc011_tc007` (Rakesh, no right, 74246): the button is now hidden.
+    - Direct URL `cancel_registration?pop=yes&child_id=74246` as Rakesh without the right shows **"Sorry! You are not
+      authorise to access this screen."** with no form.
+    - Assign the right to Rakesh, then a fresh login: the button is visible. The right was removed again afterwards, so
+      Rakesh is back to no right.
+    - Iteration 2 is filled in the workbook, and QueryLogs Q1 is Closed.
 
 Not yet confirmed (ask the user / verify live before automating):
 
@@ -2248,53 +2250,100 @@ No existing page object/test class for this screen (confirmed via grep, 2026-10-
   Void-Credit-type rows; unconfirmed.
 
 ### Automation built (2026-10-06) — first full run: 14/15 PASSED
-Files: `pages/Support/FinancialUpdates/CreditIssued_Page.java` (new), `testScripts/SupportTests/FinancialUpdates/CreditIssued_Testcases.java` (new, 15 tests), `CreditIssuedtestng.xml`; additive `IAutoConstant.CREDITS_ISSUED_URL` + `Navigations.goToCreditsIssued()`. Runs as Jaydeep via `getUserForScreen("Credits Issued")`.
-- Order: SC001_TC_001–005 → SC002_TC_002 (validation) → SC002_TC_001 (issues credit, captures new credit_id by diffing the child's credit_ids before/after) → SC004_TC_001 (link) → SC004_TC_002 (revoke) → SC003_TC_001–004 → SC004_TC_004 (void filter) → SC004_TC_003 (email, re-logs in as Rakesh, runs last).
-- SC001_TC_002 uses **current month (1st → today)** — the user's last answer was "current month date range"; whether that was meant for this test or for Void Credits is NOT yet confirmed. Dates are set through pickadate's own API (`picker.set('select', …)`), and every row's Issued Date Time is asserted to be in range.
-- Run 1 evidence: credit_id **152177** issued on 70095 (Rs 100, Book Charges, B/2627/7335) → toast "Credits issued successfully!" → re-linked to T/2627/8371, toast **"Credit invoice reference updated successfully."** (trailing period) → revoked, toast "Credit revoked successfully".
+
+Files: `pages/Support/FinancialUpdates/CreditIssued_Page.java` (new),
+`testScripts/SupportTests/FinancialUpdates/CreditIssued_Testcases.java` (new, 15 tests), `CreditIssuedtestng.xml`;
+additive `IAutoConstant.CREDITS_ISSUED_URL` + `Navigations.goToCreditsIssued()`. Runs as Jaydeep via
+`getUserForScreen("Credits Issued")`.
+
+- Order: SC001_TC_001–005 → SC002_TC_002 (validation) → SC002_TC_001 (issues credit, captures new credit_id by diffing
+  the child's credit_ids before/after) → SC004_TC_001 (link) → SC004_TC_002 (revoke) → SC003_TC_001–004 → SC004_TC_004 (
+  void filter) → SC004_TC_003 (email, re-logs in as Rakesh, runs last).
+- SC001_TC_002 uses **current month (1st → today)** — the user's last answer was "current month date range"; whether
+  that was meant for this test or for Void Credits is NOT yet confirmed. Dates are set through pickadate's own API (
+  `picker.set('select', …)`), and every row's Issued Date Time is asserted to be in range.
+- Run 1 evidence: credit_id **152177** issued on 70095 (Rs 100, Book Charges, B/2627/7335) → toast "Credits issued
+  successfully!" → re-linked to T/2627/8371, toast **"Credit invoice reference updated successfully."** (trailing
+  period) → revoked, toast "Credit revoked successfully".
 - **A revoked credit disappears from the grid entirely** (its row is gone after reload, not just the icon).
-- **Link modal shows only invoices relevant to the credit type, plus paid ones** — for the Book credit, the first non-current option was T/2627/8371 (Convenience). The app accepted linking a Book credit to a T/ invoice.
-- CSV confirmed: `Credits_Issued_Report_06_10_2026.csv` (dd_MM_yyyy), header = Child Id, Child Name, Issued Date, Amount, Type, Description, Invoice Line Item, Bank, Issued By, Invoice Reference, Issued Date Time, Update Status, Father/Mother Name/Email/Phone, Account Bank Name, Account Number, Account Ifsc Code, … (matches the sheet plus an extra "Invoice Line Item").
-- Pagination: 10/page confirmed ("Showing 1 to 10 of 50 entries" → "Showing 11 to"). Sorting: Amount asc/desc numeric + Child Name asc confirmed.
+- **Link modal shows only invoices relevant to the credit type, plus paid ones** — for the Book credit, the first
+  non-current option was T/2627/8371 (Convenience). The app accepted linking a Book credit to a T/ invoice.
+- CSV confirmed: `Credits_Issued_Report_06_10_2026.csv` (dd_MM_yyyy), header = Child Id, Child Name, Issued Date,
+  Amount, Type, Description, Invoice Line Item, Bank, Issued By, Invoice Reference, Issued Date Time, Update Status,
+  Father/Mother Name/Email/Phone, Account Bank Name, Account Number, Account Ifsc Code, … (matches the sheet plus an
+  extra "Invoice Line Item").
+- Pagination: 10/page confirmed ("Showing 1 to 10 of 50 entries" → "Showing 11 to"). Sorting: Amount asc/desc numeric +
+  Child Name asc confirmed.
 - SC004_TC_004: 0 Void Credits in the default range → logged as informational, not failed.
-- **SC004_TC_003 (email) — fixed (2026-10-06), confirmed live via a read-only check; not yet re-run inside the full suite.**
-  - The subject is **"Credit issued worth Rs. <amount>"**.
-  - The child id/name appears ONLY in the email body, never in the row text — that's why the first run failed.
-  - Per user instruction, the test now filters Subject = **"Credit Issued"** and Body = child id (`#body` field on Email View's `#frm-search`), then matches the row containing "credit issued worth rs. <amount>" + today's date (`dd MMM, yyyy`).
-  - Live row: `qa@footprintseducation.in | Credit issued worth Rs. 100 | cc: center head | ["error",401,"Invalid_Key","Invalid API key"] | 06 Oct, 2026 12:38 PM | Pending`. The 401 is the test environment's mail provider, not a test issue.
-  - The email is still recorded even when the credit is revoked right after.
-  - The grid's "Issued Date Time" (07:08 AM) vs the email time (12:38 PM) suggests the grid shows UTC, not IST.
+- **SC004_TC_003 (email) — fixed (2026-10-06), confirmed live via a read-only check; not yet re-run inside the full
+  suite.**
+    - The subject is **"Credit issued worth Rs. <amount>"**.
+    - The child id/name appears ONLY in the email body, never in the row text — that's why the first run failed.
+    - Per user instruction, the test now filters Subject = **"Credit Issued"** and Body = child id (`#body` field on
+      Email View's `#frm-search`), then matches the row containing "credit issued worth rs. <amount>" + today's date (
+      `dd MMM, yyyy`).
+    - Live row:
+      `qa@footprintseducation.in | Credit issued worth Rs. 100 | cc: center head | ["error",401,"Invalid_Key","Invalid API key"] | 06 Oct, 2026 12:38 PM | Pending`.
+      The 401 is the test environment's mail provider, not a test issue.
+    - The email is still recorded even when the credit is revoked right after.
+    - The grid's "Issued Date Time" (07:08 AM) vs the email time (12:38 PM) suggests the grid shows UTC, not IST.
 
 ### FINAL STATUS (2026-10-06): Credits Issued automation COMPLETE — 32/32 passing
-- Complete suite run: 30/32. The 2 misses (Link/Revoke) were caused by child 73041 having 40+ credits, so the new credit wasn't on search page 1. Fixed in `openActionModal()`: it now runs `DataTable().page.len(-1).draw()` after searching. Re-run of add+link+revoke: 3/3 (credit 152238, link B/2627/6208 → PI/993959, revoked).
+
+- Complete suite run: 30/32. The 2 misses (Link/Revoke) were caused by child 73041 having 40+ credits, so the new credit
+  wasn't on search page 1. Fixed in `openActionModal()`: it now runs `DataTable().page.len(-1).draw()` after searching.
+  Re-run of add+link+revoke: 3/3 (credit 152238, link B/2627/6208 → PI/993959, revoked).
 - Robustness fixes after a slow-server run (26/32, all test-side; the app had issued every credit correctly):
-  - Default view now checks the table's DEFINED columns via `getDefinedColumnHeaders()` — the responsive DataTable folds "Update Status" into the "+" expander when long descriptions squeeze it.
-  - Confirm wait is now 20s.
-  - In the per-type test, the new grid row is the hard proof of issuance; a missed flash message is only logged. Customer Payment (not listed, by design) keeps the message as a hard check.
-- Chain credit **152220** (Book, 73041) from the complete run was revoked manually by the user (2026-10-08). Per-type credits are intentionally left in place.
+    - Default view now checks the table's DEFINED columns via `getDefinedColumnHeaders()` — the responsive DataTable
+      folds "Update Status" into the "+" expander when long descriptions squeeze it.
+    - Confirm wait is now 20s.
+    - In the per-type test, the new grid row is the hard proof of issuance; a missed flash message is only logged.
+      Customer Payment (not listed, by design) keeps the message as a hard check.
+- Chain credit **152220** (Book, 73041) from the complete run was revoked manually by the user (2026-10-08). Per-type
+  credits are intentionally left in place.
 - OneTime Charges regression (same day, child 72620): **25/25 passed**.
 
-### Per-credit-type happy flow (2026-10-06) — `sc002_tc001_happyFlowEachCreditType` (DataProvider `creditTypes`, same pattern as OneTime Charges' `chargeTypeData`)
-- 17 types (every dropdown type **except "Credits - Security"**, excluded per user). Optional `-DcreditTypes="<type>,<type>"` runs only those rows.
-- **The app does NOT validate the credit type ↔ invoice mapping** (user, 2026-10-06), but Support maps them manually. So each row picks the invoice the way Support would: by the invoice's **booking head** (read from the modal's cached `arrCreditInvoices.data[id].booking_heads`, exact `|`-split match, PAID only — `CreditIssued_Page.selectInvoiceByBookingHead()`), or by an exact invoice number (`selectInvoiceByNumber()`).
-  - **`T/` invoices are Convenience Fee (head "Convenience Fee|IGST", Rs 29.50), NOT Transport.** Transport is billed on `P378/...` invoices with head **"Transport Charges"**.
+### Per-credit-type happy flow (2026-10-06) — `sc002_tc001_happyFlowEachCreditType` (DataProvider
+`creditTypes`, same pattern as OneTime Charges' `chargeTypeData`)
+
+- 17 types (every dropdown type **except "Credits - Security"**, excluded per user). Optional
+  `-DcreditTypes="<type>,<type>"` runs only those rows.
+- **The app does NOT validate the credit type ↔ invoice mapping** (user, 2026-10-06), but Support maps them manually. So
+  each row picks the invoice the way Support would: by the invoice's **booking head** (read from the modal's cached
+  `arrCreditInvoices.data[id].booking_heads`, exact `|`-split match, PAID only —
+  `CreditIssued_Page.selectInvoiceByBookingHead()`), or by an exact invoice number (`selectInvoiceByNumber()`).
+    - **`T/` invoices are Convenience Fee (head "Convenience Fee|IGST", Rs 29.50), NOT Transport.** Transport is billed
+      on `P378/...` invoices with head **"Transport Charges"**.
 - Mapping (user-confirmed):
-  - Tuition → Preschool Fee
-  - Book → Book Set (B/)
-  - Transport → Transport Charges (child **50875 Gyanvi Mittal**)
-  - Convenience → Convenience Fee (amount/line item auto-fill)
-  - Annual → Annual Preschool Fee
-  - Registration → Registration Fee
-  - Delay Penalty → **P378/2627/495**, Extended DayCare → **P378/2627/493**, Late-Stay → **P378/2627/479** (all on child **46195 Nayansh Kaushik**, same child as OneTime Charges)
-  - every other type → Preschool Fee
-  - Main child: **73041 Kartikey Jaiswal** (has B/, K/, P378 and T/ paid invoices). Other children checked: 73875 has only due PI/ invoices (unusable); 73007 has no T/.
+    - Tuition → Preschool Fee
+    - Book → Book Set (B/)
+    - Transport → Transport Charges (child **50875 Gyanvi Mittal**)
+    - Convenience → Convenience Fee (amount/line item auto-fill)
+    - Annual → Annual Preschool Fee
+    - Registration → Registration Fee
+    - Delay Penalty → **P378/2627/495**, Extended DayCare → **P378/2627/493**, Late-Stay → **P378/2627/479** (all on
+      child **46195 Nayansh Kaushik**, same child as OneTime Charges)
+    - every other type → Preschool Fee
+    - Main child: **73041 Kartikey Jaiswal** (has B/, K/, P378 and T/ paid invoices). Other children checked: 73875 has
+      only due PI/ invoices (unusable); 73007 has no T/.
 - **Results:**
-  - 16/17 confirmed passing: 13 on 73041, Transport on 50875 (credit 152195), Delay Penalty/Extended DayCare/Late-Stay on 46195 (credits 152199/152200/152201).
-  - **"Customer Payment" FAILED — investigated read-only (2026-10-06):** the server accepted it ("Credits issued successfully!", credit_id 152183 consumed), but that id appears in the Credits Issued grid under NONE of Type All / Credits / Void Credits, and "Customer Payment" text is not on child 73041's Account Statement either. Every other type shows up immediately. **Confirmed BY DESIGN (user, 2026-10-06): Customer Payment credits are not listed on Credits Issued** — the test now checks only the success message for that row.
-  - **Correction:** the failed per-type runs 2/3 DID issue some credits (contrary to the first assumption that a dismissed confirm submitted nothing). Extra credits on 73041: 152179 (Delay Penalty), 152180 (Book), 152187 (Delay Penalty), 152193 (Late-Stay).
-  - Fresh children are NOT needed between runs — issuing a credit doesn't consume the child. User supplied spares 53603, 64087 (unused, invoice heads not checked).
-- Bug fixed in the first per-type run: checking `isAlertPresent()` 500ms after Submit returned false; touching the DOM while the native confirm was open made Chrome DISMISS it (= Cancel, nothing submitted). Now waits for the alert via `acceptConfirmPopup()` (10s).
-- Full-suite run 2 (2026-10-06): all 15 original tests PASSED, incl. SC004_TC_003 email with Subject "Credit Issued" + Body child id (chain credit 152178 on 73041, re-linked + revoked).
+    - 16/17 confirmed passing: 13 on 73041, Transport on 50875 (credit 152195), Delay Penalty/Extended DayCare/Late-Stay
+      on 46195 (credits 152199/152200/152201).
+    - **"Customer Payment" FAILED — investigated read-only (2026-10-06):** the server accepted it ("Credits issued
+      successfully!", credit_id 152183 consumed), but that id appears in the Credits Issued grid under NONE of Type
+      All / Credits / Void Credits, and "Customer Payment" text is not on child 73041's Account Statement either. Every
+      other type shows up immediately. **Confirmed BY DESIGN (user, 2026-10-06): Customer Payment credits are not listed
+      on Credits Issued** — the test now checks only the success message for that row.
+    - **Correction:** the failed per-type runs 2/3 DID issue some credits (contrary to the first assumption that a
+      dismissed confirm submitted nothing). Extra credits on 73041: 152179 (Delay Penalty), 152180 (Book), 152187 (Delay
+      Penalty), 152193 (Late-Stay).
+    - Fresh children are NOT needed between runs — issuing a credit doesn't consume the child. User supplied spares
+      53603, 64087 (unused, invoice heads not checked).
+- Bug fixed in the first per-type run: checking `isAlertPresent()` 500ms after Submit returned false; touching the DOM
+  while the native confirm was open made Chrome DISMISS it (= Cancel, nothing submitted). Now waits for the alert via
+  `acceptConfirmPopup()` (10s).
+- Full-suite run 2 (2026-10-06): all 15 original tests PASSED, incl. SC004_TC_003 email with Subject "Credit Issued" +
+  Body child id (chain credit 152178 on 73041, re-linked + revoked).
 
 **Status (2026-10-05, end of day): exploration done, NO automation code written yet. Resume here.** Pending user
 answers:
@@ -2395,6 +2444,7 @@ HDFC flagged amount-/order-ID-tampering on the settlement pipeline (`processPaym
 accepting a CHARGED payload from anyone). 5 acceptance criteria (forged/no-secret rejected; settle only after
 server-to-server HDFC Order Status CHARGED + amount match; replay settles once; return-page order bound to session +
 unsigned can't mark FAILED; TLS verified on gateway cURL). **Status: HELD, not verified.** Reasons:
+
 - Observed live that `processPayments` settles from the request body alone with **no auth secret** (confirmed by user:
   "there is no secret url") and returns `success` — i.e. currently **pre-fix**; negative tests are pointless until the
   fix is deployed.
@@ -2403,8 +2453,9 @@ unsigned can't mark FAILED; TLS verified on gateway cURL). **Status: HELD, not v
   SQL-injection points are code-review items needing repo access.
 - Sending forged/tampered payloads at the live endpoint is blocked by the Claude Code auto-mode classifier — the
   negative API tests must be run by the user (or via Postman), not by the assistant.
-Resume only after dev confirms the fix is deployed; then build/run the AC 1/3/4 negative tests (user executes them) and
-do the AC 5 + SQLi code review against the shared repos.
+  Resume only after dev confirms the fix is deployed; then build/run the AC 1/3/4 negative tests (user executes them)
+  and
+  do the AC 5 + SQLi code review against the shared repos.
 
 ## Requirements — Payment Plan Migration (V1 ↔ V2) (requirement received 2026-10-13, NOT yet automated)
 
@@ -2426,15 +2477,15 @@ existing page object or test covers this (grep, 2026-10-13).
 - **There is no migration benefit in the first year.** V1→V2 is offered only from year 2, at each annual renewal, and it
   is fully automatic: no Support or centre action is needed.
 - **Email flow (cron-driven, V1→V2 renewal offer):**
-  - About 7 days before renewal, an offer email goes to the parent with the new monthly fee, the credit/charge
-    calculation and the next bill.
-  - If there is no response, a reminder goes out about 3 days before renewal.
-  - The parent replies Accept or Decline through a secure one-time link (same style as the joining-date-change email).
-  - **Accept:** about 2 days before renewal, ahead of that cycle's invoice, the system auto-adds a month-end migration
-    request. The month-end cron then processes it.
-  - **Decline or no response:** nothing changes, and the offer returns the following year.
-  - If the current cycle's annual fee is already paid, it is non-refundable, and the switch applies from the next
-    renewal.
+    - About 7 days before renewal, an offer email goes to the parent with the new monthly fee, the credit/charge
+      calculation and the next bill.
+    - If there is no response, a reminder goes out about 3 days before renewal.
+    - The parent replies Accept or Decline through a secure one-time link (same style as the joining-date-change email).
+    - **Accept:** about 2 days before renewal, ahead of that cycle's invoice, the system auto-adds a month-end migration
+      request. The month-end cron then processes it.
+    - **Decline or no response:** nothing changes, and the offer returns the following year.
+    - If the current cycle's annual fee is already paid, it is non-refundable, and the switch applies from the next
+      renewal.
 
 ### V1 → V2
 
@@ -2452,7 +2503,7 @@ existing page object or test covers this (grep, 2026-10-13).
 - The subscription changes to the V1 card (−2000), and a yearly plan is created with billing date = Joining Month + 11
   months.
 - The difference is charged as the Annual Fee: `Annual Fee − ((V2 monthly − V1 monthly) × Months Of Service)`. Sample
-  8500.
+    8500.
 - Invoice line item: **"Annual Fee Against V2 to V1 Migration"**. The breakup follows the program like other invoices,
   and the invoice must be treated as the last annual invoice.
 - Case 1 (next month): issue monthly fee credits per fee card + discounts, raise the annual invoice and set the annual
@@ -2479,7 +2530,8 @@ not hard-code them. This can be verifiable via Email View (Rakesh, filter Subjec
 - Whether the renewal-offer cron/email + Accept/Decline link is in scope (cron endpoint/ckey not supplied).
 - Where history/logs render (Child History modal vs Recent Customer Requests "Approved" row).
 
-### Test cases — `TC_Account Statement Scripts.xlsx`, sheet `Account Statement Page`, SC_018_TC_001–043 (studied 2026-10-13)
+### Test cases — `TC_Account Statement Scripts.xlsx`, sheet
+`Account Statement Page`, SC_018_TC_001–043 (studied 2026-10-13)
 
 Note from the sheet: **V1 = Long Term Payment Plan, V2 = Short Term Payment Plan.** The access right is
 `Payment_Plan_Migration`. The sheet predates the 2026-10-13 requirement; enhancements to it are still to be supplied by
@@ -2491,21 +2543,21 @@ the user.
   calculated values). Example: Annual Fee V1 Rs 15,000; Monthly Fee Difference (2000) Rs 3,460 (2,000 × 1.73 months);
   Final Fee Difference Rs 11,540; "Credit of Rs. 11,540.00 will be issued". Buttons: Close icon/button and Confirm.
 - TC_002 (V1→V2, months 1–8, child 47562):
-  - Confirm triggers "Are you sure you want to migrate plan?" (OK/Cancel).
-  - Toast: "Plan migrated successfully from V1 to V2. Credit of Rs. 11,540.00 raised/issued".
-  - The button then reads "Migrate in Long Term Payment Plan".
+    - Confirm triggers "Are you sure you want to migrate plan?" (OK/Cancel).
+    - Toast: "Plan migrated successfully from V1 to V2. Credit of Rs. 11,540.00 raised/issued".
+    - The button then reads "Migrate in Long Term Payment Plan".
 - TC_004 (V1→V2, months 9–12, child 42585):
-  - An "Applicable From*" dropdown offers Current/Next Month; the test picks Current Month.
-  - Toast: "Plan migrated successfully from V1 to V2. Monthly Plan of Rs. 12,999.00 updated for next month".
-  - (The sheet notes Footprints generally disallows this case.)
+    - An "Applicable From*" dropdown offers Current/Next Month; the test picks Current Month.
+    - Toast: "Plan migrated successfully from V1 to V2. Monthly Plan of Rs. 12,999.00 updated for next month".
+    - (The sheet notes Footprints generally disallows this case.)
 - TC_005 (V2→V1, months 1–8, child 46596):
-  - Monthly Fee Difference Rs 9,540 (2,000 × 4.77 months of "V2 plan extra paid period"); Final Rs 5,460.
-  - Toast: "Plan migrated successfully from V2 to V1. Invoice of Rs. 5,460.00 raised/issued".
-  - The button then reads "Migrate in Short Term Payment Plan".
+    - Monthly Fee Difference Rs 9,540 (2,000 × 4.77 months of "V2 plan extra paid period"); Final Rs 5,460.
+    - Toast: "Plan migrated successfully from V2 to V1. Invoice of Rs. 5,460.00 raised/issued".
+    - The button then reads "Migrate in Short Term Payment Plan".
 - TC_006 (V2→V1, months 9–12, child 39621):
-  - Applicable From = Current Month.
-  - Toast: "...Monthly Plan of Rs. 21,499.00 updated for next month". The annual invoice is Rs 15,000 and monthly
-    credits of 2000 are issued.
+    - Applicable From = Current Month.
+    - Toast: "...Monthly Plan of Rs. 21,499.00 updated for next month". The annual invoice is Rs 15,000 and monthly
+      credits of 2000 are issued.
 - TC_007: verify the invoice created after migration (no detail in the sheet).
 - TC_008: email "Confirmation of payment plan migration" sent to the parent.
 - TC_009: due invoice blocks migration — "Invoice payment is due. Invoice must be paid for migration plan !!!"
@@ -2529,20 +2581,20 @@ the user.
 **C. Support → Financial Updates → Payment Plan Migration screen (TC_016–029)** — a NEW screen with no page object.
 
 - TC_016 default view:
-  - Filters: Migration Status multi-select with options Pending / Informed / Denied / Reminder / Confirmed / Completed
-    / Cancelled; Migration Month; Center (All Center); Filter button.
-  - Also: Search and Pagination.
-  - Columns: Child ID, Child Name, Fee/Addons/Coupons Details, Completion Email Status, Confirmation Date(Parent),
-    Confirmed By(Parent), Migration Status, Migration Date, Migration Comments, Action(Update).
+    - Filters: Migration Status multi-select with options Pending / Informed / Denied / Reminder / Confirmed / Completed
+      / Cancelled; Migration Month; Center (All Center); Filter button.
+    - Also: Search and Pagination.
+    - Columns: Child ID, Child Name, Fee/Addons/Coupons Details, Completion Email Status, Confirmation Date(Parent),
+      Confirmed By(Parent), Migration Status, Migration Date, Migration Comments, Action(Update).
 - TC_017–020: filter ("No data available in table"), search ("No matching records found"), pagination at 10 per page,
   and sorting.
 - TC_021 / 022 / 025 — Update modal "New Payment Plan Migration Request" (status Confirmed/Cancelled + comments):
-  - Confirmed toast: "Thanks, you will be migrate on new payment plan on <date>". The row gains a "Migrate to V2/V1"
-    button.
-  - Cancelled toast: "Thanks, Request cancelled". The Update button is removed.
+    - Confirmed toast: "Thanks, you will be migrate on new payment plan on <date>". The row gains a "Migrate to V2/V1"
+      button.
+    - Cancelled toast: "Thanks, Request cancelled". The Update button is removed.
 - TC_023 (child 26316): "Migrate to V2" shows the toast "Hurray! Migration has been completed successfully of <name>
   (#id)" and status becomes Completed.
-  - If the annual invoice was paid, a credit is issued; if it is due, the invoice is voided.
+    - If the annual invoice was paid, a credit is issued; if it is due, the invoice is voided.
 - TC_024: the parent picks Not Interested → status "Denied".
 - TC_026–029: date-window variants (confirm before the 29th cycle / 31st evening / after 1st-of-month invoicing / after
   annual paid → auto Completed). These depend on the server date.
@@ -2551,7 +2603,8 @@ the user.
 
 - TC_030–032: the website page and its options (confirm / reminder / not interested); execution 1 day before renewal.
 - TC_033: a pending annual invoice from the last 30 days is voided.
-- TC_034–039: staff / sibling / single-parent / inauguration discounts and add-ons continue after migration. Siblings get
+- TC_034–039: staff / sibling / single-parent / inauguration discounts and add-ons continue after migration. Siblings
+  get
   separate emails and separate executions, and both must be active.
 - TC_040: the link expires on the last day of the month at 8 PM; the cron runs at 9 PM (SDA-9396).
 - TC_041–042: Support can confirm or reject only after the invoice is generated (from the 1st).
@@ -2596,11 +2649,11 @@ eligibility" concept yet, so this is new logic.
 **Impact on SC_018 (QA mapping, pending user confirmation):**
 
 - AC1 → NEW negative cases:
-  - A first-year V1 child is not picked up by `saveMigrationPromotionalData` (no row on the Payment Plan Migration
-    screen, no email).
-  - The Account Statement "Migrate in Short Term Payment Plan" button is hidden or blocked for a first-year child —
-    UNCONFIRMED whether AC1 also covers this manual button.
-  - Boundary: the day before vs the day of the 1-year anniversary.
+    - A first-year V1 child is not picked up by `saveMigrationPromotionalData` (no row on the Payment Plan Migration
+      screen, no email).
+    - The Account Statement "Migrate in Short Term Payment Plan" button is hidden or blocked for a first-year child —
+      UNCONFIRMED whether AC1 also covers this manual button.
+    - Boundary: the day before vs the day of the 1-year anniversary.
 - AC2/3/4 → update SC_018_TC_012/013 (email content, non-refundable text, Accept/Decline link) and TC_014/TC_024
   (accept/decline via the joining-date-change-style link instead of the old website-OTP page — UNCONFIRMED).
 - AC5 → TC_015/TC_026–029/TC_040–042 (lock deadline vs invoicing). Plus a NEW race case: Accept after the
@@ -2650,12 +2703,12 @@ then automate**.
    (28th/29th) (SC_018_TC_013).
 4. `GET planmigration/processMigrationRequests?child_id=49820&date=2026-09-30` is the month-end cron that executes
    accepted migrations.
-   - Documented error: `"Plan migration cron is allowed only on the last day of the month between 11:00 PM and 11:59
+    - Documented error: `"Plan migration cron is allowed only on the last day of the month between 11:00 PM and 11:59
      PM"` — a hard time gate.
-   - Testing it needs the server clock set inside that window. Whether the `date` param bypasses the gate is not
-     confirmed.
-   - This replaces the sheet's older `financialprocess/MigrateDataInNewPlan` (SC_018_TC_015). It is the "lock against
-     invoicing" point for AC5.
+    - Testing it needs the server clock set inside that window. Whether the `date` param bypasses the gate is not
+      confirmed.
+    - This replaces the sheet's older `financialprocess/MigrateDataInNewPlan` (SC_018_TC_015). It is the "lock against
+      invoicing" point for AC5.
 
 ### Confirmed live (2026-10-13, read-only exploration as Rakesh; nothing submitted)
 
@@ -2668,14 +2721,15 @@ the user.
   `<a class="btn btn-xs btn-primary" href="javascript:migratePlanV1V2newPlan('49851', false);">Migrate in Long Term Payment Plan</a>`.
 - **Step 1:** native `confirm("Are you sure you want to migrate plan from V2 to V1?")`. Then
   `POST api/planmigration/migratePlanV1V2newplan` (child_id, user_name, user_id — no `confirm`; "Loading plan details").
-  - On ok, it opens modal `#modal_form_migration_request` showing `#display-monthly-amount` / `#display-yearly-amount`,
-    with info text in `#frm-plan-migration-request .invoice-text`.
-  - On error, the message goes to `.message-plan-migration`.
+    - On ok, it opens modal `#modal_form_migration_request` showing `#display-monthly-amount` /
+      `#display-yearly-amount`,
+      with info text in `#frm-plan-migration-request .invoice-text`.
+    - On error, the message goes to `.message-plan-migration`.
 - **Step 2 (modal confirm):**
-  - It requires `#next_yearly_billing_date` (else "Please select annual recurring date").
-  - Then native `confirm("Are you sure you want to migrate plan from V2 to V1? The new plan will be effective from next
+    - It requires `#next_yearly_billing_date` (else "Please select annual recurring date").
+    - Then native `confirm("Are you sure you want to migrate plan from V2 to V1? The new plan will be effective from next
     month")` → same POST with `confirm=YES` and `next_yearly_billing_date`.
-  - The success message goes to `.migration-error-msg`, then the page reloads after 3 s.
+    - The success message goes to `.migration-error-msg`, then the page reloads after 3 s.
 - **WebDriver note:** `unhandledPromptBehavior = dismiss and notify`, so an unexpected confirm is auto-dismissed
   (= Cancel). Exploration run 1 hit this; 49851 was verified still V2 afterwards.
 - The legacy `migratePlanV1V2()` (`api/billing/migratePlanV1V2`, "Are you sure you want to migrate plan?", Applicable
@@ -2684,30 +2738,31 @@ the user.
 **Support → Payment Plan Migration** (`https://test-franchise.footprintseducation.in/payment_plan_migration`)
 
 - **Filters** (form `#frm_invoice_report`):
-  - Migration Status: multiselect `#sr_migration_status` (checkbox values Pending/Informed/Denied/Reminder/Confirmed/
-    Completed/Cancelled; button text "No Filters").
-  - Migration Month: `#sr_migration_month` ("Aug - 2027" … "Dec - 2019").
-  - Center: `#center_selection` (select2, "All Center").
-  - Filter button: `#btn_submit`.
+    - Migration Status: multiselect `#sr_migration_status` (checkbox values Pending/Informed/Denied/Reminder/Confirmed/
+      Completed/Cancelled; button text "No Filters").
+    - Migration Month: `#sr_migration_month` ("Aug - 2027" … "Dec - 2019").
+    - Center: `#center_selection` (select2, "All Center").
+    - Filter button: `#btn_submit`.
 - **Table:** DataTable `#dt_migration_list`, 20 per page (NOT 10), 224 entries. Status counts: 217 Pending,
   4 Completed, 1 Informed, 1 Reminder, 1 Confirmed.
-  - Columns: Child ID | Child Name (link `pop_child_info`) | Fee/Addons/Coupons Details | Completion Email Status |
-    Confirmation Date (Parent) | Confirmed By (Parent) | Migration Status | Migration Date | Migration Comments | Action.
-  - Fee cell shows "Existing Annual" (V1 only), "Existing Monthly", "New Monthly" and "Addons".
-  - **V2 rows are listed too, with New Monthly = Existing − 2000.** 49851/49819/49795 are all Pending here.
+    - Columns: Child ID | Child Name (link `pop_child_info`) | Fee/Addons/Coupons Details | Completion Email Status |
+      Confirmation Date (Parent) | Confirmed By (Parent) | Migration Status | Migration Date | Migration Comments |
+      Action.
+    - Fee cell shows "Existing Annual" (V1 only), "Existing Monthly", "New Monthly" and "Addons".
+    - **V2 rows are listed too, with New Monthly = Existing − 2000.** 49851/49819/49795 are all Pending here.
 - **The Action column is EMPTY on all 224 rows for Rakesh.** The Update button is `.btn-cancel[data-migration=<base64
   JSON: migration_id, admission_id, diff_amount, annual_billing_date, child_name, migration_status>]`, rendered
   server-side. What renders it is UNKNOWN (right? date window per SC_018_TC_041?).
 - **Update modal `#modal_form_cancel`** — "New Payment Plan Migration Request":
-  - It shows Child Name and "Annual billing Date"; status `select#action` (Confirmed/Cancelled; the current status
-    and Completed are removed); `textarea#migration_comments`.
-  - Validation: "Migration status required", "Migration comments required".
-  - Note: "* Once the migration status is "Confirmed," it will be processed immediately for the V2 migration."
-  - Confirmed → native confirm "If the annual invoice is not paid, it will be marked as void. We will add credits if
-    the invoice is paid.\nFor this month, there is a Rs. <diff> rupee charge for upgrade plan." →
-    `POST financialprocess/updateCustomerMigrationResponse/` with `action_2_perform=Migration` and
-    `request_source=payment_plan_migration` (skips the parent link-expiry + OTP checks).
-  - The message goes to `.modal-header`, then reload after 5 s.
+    - It shows Child Name and "Annual billing Date"; status `select#action` (Confirmed/Cancelled; the current status
+      and Completed are removed); `textarea#migration_comments`.
+    - Validation: "Migration status required", "Migration comments required".
+    - Note: "* Once the migration status is "Confirmed," it will be processed immediately for the V2 migration."
+    - Confirmed → native confirm "If the annual invoice is not paid, it will be marked as void. We will add credits if
+      the invoice is paid.\nFor this month, there is a Rs. <diff> rupee charge for upgrade plan." →
+      `POST financialprocess/updateCustomerMigrationResponse/` with `action_2_perform=Migration` and
+      `request_source=payment_plan_migration` (skips the parent link-expiry + OTP checks).
+    - The message goes to `.modal-header`, then reload after 5 s.
 
 **Emails (Email View, Rakesh)**
 
@@ -2715,10 +2770,10 @@ the user.
   Zero Annual Fee"**.
 - Body: "your annual invoice will be raised on <date> for your ward <name> (#id)…". Then Existing Plan (Annual Fee Rs
   16,000.00 Due on <date>, Monthly) vs Optional New Plan (Annual Fee: None, Monthly +2,000).
-  - "…please confirm by Clicking Here before <date>…"
-  - **AC3 text present:** "Please note that once your annual fee for the current cycle has been charged, it is
-    non-refundable - this new plan will apply from your next renewal, not the current one."
-  - "Click Here in case you do not want to consider this option…"
+    - "…please confirm by Clicking Here before <date>…"
+    - **AC3 text present:** "Please note that once your annual fee for the current cycle has been charged, it is
+      non-refundable - this new plan will apply from your next renewal, not the current one."
+    - "Click Here in case you do not want to consider this option…"
 - Both links point to `https://test.footprintseducation.in//plan_migration.php?q=<hash>`.
 - Completion: **"Footprints: Payment plan upgraded for <child>"** ("…migrated to new payment plan as per your
   confirmation", New Plan Annual None / Monthly).
@@ -2741,14 +2796,14 @@ the user.
 `~/Desktop/QA_Documents/Testcases Scripts/TC_Payment_Plan_Migration_13Oct.xlsx` was built from the user's template
 `TC_Template_Enanched_13Oct.xlsx`: 43 TCs / 84 step rows, IDs `SC001_TC001`–`SC006_TC008`.
 
-| Scenario | Area |
-|---|---|
-| SC001 | Payment Plan Migration screen: default view, filters, grid |
-| SC002 | `saveMigrationPromotionalData` + offer / reminder emails, incl. AC1 first-year |
-| SC003 | Parent page Confirm / Not Interested + OTP |
-| SC004 | `processMigrationRequests` cron + AC5 lock / race |
-| SC005 | Support Update modal |
-| SC006 | Account Statement V2→V1 |
+| Scenario | Area                                                                           |
+|----------|--------------------------------------------------------------------------------|
+| SC001    | Payment Plan Migration screen: default view, filters, grid                     |
+| SC002    | `saveMigrationPromotionalData` + offer / reminder emails, incl. AC1 first-year |
+| SC003    | Parent page Confirm / Not Interested + OTP                                     |
+| SC004    | `processMigrationRequests` cron + AC5 lock / race                              |
+| SC005    | Support Update modal                                                           |
+| SC006    | Account Statement V2→V1                                                        |
 
 Q1–Q7 are logged in the QueryLogs sheet. The template's wrong list validation on Expected Result (K86:K301) was
 dropped in the copy.
@@ -2768,10 +2823,10 @@ confirm step blocks it is not yet known.
   `<h4 class="modal-title">Plan Migration Request - V2 to V1</h4>`.
 - Error/success area: `.migration-error-msg`. Form: `#frm-plan-migration-request`.
 - Info alert:
-  - "You are migrating from V2 (Monthly) to V1 (Annual + Monthly) payment plan. Please review the new plan details
-    below."
-  - In red: "Once you have applied for a plan migration, you must cancel the existing plan migration request before
-    raising any other new request."
+    - "You are migrating from V2 (Monthly) to V1 (Annual + Monthly) payment plan. Please review the new plan details
+      below."
+    - In red: "Once you have applied for a plan migration, you must cancel the existing plan migration request before
+      raising any other new request."
 - Card "New V1 Plan Pricing": `#display-monthly-amount` "₹ 14,499.00" (= V2 16,499 − 2,000) and
   `#display-yearly-amount` "₹ 16,000.00".
 - `select#next_yearly_billing_date` ("When should the new V1 annual plan recurring date?"): placeholder "-- Select the
@@ -2793,11 +2848,11 @@ confirm step blocks it is not yet known.
 - **Unpaid dues (16,499) did NOT block the request.** This contradicts the "all invoices must be paid" rule; a candidate
   bug/query for dev.
 - **Result:**
-  - **Recent Customer Requests** (`recent_update_details?child_id=49851`, also the CUSTOMER REQUESTS icon on Account
-    Statement): Request Type **"Plan Migration"**, Request Status **Pending**, Approval Status NA, Center Nirvana
-    Country, **WEF Date Oct 31, 2026**.
-  - The requirement said "immediately processed … customer request with Approved status", but live it is **Pending**,
-    presumably processed by the month-end `processMigrationRequests` cron.
+    - **Recent Customer Requests** (`recent_update_details?child_id=49851`, also the CUSTOMER REQUESTS icon on Account
+      Statement): Request Type **"Plan Migration"**, Request Status **Pending**, Approval Status NA, Center Nirvana
+      Country, **WEF Date Oct 31, 2026**.
+    - The requirement said "immediately processed … customer request with Approved status", but live it is **Pending**,
+      presumably processed by the month-end `processMigrationRequests` cron.
 - **Account Statement right after:** still `[PAYMENT PLAN : V2]`; monthly 16,499 (Next Billing 01 Nov 2026); Yearly
   "Not Available". The "MIGRATE IN LONG TERM PAYMENT PLAN" button is STILL shown, although the popup says an existing
   request must be cancelled before a new one.
@@ -2823,24 +2878,24 @@ Checks to run after EVERY migration (user instruction), all in `PlanMigration_Te
 
 1. **Customer Requests:** Plan Migration → **Approved** (Approval Status NA, WEF Oct 31, 2026).
 2. **Account Statement:**
-   - header `<legend>…<span class="">[Payment Plan : V1]</span>`.
-   - Monthly Subscription: "Tuition Fee - Half Day Program", 14499.00 (Monthly) = V2 16,499 − 2,000.
-   - Yearly Subscription: "Annual Fee - Half Day Program", **16000.00 (Yearly)**, **Next Billing Date 01 Nov, 2026** (=
-     the annual recurring date chosen).
-   - The "Migrate in Long Term Payment Plan" button is gone (and there is no V1→V2 button either).
+    - header `<legend>…<span class="">[Payment Plan : V1]</span>`.
+    - Monthly Subscription: "Tuition Fee - Half Day Program", 14499.00 (Monthly) = V2 16,499 − 2,000.
+    - Yearly Subscription: "Annual Fee - Half Day Program", **16000.00 (Yearly)**, **Next Billing Date 01 Nov, 2026** (=
+      the annual recurring date chosen).
+    - The "Migrate in Long Term Payment Plan" button is gone (and there is no V1→V2 button either).
 3. **Child History** (popup "Child Updates History"):
-   - **"Plan Migration Completed"** (2026-10-31 23:00:05) — "Migration: V2 -> V1 | Length: Half Day | Effective Date:
-     2026-11-01 | Monthly Plan ID: ALINC-monthly-fee-14499 | Annual Plan ID: annual-fee-16000".
-   - Plus "Plan Migration Request" (Rakesh Singh, 2026-10-13) — "Plan Migration Request Created : Migration: V2 -> V1 |
-     Length: Half Day | Annual Recurring Date: 2026-11-01".
-   - The existing `getChildHistoryFullText()` XPath matches `.modal-title` only (header text). The new
-     `waitForChildHistoryText()` reads the page text from "Child Updates History" onward.
+    - **"Plan Migration Completed"** (2026-10-31 23:00:05) — "Migration: V2 -> V1 | Length: Half Day | Effective Date:
+      2026-11-01 | Monthly Plan ID: ALINC-monthly-fee-14499 | Annual Plan ID: annual-fee-16000".
+    - Plus "Plan Migration Request" (Rakesh Singh, 2026-10-13) — "Plan Migration Request Created : Migration: V2 -> V1 |
+      Length: Half Day | Annual Recurring Date: 2026-11-01".
+    - The existing `getChildHistoryFullText()` XPath matches `.modal-title` only (header text). The new
+      `waitForChildHistoryText()` reads the page text from "Child Updates History" onward.
 4. **Email View:** Subject **"Plan Migration Report V2 -> V1 - All Centers - 31 Oct 2026"** (internal, To Rakesh).
-   - Its table: # | Center Name | Child Name | Child ID | Program | Effective Date | Monthly Plan ID | Annual Plan ID |
-     Yearly Subscription ID.
-   - The row is "Nirvana Country | Anaika Singhal | 49851 | Half Day | 01 Nov 2026 | ALINC-monthly-fee-14499 |
-     annual-fee-16000 | 49851_annual_103126"; "Total Migrations Processed: 1".
-   - The subject date = the request's WEF date.
+    - Its table: # | Center Name | Child Name | Child ID | Program | Effective Date | Monthly Plan ID | Annual Plan ID |
+      Yearly Subscription ID.
+    - The row is "Nirvana Country | Anaika Singhal | 49851 | Half Day | 01 Nov 2026 | ALINC-monthly-fee-14499 |
+      annual-fee-16000 | 49851_annual_103126"; "Total Migrations Processed: 1".
+    - The subject date = the request's WEF date.
 
 **Open (query for dev):** no PARENT confirmation email was found for 49851. Neither "Confirmation of payment plan
 migration" (spec subject) nor "Footprints: Payment plan updated for Anaika Singhal" (the subject seen for another V2→V1
@@ -2859,20 +2914,21 @@ child, Ariv Kudale, 01 Oct) exists, despite `email_sent: Yes`.
 **Run 2026-10-31 (server time), child 49819 — tc004 + tc005 + tc006.** 49819 is now CONSUMED (V1).
 
 - `tc005`:
-  - The popup's first annual-date option was **2026-12-01** (server date Oct 31). That was selected.
-  - The request went Pending (WEF Oct 31, 2026) → cron `processed:1, approved:1, email_sent:Yes` → **Approved**.
-  - Result: V1; monthly **14799.00** (= undiscounted V2 16,799 − 2,000); yearly 16000.00.
-  - Child History: "Plan Migration Completed … Length: Full Day | Effective Date: 2026-11-01 | Monthly Plan ID:
-    ALINC-monthly-fee-14799 | Annual Plan ID: annual-fee-16000".
-  - Report email "Plan Migration Report V2 -> V1 - All Centers - 31 Oct 2026" lists 49819 (Gokhale Vihar Marg,
-    Butler Colony | Hetansh Kumar | Full Day | 01 Nov 2026 | … | 49819_annual_103126).
+    - The popup's first annual-date option was **2026-12-01** (server date Oct 31). That was selected.
+    - The request went Pending (WEF Oct 31, 2026) → cron `processed:1, approved:1, email_sent:Yes` → **Approved**.
+    - Result: V1; monthly **14799.00** (= undiscounted V2 16,799 − 2,000); yearly 16000.00.
+    - Child History: "Plan Migration Completed … Length: Full Day | Effective Date: 2026-11-01 | Monthly Plan ID:
+      ALINC-monthly-fee-14799 | Annual Plan ID: annual-fee-16000".
+    - Report email "Plan Migration Report V2 -> V1 - All Centers - 31 Oct 2026" lists 49819 (Gokhale Vihar Marg,
+      Butler Colony | Hetansh Kumar | Full Day | 01 Nov 2026 | … | 49819_annual_103126).
 - **🐛 Likely BUG — the chosen annual recurring date is ignored.**
-  - The request entry records "Annual Recurring Date: 2026-12-01", but the processed Yearly Subscription shows **Next
-    Billing Date : 01 Nov, 2026**.
-  - That is the effective date, not the chosen date, contrary to the popup's own help text "The selected month will be
-    set for annual billing date."
-  - It was hidden on 49851 because 2026-11-01 was chosen there. The shared check asserts the spec'd behaviour and fails
-    on 49819 until fixed. Report to dev/JIRA.
+    - The request entry records "Annual Recurring Date: 2026-12-01", but the processed Yearly Subscription shows **Next
+      Billing Date : 01 Nov, 2026**.
+    - That is the effective date, not the chosen date, contrary to the popup's own help text "The selected month will be
+      set for annual billing date."
+    - It was hidden on 49851 because 2026-11-01 was chosen there. The shared check asserts the spec'd behaviour and
+      fails
+      on 49819 until fixed. Report to dev/JIRA.
 - **Popup monthly ≠ plan amount.** The popup shows the fee AFTER discounts (₹13,319 = 14,799 less a 10% inaugural
   discount); Account Statement's Plan Amount is undiscounted (14,799). `tc005` now expects (monthly before − 2,000) from
   Account Statement.
@@ -2889,47 +2945,49 @@ child, Ariv Kudale, 01 Oct) exists, despite `email_sent: Yes`.
   month (e.g. 2027-01-01). Move the clock to month-end 11 PM only for the cron. Then verify the Yearly Next Billing Date
   = 01 Jan, 2027. Raise the JIRA only if it still shows the plan start date.
 - **Retest step 1 done (2026-10-13, normal server date):** `tc005` on **69923** with `-DannualDate=2026-12-01`.
-  - Success message (now captured): **"Plan migration request saved successfully! Request will be processed on 31 Oct,
-    2026"**.
-  - Customer Request: Plan Migration Pending, WEF Oct 31, 2026.
-  - Monthly before 12,999 → expected 10,999; the popup showed ₹9,899 (discounted). Cron gate → informational.
-  - Next: the user sets the server to Oct 31 11 PM → run `tc006 -DprocessedChildId=69923 -DprocessedAnnualDate=2026-12-01
+    - Success message (now captured): **"Plan migration request saved successfully! Request will be processed on 31 Oct,
+      2026"**.
+    - Customer Request: Plan Migration Pending, WEF Oct 31, 2026.
+    - Monthly before 12,999 → expected 10,999; the popup showed ₹9,899 (discounted). Cron gate → informational.
+    - Next: the user sets the server to Oct 31 11 PM → run `tc006 -DprocessedChildId=69923 -DprocessedAnnualDate=2026-12-01
     -DprocessedMonthlyAmount=10999.00` after the cron.
 - **Expected behaviour clarified by the user (2026-10-13):** if the annual recurring date selected = 1 Dec, then **WEF
   should be 30 Nov** and the cron processes the request on 30 Nov. That makes the plan effective / the yearly Next
   Billing Date 01 Dec.
-  - **Actual:** WEF is always the last day of the CURRENT month (Oct 31), whatever date is selected. Seen on 69923
-    (raised at a normal server date: "Request will be processed on 31 Oct, 2026"; Customer Request WEF Oct 31, 2026;
-    history "Annual Recurring Date: 2026-12-01") and 49819 (processed Oct 31 → effective 2026-11-01, yearly Next
-    Billing 01 Nov, 2026).
-  - **BUG CONFIRMED.** The user is logging it in JIRA.
-  - `tc005` now asserts WEF = selected annual date − 1 day.
-  - 69923 is Pending with the wrong WEF (Oct 31) — do not reuse for a clean run until the fix.
+    - **Actual:** WEF is always the last day of the CURRENT month (Oct 31), whatever date is selected. Seen on 69923
+      (raised at a normal server date: "Request will be processed on 31 Oct, 2026"; Customer Request WEF Oct 31, 2026;
+      history "Annual Recurring Date: 2026-12-01") and 49819 (processed Oct 31 → effective 2026-11-01, yearly Next
+      Billing 01 Nov, 2026).
+    - **BUG CONFIRMED.** The user is logging it in JIRA.
+    - `tc005` now asserts WEF = selected annual date − 1 day.
+    - 69923 is Pending with the wrong WEF (Oct 31) — do not reuse for a clean run until the fix.
 - **Reproduced again (2026-10-13, normal server date) on 62853:**
-  - Selected 2026-12-01 → "Plan migration request saved successfully! Request will be processed on 31 Oct, 2026".
-  - Customer Request Pending, **WEF Oct 31, 2026** (expected Nov 30, 2026).
-  - `tc005` fails exactly here: `expected [2026-11-30] but found [2026-10-31]`.
-  - Monthly before 11,799; popup ₹9,799 (no discount). 62853 is now Pending with the wrong WEF.
-- **Bug evidence screenshots (2026-10-14):** saved in `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_WEF_AnnualDate/`
+    - Selected 2026-12-01 → "Plan migration request saved successfully! Request will be processed on 31 Oct, 2026".
+    - Customer Request Pending, **WEF Oct 31, 2026** (expected Nov 30, 2026).
+    - `tc005` fails exactly here: `expected [2026-11-30] but found [2026-10-31]`.
+    - Monthly before 11,799; popup ₹9,799 (no discount). 62853 is now Pending with the wrong WEF.
+- **Bug evidence screenshots (2026-10-14):** saved in
+  `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_WEF_AnnualDate/`
   (01–06: 62853 Customer Request WEF Oct 31; 62853 history "Annual Recurring Date: 2026-12-01"; 49819 Customer Request;
   49819 Yearly Next Billing 01 Nov 2026; 49819 history Effective Date 2026-11-01 vs Annual Recurring Date 2026-12-01;
   report email). The temporary `evidence_*` test method was removed.
 - **Parent-email bug evidence (2026-10-14, read-only):** Email View for 49851 and 49819, searching Subject "Payment
   plan" / "Confirmation of payment plan" / "Plan Migration" × Body = child ID / child first name.
-  - Only the internal "Plan Migration Report V2 -> V1 - All Centers - 31 Oct 2026" (To rakesh.singh@…) and an old
-    "[Info] … Records Saved in DB (17 September, 2026)" appear. There is **no parent-addressed email**, although the cron
-    returned `email_sent: Yes`.
-  - Screenshots: `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_ParentEmail/`.
+    - Only the internal "Plan Migration Report V2 -> V1 - All Centers - 31 Oct 2026" (To rakesh.singh@…) and an old
+      "[Info] … Records Saved in DB (17 September, 2026)" appear. There is **no parent-addressed email**, although the
+      cron
+      returned `email_sent: Yes`.
+    - Screenshots: `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_ParentEmail/`.
 - **Bug reports written (2026-10-14)**, for the user to log in JIRA; all in `~/Desktop/QA_Documents/Bug Evidence/`:
-  - Bug 1 (WEF/annual date ignored) — text in chat, screenshots `PlanMigration_WEF_AnnualDate/`.
-  - Bug 2 (no parent email) — `Bug2_PlanMigration_ParentEmail.md`, screenshots `PlanMigration_ParentEmail/`.
-  - Bug 3 (dues not blocking) — `Bug3_PlanMigration_DuesNotBlocking.md`, screenshots
-    `PlanMigration_DuesNotBlocking/`. 49851 still has unpaid PI/999905 (₹16,499, due 05 Oct 2026, Dues ₹16,499) yet
-    was migrated to V1.
+    - Bug 1 (WEF/annual date ignored) — text in chat, screenshots `PlanMigration_WEF_AnnualDate/`.
+    - Bug 2 (no parent email) — `Bug2_PlanMigration_ParentEmail.md`, screenshots `PlanMigration_ParentEmail/`.
+    - Bug 3 (dues not blocking) — `Bug3_PlanMigration_DuesNotBlocking.md`, screenshots
+      `PlanMigration_DuesNotBlocking/`. 49851 still has unpaid PI/999905 (₹16,499, due 05 Oct 2026, Dues ₹16,499) yet
+      was migrated to V1.
 - **All 3 bugs logged in JIRA by the user (2026-10-14)** — JIRA IDs not yet supplied. Until they're fixed:
-  - `tc005` fails on WEF (Bug 1).
-  - `tc006` fails for any child whose chosen annual date ≠ the 1st of next month (Bug 1).
-  - No automated assertion exists yet for the parent email (Bug 2) or the dues block (Bug 3).
+    - `tc005` fails on WEF (Bug 1).
+    - `tc006` fails for any child whose chosen annual date ≠ the 1st of next month (Bug 1).
+    - No automated assertion exists yet for the parent email (Bug 2) or the dues block (Bug 3).
 
 ### V2→V1 migration via parent EMAIL (renewal offer) — started 2026-10-14
 
@@ -2941,45 +2999,52 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
 3. The request is processed by the month-end cron.
 
 - **Example child 62654 (Raghavi Nelkudri), read-only 2026-10-14 (server Oct 14 12:30 PM):**
-  - V2; Tuition Fee - After School Program 10,299 (Monthly), next billing 01 Nov 2026; Yearly "Not Available"; **Dues
-    10,299**.
-  - Child info popup (`pop_child_info?&child_id=62654`, link
-    `<a class="btn-link text-primary" href="pop_child_info?&child_id=…" title="Child Information">`) shows "November 21,
-    2025" and **"November 24, 2025" = Joining Date** (`div.col-xs-8.col-sm-7.mb-10`).
-  - Not yet on the Payment Plan Migration screen. Only internal "[Info] … Records Saved in DB" emails mention it.
+    - V2; Tuition Fee - After School Program 10,299 (Monthly), next billing 01 Nov 2026; Yearly "Not Available"; **Dues
+      10,299**.
+    - Child info popup (`pop_child_info?&child_id=62654`, link
+      `<a class="btn-link text-primary" href="pop_child_info?&child_id=…" title="Child Information">`) shows "November
+      21,
+      2025" and **"November 24, 2025" = Joining Date** (`div.col-xs-8.col-sm-7.mb-10`).
+    - Not yet on the Payment Plan Migration screen. Only internal "[Info] … Records Saved in DB" emails mention it.
 - **V2 offer email = "New Payment Plan: Annual Fee Applies"** (+ "Reminder - New Payment Plan: Annual Fee Applies"). To
   father+mother, Cc CD. Body (child 49820 example):
-  - "your ward <Name> (#id)'s current payment plan does not carry an annual fee. From your next renewal on <1st Month,
-    Year>, Footprints is offering the option to switch to our standard plan, which carries a lower monthly fee alongside
-    an annual fee."
-  - Existing Payment Plan: Annual Fee None, Monthly X. Optional New Payment Plan: Annual Fee Rs. 16,000.00, Monthly X −
-    2,000.
-  - "If you switch, you would pay Rs. 2,000.00 less per month, and an annual fee of Rs. 16,000.00 would apply from
-    <date> onward."
-  - "please confirm by Clicking Here before <date>"; "Click Here in case you do not want to consider this option…".
-  - Both links → `test.footprintseducation.in//plan_migration.php?q=<token>`.
+    - "your ward <Name> (#id)'s current payment plan does not carry an annual fee. From your next renewal on <1st Month,
+      Year>, Footprints is offering the option to switch to our standard plan, which carries a lower monthly fee
+      alongside
+      an annual fee."
+    - Existing Payment Plan: Annual Fee None, Monthly X. Optional New Payment Plan: Annual Fee Rs. 16,000.00, Monthly
+      X −
+      2,000.
+    - "If you switch, you would pay Rs. 2,000.00 less per month, and an annual fee of Rs. 16,000.00 would apply from
+      <date> onward."
+    - "please confirm by Clicking Here before <date>"; "Click Here in case you do not want to consider this option…".
+    - Both links → `test.footprintseducation.in//plan_migration.php?q=<token>`.
 - **Plan:**
-  - The user sets the server date to 24 Oct 2026, then call
-    `saveMigrationPromotionalData/?send_promotional_email=yes&child_id=62654`.
-  - Check the PPM row = Informed, the email content, then the link → Confirm → OTP 1234 → Confirmed.
-  - Cron on Oct 31 11 PM, then `verifyProcessedV2ToV1Migration`.
-  - Decline path on another child → Denied.
-- **Offer sent for 62654 (server Oct 24 2026 06:30 PM):** `saveMigrationPromotionalData/?send_promotional_email=yes&child_id=62654`
+    - The user sets the server date to 24 Oct 2026, then call
+      `saveMigrationPromotionalData/?send_promotional_email=yes&child_id=62654`.
+    - Check the PPM row = Informed, the email content, then the link → Confirm → OTP 1234 → Confirmed.
+    - Cron on Oct 31 11 PM, then `verifyProcessedV2ToV1Migration`.
+    - Decline path on another child → Denied.
+- **Offer sent for 62654 (server Oct 24 2026 06:30 PM):**
+  `saveMigrationPromotionalData/?send_promotional_email=yes&child_id=62654`
   → HTTP 200 `{"status":"ok","message":"Promotional email sent successfully to 1 Child"}`. **`tc007_v2OfferEmailSent`
   PASSED.**
-  - **Email** "New Payment Plan: Annual Fee Applies" (24 Oct 2026 18:30): To d_62654_father/mother, CC
-    Archana.Kadiwal@center (CD).
-    - "From your next renewal on **1st November, 2026**…"; Existing: Annual None / Monthly 10,299.00; New: Annual Rs.
-      16,000.00 / Monthly 8,299.00; "you would pay Rs. 2,000.00 less per month".
-    - "please confirm by Clicking Here before **30th October, 2026**".
-    - **NEW 3rd option:** "Click Here if you want to think about it and want us to reminder you later. Or Click Here in
-      case you do not want to consider this option…" — typo "reminder you later".
-    - All links → `plan_migration.php?q=7715373f7e42b992e9360e3521dc8c26`.
-    - The V2 email has **no non-refundable sentence** (that is in the V1 "Zero Annual Fee" email only).
-  - **Payment Plan Migration grid defaults Migration Month to the FIRST option ("Aug - 2027")**, so a test must select
-    the renewal month ("Nov - 2026") + Filter before searching.
-  - Row: "62654 | Raghavi Nelkudri | Existing Monthly 10,299 / New Monthly 8,299 | Pending | Informed | **Update**". The
-    Update action IS shown for this Informed row, which partially answers open query Q2.
+    - **Email** "New Payment Plan: Annual Fee Applies" (24 Oct 2026 18:30): To d_62654_father/mother, CC
+      Archana.Kadiwal@center (CD).
+        - "From your next renewal on **1st November, 2026**…"; Existing: Annual None / Monthly 10,299.00; New: Annual
+          Rs.
+          16,000.00 / Monthly 8,299.00; "you would pay Rs. 2,000.00 less per month".
+        - "please confirm by Clicking Here before **30th October, 2026**".
+        - **NEW 3rd option:** "Click Here if you want to think about it and want us to reminder you later. Or Click Here
+          in
+          case you do not want to consider this option…" — typo "reminder you later".
+        - All links → `plan_migration.php?q=7715373f7e42b992e9360e3521dc8c26`.
+        - The V2 email has **no non-refundable sentence** (that is in the V1 "Zero Annual Fee" email only).
+    - **Payment Plan Migration grid defaults Migration Month to the FIRST option ("Aug - 2027")**, so a test must select
+      the renewal month ("Nov - 2026") + Filter before searching.
+    - Row: "62654 | Raghavi Nelkudri | Existing Monthly 10,299 / New Monthly 8,299 | Pending | Informed | **Update**".
+      The
+      Update action IS shown for this Informed row, which partially answers open query Q2.
 - **Email View convention (user, 2026-10-14):** filter by Subject (e.g. "New Payment Plan: Annual Fee Applies"), then
   **sort the "Created Date" column descending** so the newest email is first (+ Body = child ID as an extra filter).
   Implemented in `PlanMigration_Test.sortEmailViewByCreatedDateDesc()` (clicks the header until
@@ -2987,86 +3052,94 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
 - **`tc007` extended (PASSED):** a full 13-line email content check (values computed: existing monthly from Account
   Statement, new = −2,000, renewal date from the email, confirm-by = renewal − 2 days). Child name read via
   `textContent` (Account Statement renders it CSS-uppercased).
-  - **3 blue links** (rgb 47,111,208), ALL the same URL `plan_migration.php?q=<token>`:
-    1. "Clicking Here" = confirm/reject
-    2. "Click Here" = remind me later
-    3. "Click Here" = not interested
-  - Content issues to raise: typo "want us to **reminder** you later"; CD name spelt "Kadiwal" (CC) vs "Kadival"
-    (signature).
+    - **3 blue links** (rgb 47,111,208), ALL the same URL `plan_migration.php?q=<token>`:
+        1. "Clicking Here" = confirm/reject
+        2. "Click Here" = remind me later
+        3. "Click Here" = not interested
+    - Content issues to raise: typo "want us to **reminder** you later"; CD name spelt "Kadiwal" (CC) vs "Kadival"
+      (signature).
 - **Parent page for 62654 (read-only, 2026-10-14):**
-  - "Offer To Migrate On New Payment Plan", "Dear Santhosh R Nelkudri & Channamma S", "A New Payment Plan is available
-    for Raghavi Nelkudri (#62654) from November 01, 2026". Existing (Annual None / Monthly ₹10,299) vs New (Annual
-    ₹16,000 / Monthly ₹8,299).
-  - **3 buttons:** `#btn_confirm` "Confirm", `#btn_reminder` "Remind Me Later" (new), `#btn_denied` "Not Interested"
-    (all `.btn-migrate`). Footer "*New fee will be applicable for all payable on or after November 01, 2026."
-  - Popup (a 2nd element with id `fee-modal`, title "Payment Plan"):
-    - Message (static HTML seen: "Are you sure want to confirm to migration in new payment plan? You annual plan will
-      not be charged on November 01, 2026." — V1→V2 wording; verify live after clicking Confirm before calling it a
-      bug).
-    - → `#btn_get_submit` "Continue" (`showContactDetails()`) → "Please select contact details for OTP": radios
-      Father/Mother (`onchange=sendOTP(<id>,'<phone>','F'|'M')`), masked email/phone.
-    - → `#otp` (4 digits, "OTP is valid for 10 Minutes", Resend) → `#btn_otp_submit` "Continue"
-      (`updateMigrationResponse()`).
-    - Hidden fields: `#migration_id` (9050), `#admission_id`, `#action`, `#verified_by`, `#otp_password`,
-      `#user_id`=Parent.
-  - Handlers live in an external script (no inline code).
-- **Parent responses — `tc008_parentRespondsToOffer` (`-DofferChildId -DparentAction=confirm|reminder|denied`), server Oct
+    - "Offer To Migrate On New Payment Plan", "Dear Santhosh R Nelkudri & Channamma S", "A New Payment Plan is available
+      for Raghavi Nelkudri (#62654) from November 01, 2026". Existing (Annual None / Monthly ₹10,299) vs New (Annual
+      ₹16,000 / Monthly ₹8,299).
+    - **3 buttons:** `#btn_confirm` "Confirm", `#btn_reminder` "Remind Me Later" (new), `#btn_denied` "Not Interested"
+      (all `.btn-migrate`). Footer "*New fee will be applicable for all payable on or after November 01, 2026."
+    - Popup (a 2nd element with id `fee-modal`, title "Payment Plan"):
+        - Message (static HTML seen: "Are you sure want to confirm to migration in new payment plan? You annual plan
+          will
+          not be charged on November 01, 2026." — V1→V2 wording; verify live after clicking Confirm before calling it a
+          bug).
+        - → `#btn_get_submit` "Continue" (`showContactDetails()`) → "Please select contact details for OTP": radios
+          Father/Mother (`onchange=sendOTP(<id>,'<phone>','F'|'M')`), masked email/phone.
+        - → `#otp` (4 digits, "OTP is valid for 10 Minutes", Resend) → `#btn_otp_submit` "Continue"
+          (`updateMigrationResponse()`).
+        - Hidden fields: `#migration_id` (9050), `#admission_id`, `#action`, `#verified_by`, `#otp_password`,
+          `#user_id`=Parent.
+    - Handlers live in an external script (no inline code).
+- **Parent responses — `tc008_parentRespondsToOffer` (`-DofferChildId -DparentAction=confirm|reminder|denied`), server
+  Oct
   24 2026:**
-  - **Rocket Loader:** the page's onclick handlers are guarded by `if (!window.__cfRLUnblockHandlers) return false`, so
-    early clicks do nothing. The test waits for `__cfRLUnblockHandlers` + jQuery and retries the click.
-  - **62654 Confirm — PASSED.**
-    - Popup "Payment Plan": "Your annual plan will not be invoiced on November 01, 2026" → Continue → "Please select
-      contact details for OTP" → Father (`#customRadioInline2`) → "OTP has been sent successfully" → OTP 1234 →
-      Continue.
-    - Result: "Thanks, your new payment plan will be applied from next month."
-    - Row: Confirmation Date (Parent) 24 Oct, 2026 | Confirmed By (Parent) 1377446720 | **Confirmed** | Update.
-  - **62671 Not Interested — PASSED.**
-    - Popup: "Your Annual Fee will be invoiced on November 01, 2026" → OTP flow.
-    - Result: "Thanks, your annual fee will be invoiced on November 01,2026" (no space after the comma).
-    - Row: 24 Oct, 2026 | 1016639668 | **Denied**.
-  - **62664 Remind Me Later — WORKS.**
-    - Popup: "We will send you reminder for this again" → Continue → **NO OTP step**. Page alert "Thanks, your
-      reminder request registered successfully"; the Remind Me Later button becomes disabled (a 2nd test run therefore
-      times out on clicking it — expected).
-    - Row: **Reminder** (no confirmation date/by).
-  - **🐛 Content issue (V2→V1 popups use V1→V2 wording):**
-    - Confirm says "Your annual plan will **not** be invoiced on November 01, 2026", but for V2→V1 the ₹16,000 annual
-      fee WILL start.
-    - Not Interested says "Your Annual Fee **will** be invoiced on November 01, 2026" / "Thanks, your annual fee will
-      be invoiced…", but a V2 child who declines stays on V2 with NO annual fee.
-    - The two messages are inverted for the V2 direction. Candidate Bug 4.
-  - **Test data now:** 62654 Confirmed (awaiting cron Oct 31 11 PM); 62671 Denied; 62664 Reminder (awaiting reminder
-    email API).
+    - **Rocket Loader:** the page's onclick handlers are guarded by `if (!window.__cfRLUnblockHandlers) return false`,
+      so
+      early clicks do nothing. The test waits for `__cfRLUnblockHandlers` + jQuery and retries the click.
+    - **62654 Confirm — PASSED.**
+        - Popup "Payment Plan": "Your annual plan will not be invoiced on November 01, 2026" → Continue → "Please select
+          contact details for OTP" → Father (`#customRadioInline2`) → "OTP has been sent successfully" → OTP 1234 →
+          Continue.
+        - Result: "Thanks, your new payment plan will be applied from next month."
+        - Row: Confirmation Date (Parent) 24 Oct, 2026 | Confirmed By (Parent) 1377446720 | **Confirmed** | Update.
+    - **62671 Not Interested — PASSED.**
+        - Popup: "Your Annual Fee will be invoiced on November 01, 2026" → OTP flow.
+        - Result: "Thanks, your annual fee will be invoiced on November 01,2026" (no space after the comma).
+        - Row: 24 Oct, 2026 | 1016639668 | **Denied**.
+    - **62664 Remind Me Later — WORKS.**
+        - Popup: "We will send you reminder for this again" → Continue → **NO OTP step**. Page alert "Thanks, your
+          reminder request registered successfully"; the Remind Me Later button becomes disabled (a 2nd test run
+          therefore
+          times out on clicking it — expected).
+        - Row: **Reminder** (no confirmation date/by).
+    - **🐛 Content issue (V2→V1 popups use V1→V2 wording):**
+        - Confirm says "Your annual plan will **not** be invoiced on November 01, 2026", but for V2→V1 the ₹16,000
+          annual
+          fee WILL start.
+        - Not Interested says "Your Annual Fee **will** be invoiced on November 01, 2026" / "Thanks, your annual fee
+          will
+          be invoiced…", but a V2 child who declines stays on V2 with NO annual fee.
+        - The two messages are inverted for the V2 direction. Candidate Bug 4.
+    - **Test data now:** 62654 Confirmed (awaiting cron Oct 31 11 PM); 62671 Denied; 62664 Reminder (awaiting reminder
+      email API).
 - **Reminder email for 62664 (2026-10-14):** `sendMigrationPromotionalReminderEmail?days=3&child_id=62664` → HTTP 200,
   plain text **"Reminder Send Successfullynull"** (not JSON; stray "null").
-  - Only 62664's reminder was created in that run, so `child_id` appears to be respected.
-  - Email **"Reminder - New Payment Plan: Annual Fee Applies"** (To d_62664_father/mother, CC renuka.s@center =
-    Renuka Sarkar): the same content as the offer, but the "remind me later" option is dropped — only "Clicking Here"
-    (confirm) + "Click Here in case you do not want to consider…".
-  - Created **14 Oct, 2026 13:26** — the server clock was back at the real date by then (offer emails were 24 Oct).
-  - **`tc009_v2ReminderEmailSent` PASSED** (13 content checks + asserts no "remind" text).
+    - Only 62664's reminder was created in that run, so `child_id` appears to be respected.
+    - Email **"Reminder - New Payment Plan: Annual Fee Applies"** (To d_62664_father/mother, CC renuka.s@center =
+      Renuka Sarkar): the same content as the offer, but the "remind me later" option is dropped — only "Clicking Here"
+      (confirm) + "Click Here in case you do not want to consider…".
+    - Created **14 Oct, 2026 13:26** — the server clock was back at the real date by then (offer emails were 24 Oct).
+    - **`tc009_v2ReminderEmailSent` PASSED** (13 content checks + asserts no "remind" text).
 - **Cron for the parent-email path (server Oct 31 2026 11 PM):**
   `processMigrationRequests?child_id=62654&date=2026-10-31` →
   `{"status":"ok","message":"Processed 1 migration requests","processed":1,"approved":1,"failed":0,"email_sent":"No","date":"2026-10-31"}`.
   **`tc010_verifyParentEmailMigrationProcessed` PASSED** for 62654:
-  - Customer Request "Plan Migration" Approved (WEF Oct 31, 2026). [Payment Plan : V1]. Monthly 8,299.00. Yearly
-    16,000.00 with **Next Billing Date 01 Nov, 2027**.
-  - **The annual invoice is raised immediately at processing:** ledger "Invoice charged on 31 October, 2026 11:00 PM (Due
-    date 04 Nov, 2026)" with line "**Annual Fee Invoice Amount Against V2 to V1 Migration**" (the spec said "Annual Fee
-    Against V2 to V1 Migration"). The yearly next billing therefore moves to next year.
-  - Child History entries are titled "**Plan Migration**" (NOT "Plan Migration Completed" as in the Support path):
-    - "Auto: on 31 October, 2026 11:00 PM, the New Payment Plan (V1) was migrated via parent email confirmation. The
-      request was approved by the Father, and on 24 October, 2026 06:46 PM confirmation was completed."
-    - "Auto: Request for new payment plan migration confirmed by Father on 24 October, 2026 06:46 PM - queued for
-      month-end processing".
-  - **Parent email IS sent here** (despite `email_sent: No`): "**Footprints: Payment plan updated for Raghavi
-    Nelkudri**" 31 Oct 23:00, To d_62654_father/mother, CC CD — "This is to inform that you have been migrated to new
-    payment plan as per your confirmation. New Payment Plan Annual Fee: Rs. 16,000.00 Monthly Fee: Rs. 8,299.00".
-  - **No internal "Plan Migration Report V2 -> V1" email** for this run (only the earlier 49851/49819 reports).
-  - Open questions for dev:
-    - The Support path did NOT raise an immediate annual invoice for 49851/49819 (yearly next billing 01 Nov 2026) —
-      which is right?
-    - Is the missing report email for the parent-email path intended?
+    - Customer Request "Plan Migration" Approved (WEF Oct 31, 2026). [Payment Plan : V1]. Monthly 8,299.00. Yearly
+      16,000.00 with **Next Billing Date 01 Nov, 2027**.
+    - **The annual invoice is raised immediately at processing:** ledger "Invoice charged on 31 October, 2026 11:00 PM (
+      Due
+      date 04 Nov, 2026)" with line "**Annual Fee Invoice Amount Against V2 to V1 Migration**" (the spec said "Annual
+      Fee
+      Against V2 to V1 Migration"). The yearly next billing therefore moves to next year.
+    - Child History entries are titled "**Plan Migration**" (NOT "Plan Migration Completed" as in the Support path):
+        - "Auto: on 31 October, 2026 11:00 PM, the New Payment Plan (V1) was migrated via parent email confirmation. The
+          request was approved by the Father, and on 24 October, 2026 06:46 PM confirmation was completed."
+        - "Auto: Request for new payment plan migration confirmed by Father on 24 October, 2026 06:46 PM - queued for
+          month-end processing".
+    - **Parent email IS sent here** (despite `email_sent: No`): "**Footprints: Payment plan updated for Raghavi
+      Nelkudri**" 31 Oct 23:00, To d_62654_father/mother, CC CD — "This is to inform that you have been migrated to new
+      payment plan as per your confirmation. New Payment Plan Annual Fee: Rs. 16,000.00 Monthly Fee: Rs. 8,299.00".
+    - **No internal "Plan Migration Report V2 -> V1" email** for this run (only the earlier 49851/49819 reports).
+    - Open questions for dev:
+        - The Support path did NOT raise an immediate annual invoice for 49851/49819 (yearly next billing 01 Nov 2026) —
+          which is right?
+        - Is the missing report email for the parent-email path intended?
 - **`tc011_verifyDeniedChildUnchanged` PASSED** for 62671 (after the cron): the row still Denied; V2; monthly 12,499.00
   unchanged; yearly "Not Available"; no "Against V2 to V1 Migration" invoice.
 - `tc007`–`tc011` cover the parent-email V2→V1 flow end-to-end.
@@ -3074,8 +3147,10 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
   typo, Kadiwal/Kadival, `email_sent: No` vs the sent parent email, and "Reminder Send Successfullynull". Bug 4 (the
   reversed V2 popup messages) was written up for JIRA.
 - **Bug 4 screenshots** copied to `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_V2PopupWording/`:
-  01 62654 Confirm popup "Your annual plan will not be invoiced…"; 02 Confirm result; 03 62671 Not Interested popup "Your
-  Annual Fee will be invoiced…"; 04 Not Interested result "Thanks, your annual fee will be invoiced on November 01,2026".
+  01 62654 Confirm popup "Your annual plan will not be invoiced…"; 02 Confirm result; 03 62671 Not Interested popup "
+  Your
+  Annual Fee will be invoiced…"; 04 Not Interested result "Thanks, your annual fee will be invoiced on November
+  01,2026".
 - **Link expiry CONFIRMED (2026-10-14, server at Oct 31 11 PM):** opening 62664's reminder-email link
   (`plan_migration.php?q=73cd55771cacbf63b59548b7a646332a` — different token from the offer email) shows only a yellow
   alert: "**This link has expired. Please contact your Centre Directress if you'd still like to change your payment
@@ -3088,27 +3163,28 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
   cron. Do not call it the "Support path".
 - **Annual invoice — parent-email vs Account Statement path (read-only, 2026-10-14).** Screenshots:
   `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_AnnualInvoice_EmailVsAccountStatement/`.
-  - **62654 (parent email):** **PI/1002267**, "Invoice charged on 31 October, 2026 11:00 PM (Due date 04 Nov, 2026)",
-    ₹16,000.00 = Daycare Fee "Annual Fee Invoice Amount Against V2 to V1 Migration" 13,559.32 + SGST 9% 1,220.34 +
-    CGST 9% 1,220.34. Yearly Next Billing 01 Nov, 2027.
-  - **49851 / 49819 (Account Statement):** NO migration annual invoice. The last invoices are the Oct monthly ones
-    (PI/999905 01 Oct 06:44 PM for 49851; 01 Oct 06:49 PM for 49819). Yearly Next Billing 01 Nov, 2026.
-  - Question for dev: which behaviour is correct?
+    - **62654 (parent email):** **PI/1002267**, "Invoice charged on 31 October, 2026 11:00 PM (Due date 04 Nov, 2026)",
+      ₹16,000.00 = Daycare Fee "Annual Fee Invoice Amount Against V2 to V1 Migration" 13,559.32 + SGST 9% 1,220.34 +
+      CGST 9% 1,220.34. Yearly Next Billing 01 Nov, 2027.
+    - **49851 / 49819 (Account Statement):** NO migration annual invoice. The last invoices are the Oct monthly ones
+      (PI/999905 01 Oct 06:44 PM for 49851; 01 Oct 06:49 PM for 49819). Yearly Next Billing 01 Nov, 2026.
+    - Question for dev: which behaviour is correct?
 - **Test fix:** `openAccountStatement()` now verifies the `<legend>` header shows "#<childId> " and falls back to
   Admission ID + Generate Report. Confirmed live once: `account_statement?child_id=49851` rendered #49819 (the
   previously viewed child) — intermittent.
 - **Rechecked (2026-10-14), every ledger invoice row containing "annual" (case-insensitive):**
-  - 62654: only PI/1002267 "Annual Fee Invoice Amount Against V2 to V1 Migration" ₹16,000.00 (31 Oct 2026).
-  - **49851 and 49819: none at all.** Their Oct invoices are monthly Tuition/Preschool Fee. So the Account Statement
-    path raised no annual invoice — confirmed. Identify migration annual invoices by the text "Annual Fee Invoice Amount
-    Against V2 to V1 Migration" (user).
+    - 62654: only PI/1002267 "Annual Fee Invoice Amount Against V2 to V1 Migration" ₹16,000.00 (31 Oct 2026).
+    - **49851 and 49819: none at all.** Their Oct invoices are monthly Tuition/Preschool Fee. So the Account Statement
+      path raised no annual invoice — confirmed. Identify migration annual invoices by the text "Annual Fee Invoice
+      Amount
+      Against V2 to V1 Migration" (user).
 - **BY DESIGN (user, 2026-10-14) — the dev question is closed:**
-  - **Account Statement path** ("Migrate in Long Term Payment Plan" button): NO annual invoice at processing; the
-    Yearly Subscription only shows the next annual billing date (the annual fee is billed then).
-  - **Parent-email path:** the annual invoice ("Annual Fee Invoice Amount Against V2 to V1 Migration") is raised
-    IMMEDIATELY at processing, and the yearly Next Billing Date is set to next year automatically.
-  - Asserted in `verifyProcessedV2ToV1Migration` (no such invoice) and `tc010` (the invoice is present + next billing
-    = renewal + 1 year).
+    - **Account Statement path** ("Migrate in Long Term Payment Plan" button): NO annual invoice at processing; the
+      Yearly Subscription only shows the next annual billing date (the annual fee is billed then).
+    - **Parent-email path:** the annual invoice ("Annual Fee Invoice Amount Against V2 to V1 Migration") is raised
+      IMMEDIATELY at processing, and the yearly Next Billing Date is set to next year automatically.
+    - Asserted in `verifyProcessedV2ToV1Migration` (no such invoice) and `tc010` (the invoice is present + next billing
+      = renewal + 1 year).
 - **Bug 2 CLOSED — by design (user, 2026-10-14):** the Account Statement path sends NO parent email after migration.
   Only the parent-email path sends "Footprints: Payment plan updated for <child>". `Bug2_PlanMigration_ParentEmail.md`
   is marked CLOSED; the user should close the JIRA.
@@ -3118,45 +3194,48 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
   with Nov 2026 Payment Plan Migration rows in **Pending** (saved earlier, no offer sent):
 
   | Child | Name | Monthly | Joining | Dues |
-  |---|---|---|---|---|
+    |---|---|---|---|---|
   | 62700 | Sadiq Abbas | 10,999 Half Day | 24 Nov 2025 | 10,999 |
   | 62694 | Advita Giri | Account Statement **17,799 Full Day**, but the PPM row says **12,499→10,499 (stale — plan changed after the row was saved; check the offer email amount)** | 24 Nov 2025 | 17,799 |
   | 62806 | Yatika Thakur | 16,499 Half Day | 28 Nov 2025 | 32,998 |
   | 62730 | Yashika Dubey | 8,999 Half Day | 24/26 Nov 2025 | 8,999 |
 
-  - 62806 is a transfer case from #61172.
-  - **Name lookup fix:** the legend has a 2nd `pop_child_info` link ("Transfer Case From #61172"). The name is now read
-    from the link whose href has `child_id=<id>`.
+    - 62806 is a transfer case from #61172.
+    - **Name lookup fix:** the legend has a 2nd `pop_child_info` link ("Transfer Case From #61172"). The name is now
+      read
+      from the link whose href has `child_id=<id>`.
 - **V1 candidates for later V1→V2** (PPM Nov - 2026, V1, Pending): 34643, 39951, 41206/41207 (siblings), 41640, 41644/
   41646, 41667, 43870, 48982, 49314, 49386, 49603, 49733, 49849, 49937, 49950, 50040/50041, 50115/50117, 50119, 50135,
   50140, 50176. Joining dates are not yet checked for first-year eligibility.
 - **Recheck run (server Oct 24 2026):** offers sent for 62700/62694/62730/62806 with
   `…&child_id=<id>&date=2026-10-24` → all "Promotional email sent successfully to 1 Child".
-  - `tc007` PASSED for 62700, 62730, 62806 (13/13 lines, Informed). The 62700 first attempt hit a one-off Account
-    Statement load timeout; the rerun passed.
-  - `tc008`:
-    - 62700 Confirm → **Confirmed** (24 Oct, 1879501037)
-    - 62730 Remind Me Later → **Reminder**
-    - 62806 Not Interested → **Denied** (24 Oct, 1894143316)
+    - `tc007` PASSED for 62700, 62730, 62806 (13/13 lines, Informed). The 62700 first attempt hit a one-off Account
+      Statement load timeout; the rerun passed.
+    - `tc008`:
+        - 62700 Confirm → **Confirmed** (24 Oct, 1879501037)
+        - 62730 Remind Me Later → **Reminder**
+        - 62806 Not Interested → **Denied** (24 Oct, 1894143316)
 - **🐛 Bug 5 (candidate) — 62694 (Advita Giri): a stale migration record means the parent's Confirm is silently not
   saved.**
-  - The record was saved earlier with Existing Monthly 12,499 → New 10,499. The child's plan has since changed (Account
-    Statement: Tuition Fee - Full Day 17,799).
-  - The offer email was sent with the CURRENT amounts (Existing 17,799 → New 15,799), but the record was NOT updated:
-    still 12,499/10,499, status stays **Pending** (never Informed).
-  - Parent Confirm + OTP 1234 showed "Thanks, your new payment plan will be applied from next month.", but the row
-    stays **Pending** with no Confirmation Date/Confirmed By.
-  - Only one row exists for 62694 across all 2026–2027 months.
-  - Evidence: `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_StaleRecord_ConfirmNotSaved/` (00 Account Statement
-    17,799; 01 offer email 17,799→15,799; 02 popup; 03 OTP; 04 success message; 05 row still Pending).
-  - `getPaymentPlanMigrationRow()` now returns all matching rows joined by " ||| " and warns when there is more than
-    one.
+    - The record was saved earlier with Existing Monthly 12,499 → New 10,499. The child's plan has since changed (
+      Account
+      Statement: Tuition Fee - Full Day 17,799).
+    - The offer email was sent with the CURRENT amounts (Existing 17,799 → New 15,799), but the record was NOT updated:
+      still 12,499/10,499, status stays **Pending** (never Informed).
+    - Parent Confirm + OTP 1234 showed "Thanks, your new payment plan will be applied from next month.", but the row
+      stays **Pending** with no Confirmation Date/Confirmed By.
+    - Only one row exists for 62694 across all 2026–2027 months.
+    - Evidence: `~/Desktop/QA_Documents/Bug Evidence/PlanMigration_StaleRecord_ConfirmNotSaved/` (00 Account Statement
+      17,799; 01 offer email 17,799→15,799; 02 popup; 03 OTP; 04 success message; 05 row still Pending).
+    - `getPaymentPlanMigrationRow()` now returns all matching rows joined by " ||| " and warns when there is more than
+      one.
 - **62730 reminder path (server Oct 28 2026 06:31 PM):**
-  - The reminder API → "Reminder Send Successfullynull". `tc009` PASSED (reminder email 28 Oct 18:31, 13/13).
-  - `tc008` Confirm from the REMINDER email link (`q=fa45f831…`, its own token) → OTP 1234 → "Thanks, your new payment
-    plan will be applied from next month." → row **Confirmed** (28 Oct, 2026 | 1366353774).
+    - The reminder API → "Reminder Send Successfullynull". `tc009` PASSED (reminder email 28 Oct 18:31, 13/13).
+    - `tc008` Confirm from the REMINDER email link (`q=fa45f831…`, its own token) → OTP 1234 → "Thanks, your new payment
+      plan will be applied from next month." → row **Confirmed** (28 Oct, 2026 | 1366353774).
 - **Email View gotcha:** sorting by "Created Date" is NOT chronological ("29 Sep, 2026" sorted above "28 Oct, 2026" —
-  a text sort on "dd Mon, yyyy"). Always also filter Body = child ID (as `openEmailBySubjectAndBody` does); don't rely on
+  a text sort on "dd Mon, yyyy"). Always also filter Body = child ID (as `openEmailBySubjectAndBody` does); don't rely
+  on
   sort order alone.
 - **Recheck state before the cron:** 62700 Confirmed | 62730 Confirmed (via reminder) | 62806 Denied | 62694 Pending
   (Bug 5 — confirm not saved). Next: server Oct 31 11 PM → cron for all 4 → `tc010` for 62700/62730, `tc011` for
@@ -3172,24 +3251,24 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
 - **Scope:** `wp_pods_customer_request` rows with `type = 'Plan Migration'`, `status = 'Approved'`, `effective_date =
   last day of the month` (+ the function's existing date logic).
 - **Ties in with the BY-DESIGN Account Statement path:**
-  - No annual invoice at processing (Oct 31). The regular billing raises the Yearly invoice on Nov 1.
-  - This cron then moves the yearly Next Billing Date (01 Nov 2026 → 01 Nov 2027) — but only if that Yearly invoice
-    exists.
+    - No annual invoice at processing (Oct 31). The regular billing raises the Yearly invoice on Nov 1.
+    - This cron then moves the yearly Next Billing Date (01 Nov 2026 → 01 Nov 2027) — but only if that Yearly invoice
+      exists.
 - **Endpoint / trigger** for this cron and for the 1st-of-month billing run: NOT yet supplied.
 - **Server-time gotcha (2026-10-14):** the user set "31 Oct 11 PM", but the portal header showed **Nov 1, 04:30 AM**.
   The clock was set in UTC; the portal and the cron use IST (+5:30). The cron gate kept refusing.
-  - Always confirm via the portal header that it shows "Oct 31, 11:xx PM" (IST) before running
-    `processMigrationRequests`.
-  - Risk: while the server sat on Nov 1, 1st-of-month billing jobs may have run. Check the ledgers for 1 Nov invoices.
+    - Always confirm via the portal header that it shows "Oct 31, 11:xx PM" (IST) before running
+      `processMigrationRequests`.
+    - Risk: while the server sat on Nov 1, 1st-of-month billing jobs may have run. Check the ledgers for 1 Nov invoices.
 
 ### V1→V2 — children supplied by the user (2026-10-14), read-only pre-check (server Nov 1 04:30 AM)
 
-| Child | Name | Plan | Monthly | Yearly (Next Billing) | Annual invoice(s) | Joining | Dues | PPM row |
-|---|---|---|---|---|---|---|---|---|
-| 67748 | Tejasv Jain | V1 | 7,749 Half Day | 16,000, 01 Apr 2027 | FP/P067/2025-26/1936, 31 Mar 2026, "Annual fee for Preschool April, 2026 - March, 2027" 15,000 | 31 Mar / 2 Apr 2026 | 4,749 | none |
-| 68078 | Manas Mishra | V1 | 6,399 After School | 16,000, 01 Aug 2027 | P476/2627/129, 01 Aug 2026, 16,000 | 8 Apr 2026 | 6,399 | none |
-| **68557** | Shreshth Tiwari | **V2 (not V1)** | 12,749 | none | P397/2627/366 prorated annual – Center Shift 3,112 | 21 Apr 2026 | 12,749 | none |
-| 68891 | Daivik Bhola | V1 | 9,999 Half Day | 16,000, 01 Jul 2027 | P491/2627/27 prorated (Center Shift) 2,718 + P491/2627/82, 01 Jul 2026, 16,000 | 30 Apr 2026 | 9,999 | none |
+| Child     | Name            | Plan            | Monthly            | Yearly (Next Billing) | Annual invoice(s)                                                                              | Joining             | Dues   | PPM row |
+|-----------|-----------------|-----------------|--------------------|-----------------------|------------------------------------------------------------------------------------------------|---------------------|--------|---------|
+| 67748     | Tejasv Jain     | V1              | 7,749 Half Day     | 16,000, 01 Apr 2027   | FP/P067/2025-26/1936, 31 Mar 2026, "Annual fee for Preschool April, 2026 - March, 2027" 15,000 | 31 Mar / 2 Apr 2026 | 4,749  | none    |
+| 68078     | Manas Mishra    | V1              | 6,399 After School | 16,000, 01 Aug 2027   | P476/2627/129, 01 Aug 2026, 16,000                                                             | 8 Apr 2026          | 6,399  | none    |
+| **68557** | Shreshth Tiwari | **V2 (not V1)** | 12,749             | none                  | P397/2627/366 prorated annual – Center Shift 3,112                                             | 21 Apr 2026         | 12,749 | none    |
+| 68891     | Daivik Bhola    | V1              | 9,999 Half Day     | 16,000, 01 Jul 2027   | P491/2627/27 prorated (Center Shift) 2,718 + P491/2627/82, 01 Jul 2026, 16,000                 | 30 Apr 2026         | 9,999  | none    |
 
 - **All four joined Mar–Apr 2026, so they are FIRST-YEAR children** (as of Oct/Nov 2026). Per AC1 they must NOT get
   the V1→V2 offer, which makes them suited to the AC1 negative test, not the positive flow.
@@ -3197,22 +3276,23 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
 - For positive V1→V2: use 2nd-year V1 children with a Nov 2026 renewal (PPM Nov - 2026 V1 rows, e.g. 34643, 39951,
   41667, 43870, 49733, 50176) — pending user confirmation.
 - **Cron for the recheck (portal header Oct 31 11:05 PM IST):**
-  - 62700 / 62730 / 62694 → "Processed 1 migration requests … approved 1, email_sent No".
-  - 62806 → "No migration requests to process for today" (Denied).
-  - **`tc010` PASSED** for 62700 (8,999), 62730 (6,999) and **62694 (15,799 = current 17,799 − 2,000, NOT the stale
-    10,499)**: Approved, V1, yearly 16,000 next 01 Nov 2027, annual invoice "Annual Fee Invoice Amount Against V2 to V1
-    Migration" 31 Oct 2026 11:00 PM.
-  - **`tc011` PASSED** for 62806 (V2 16,499 unchanged, no yearly).
+    - 62700 / 62730 / 62694 → "Processed 1 migration requests … approved 1, email_sent No".
+    - 62806 → "No migration requests to process for today" (Denied).
+    - **`tc010` PASSED** for 62700 (8,999), 62730 (6,999) and **62694 (15,799 = current 17,799 − 2,000, NOT the stale
+      10,499)**: Approved, V1, yearly 16,000 next 01 Nov 2027, annual invoice "Annual Fee Invoice Amount Against V2 to
+      V1
+      Migration" 31 Oct 2026 11:00 PM.
+    - **`tc011` PASSED** for 62806 (V2 16,499 unchanged, no yearly).
 - **After the cron, Payment Plan Migration rows:**
-  - 62700 and 62730: "Sent | <confirm date> | <phone> | **Completed** | 31 Oct, 2026".
-  - **62694: STILL "12,499 / 10,499 | Pending | Pending | Update"**, although its migration was processed and
-    approved.
+    - 62700 and 62730: "Sent | <confirm date> | <phone> | **Completed** | 31 Oct, 2026".
+    - **62694: STILL "12,499 / 10,499 | Pending | Pending | Update"**, although its migration was processed and
+      approved.
 - **Bug 5 REVISED:** the parent's Confirm and the migration both work and use current amounts. The defect is that the
   Payment Plan Migration screen record for a child whose plan changed after the record was saved is never updated:
-  - stale amounts;
-  - status stays Pending through Confirm and Completed;
-  - no confirmation date/by, no completion email status/migration date;
-  - the Update action is still offered (Support could act on an already-migrated child).
+    - stale amounts;
+    - status stays Pending through Confirm and Completed;
+    - no confirmation date/by, no completion email status/migration date;
+    - the Update action is still offered (Support could act on an already-migrated child).
 - **No 1 Nov 2026 invoices** on any of the 4 children, so the 1st-of-month billing did not run during the clock
   changes.
 
@@ -3220,53 +3300,53 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
   mismatch was 49352 (already migrated/Completed — expected), so no other Bug 5 cases were found in that sample.
 - **V1→V2 candidates checked (read-only):** 34643 Sriyan Singh (11,099), 39951 Avyukt Verma (6,599), 41667 Eshaan Singh
   (14,399), 43870 Nurvi Wadikar (11,499), 49733 Aditya H Bhat (20,399), 50176 Abirami Arun (10,999).
-  - All V1, 2nd year+, yearly Next Billing 01 Nov 2026, Nov 2026 rows Pending, all with dues.
-  - Proposed: 34643 Confirm; 39951 Remind → Confirm; 41667 Not Interested; 43870 spare.
+    - All V1, 2nd year+, yearly Next Billing 01 Nov 2026, Nov 2026 rows Pending, all with dues.
+    - Proposed: 34643 Confirm; 39951 Remind → Confirm; 41667 Not Interested; 43870 spare.
 - **New tests:**
-  - `tc012_v1OfferEmailSent` — "New Payment Plan: Zero Annual Fee" content incl. the AC3 non-refundable line, links,
-    Informed row.
-  - `tc013_verifyV1ToV2MigrationProcessed` — Approved, V2, monthly +2000, yearly removed, history, parent email
-    "Footprints: Payment plan upgraded for <child>".
-  - `tc014_firstYearV1ChildNotOffered` — runs the offer API, then expects no row and no email.
-  - `tc008` is reused with `-DofferSubject="New Payment Plan: Zero Annual Fee"`.
+    - `tc012_v1OfferEmailSent` — "New Payment Plan: Zero Annual Fee" content incl. the AC3 non-refundable line, links,
+      Informed row.
+    - `tc013_verifyV1ToV2MigrationProcessed` — Approved, V2, monthly +2000, yearly removed, history, parent email
+      "Footprints: Payment plan upgraded for <child>".
+    - `tc014_firstYearV1ChildNotOffered` — runs the offer API, then expects no row and no email.
+    - `tc008` is reused with `-DofferSubject="New Payment Plan: Zero Annual Fee"`.
 - **`tc014` PASSED for 67748, 68078, 68891** — API "Promotional email sent successfully to 0 Child", no rows, no email.
-  - Caveat: their renewals are Apr/Jul/Aug 2027, so "0 Child" may be due to renewal timing, not the first-year rule.
-  - A strong AC1 test needs a first-year V1 child whose yearly renewal is upcoming now.
+    - Caveat: their renewals are Apr/Jul/Aug 2027, so "0 Child" may be due to renewal timing, not the first-year rule.
+    - A strong AC1 test needs a first-year V1 child whose yearly renewal is upcoming now.
 - **V1→V2 run (server Oct 24 2026):** offers for 34643/39951/41667 → "sent successfully to 1 Child".
-  - **`tc012` PASSED ×3** (10/10 content lines incl. AC3 non-refundable; 3 links with the same token; row Informed).
-  - The V1 email: "your annual invoice will be raised on 1st November, 2026 for your ward …"; Existing "Annual Fee:
-    Rs. 16,000.00 Due on 1st November, 2026" + Monthly X; New "Annual Fee: None" + Monthly X+2,000; "So, instead of
-    paying Rs. 16,000.00 in November, you could just pay additional Rs. 2,000.00 per month."; confirm before 30th
-    October; the same 3-option line (with the "reminder you later" typo).
-  - `tc008` (with `-DofferSubject="New Payment Plan: Zero Annual Fee"`, renewal regex now accepts "will be raised
-    on"):
-    - 34643 Confirm → **Confirmed** (24 Oct, 1148141008)
-    - 39951 Remind Me Later → **Reminder**
-    - 41667 Not Interested → **Denied** (24 Oct, 1133190870)
-  - **Bug 4 corroborated:** the V1 children get the SAME popup texts ("Your annual plan will not be invoiced…" on
-    Confirm; "Your Annual Fee will be invoiced…" on Not Interested). These are correct for V1→V2 but were shown
-    unchanged to V2 children, so the text is not direction-aware.
+    - **`tc012` PASSED ×3** (10/10 content lines incl. AC3 non-refundable; 3 links with the same token; row Informed).
+    - The V1 email: "your annual invoice will be raised on 1st November, 2026 for your ward …"; Existing "Annual Fee:
+      Rs. 16,000.00 Due on 1st November, 2026" + Monthly X; New "Annual Fee: None" + Monthly X+2,000; "So, instead of
+      paying Rs. 16,000.00 in November, you could just pay additional Rs. 2,000.00 per month."; confirm before 30th
+      October; the same 3-option line (with the "reminder you later" typo).
+    - `tc008` (with `-DofferSubject="New Payment Plan: Zero Annual Fee"`, renewal regex now accepts "will be raised
+      on"):
+        - 34643 Confirm → **Confirmed** (24 Oct, 1148141008)
+        - 39951 Remind Me Later → **Reminder**
+        - 41667 Not Interested → **Denied** (24 Oct, 1133190870)
+    - **Bug 4 corroborated:** the V1 children get the SAME popup texts ("Your annual plan will not be invoiced…" on
+      Confirm; "Your Annual Fee will be invoiced…" on Not Interested). These are correct for V1→V2 but were shown
+      unchanged to V2 children, so the text is not direction-aware.
 - **39951 V1 reminder path (server Oct 28):**
-  - The reminder API → "Reminder Send Successfullynull".
-  - **`tc015_v1ReminderEmailSent` PASSED** ("Reminder - New Payment Plan: Zero Annual Fee", 28 Oct 2026 20:00; 10/10
-    lines; no "remind" option).
-  - `tc008` Confirm from the reminder → **Confirmed** (28 Oct, 1854200941).
-  - The V1 reminder link reuses the SAME token as the offer (`q=6ab886…`), unlike the V2 reminder earlier, which had a
-    new token.
+    - The reminder API → "Reminder Send Successfullynull".
+    - **`tc015_v1ReminderEmailSent` PASSED** ("Reminder - New Payment Plan: Zero Annual Fee", 28 Oct 2026 20:00; 10/10
+      lines; no "remind" option).
+    - `tc008` Confirm from the reminder → **Confirmed** (28 Oct, 1854200941).
+    - The V1 reminder link reuses the SAME token as the offer (`q=6ab886…`), unlike the V2 reminder earlier, which had a
+      new token.
 - **State before the cron:** 34643 Confirmed, 39951 Confirmed (via reminder), 41667 Denied.
 - **V1→V2 cron (Oct 31 11:05 PM IST):**
-  - 34643 and 39951 → "Processed 1 … approved 1, email_sent No". 41667 → "No migration requests to process" (Denied).
+    - 34643 and 39951 → "Processed 1 … approved 1, email_sent No". 41667 → "No migration requests to process" (Denied).
 - **`tc013_verifyV1ToV2MigrationProcessed` PASSED** for both:
-  - 34643: Approved, V2, monthly 13,099 (= 11,099 + 2,000).
-  - 39951: Approved, V2, monthly 8,599 (= 6,599 + 2,000).
-  - Both: Yearly Subscription "Not Available" (removed); Invoice Voided 0.
-  - Child History "Auto: on 31 October, 2026 11:00 PM, the New Payment Plan (V2) was migrated via parent email
-    confirmation…" + "…confirmed by Father … queued for month-end processing".
-  - Parent email "Footprints: Payment plan upgraded for <child>" (31 Oct 23:00): "This is to inform that you have been
-    migrated to new payment plan as per your confirmation. New Payment Plan Annual Fee: None Monthly Fee: Rs. <new>".
+    - 34643: Approved, V2, monthly 13,099 (= 11,099 + 2,000).
+    - 39951: Approved, V2, monthly 8,599 (= 6,599 + 2,000).
+    - Both: Yearly Subscription "Not Available" (removed); Invoice Voided 0.
+    - Child History "Auto: on 31 October, 2026 11:00 PM, the New Payment Plan (V2) was migrated via parent email
+      confirmation…" + "…confirmed by Father … queued for month-end processing".
+    - Parent email "Footprints: Payment plan upgraded for <child>" (31 Oct 23:00): "This is to inform that you have been
+      migrated to new payment plan as per your confirmation. New Payment Plan Annual Fee: None Monthly Fee: Rs. <new>".
 - **`tc011` (now `-DdeniedPlan=V1`) PASSED** for 41667: V1, monthly 14,399, yearly 16,000 kept, row Denied.
 - **Test fix:** parent-email lookups now filter Subject WITHOUT the child name ("Footprints: Payment plan
-  upgraded/updated for") + Body = child ID. Names can contain double spaces (e.g. "Anaika  Singhal"), which made the
+  upgraded/updated for") + Body = child ID. Names can contain double spaces (e.g. "Anaika Singhal"), which made the
   exact-subject filter miss 39951's email.
 - Side note (pre-existing, unrelated to migration): 39951 has no Oct 2026 invoice (last 01 Sep 2026), so its monthly
   Next Billing still shows 01 Oct 2026.
@@ -3279,44 +3359,46 @@ The user asked to leave Bugs 1–3 until dev fixes them. The flow:
 - **Bug 5 reported to the dev team by the user (2026-10-14).**
 - **Bug 5 cause (user, 2026-10-14):** an EARLIER request/record existed for the same month (created in the past),
   example child **62621**.
-  - Read-only check of 62621 (Rudra Pratap): V2 9,749; one PPM row Nov 2026 "9,749 → 7,749 | Pending" (the amount
-    matches the current fee); no Customer Requests; no plan-migration history.
-  - The earlier record is not visible on screen — likely from the bulk saveMigrationPromotionalData runs ("[Info] New
-    Payment Plan Migration Records Saved in DB" 15 Sep / 05 Oct 2026).
-  - Proposed clean repro (pending the user's OK + server Oct 24): send the offer to 62621 and Confirm. If the row stays
-    Pending, the earlier same-month record alone triggers Bug 5 (no fee change needed).
+    - Read-only check of 62621 (Rudra Pratap): V2 9,749; one PPM row Nov 2026 "9,749 → 7,749 | Pending" (the amount
+      matches the current fee); no Customer Requests; no plan-migration history.
+    - The earlier record is not visible on screen — likely from the bulk saveMigrationPromotionalData runs ("[Info] New
+      Payment Plan Migration Records Saved in DB" 15 Sep / 05 Oct 2026).
+    - Proposed clean repro (pending the user's OK + server Oct 24): send the offer to 62621 and Confirm. If the row
+      stays
+      Pending, the earlier same-month record alone triggers Bug 5 (no fee change needed).
 - **Bug 5 CLOSED — not a real case (developer, 2026-10-14):** caused by an earlier same-month record created while the
   test server date was moved back and forth. Production cannot reach this state. The write-up file is marked CLOSED;
   no 62621 repro needed.
-  - **Lesson for future runs:** prefer children with NO existing Payment Plan Migration row for the target month (or
-    accept that rows pre-created by earlier date-shifted runs may not update on screen).
+    - **Lesson for future runs:** prefer children with NO existing Payment Plan Migration row for the target month (or
+      accept that rows pre-created by earlier date-shifted runs may not update on screen).
 - **Bug 5 root cause confirmed (DB screenshot from the user):** `ftprints_footprint.payment_plan_migrations` has 2
   rows for admission 62694, both V2_TO_V1 with `annual_billing_date` 2026-11-01:
-  - `migration_id` 9053: existing_monthly_fee 12499 → new 10499 (older — the one shown on screen, stays Pending).
-  - 9055: 17799 → 15799 (used by the offer/Confirm/cron).
-  - Other columns: `migration_direction` ENUM, `existing_annual_fee`, `new_annual_fee`,
-    `new_monthly_fee_onward_april`.
-  - The screen shows the older row by default. Created by date-shifted test runs, not a production case. Screenshot:
-    `Bug Evidence/PlanMigration_StaleRecord/09_DB_payment_plan_migrations_two_rows_62694.png`.
+    - `migration_id` 9053: existing_monthly_fee 12499 → new 10499 (older — the one shown on screen, stays Pending).
+    - 9055: 17799 → 15799 (used by the offer/Confirm/cron).
+    - Other columns: `migration_direction` ENUM, `existing_annual_fee`, `new_annual_fee`,
+      `new_monthly_fee_onward_april`.
+    - The screen shows the older row by default. Created by date-shifted test runs, not a production case. Screenshot:
+      `Bug Evidence/PlanMigration_StaleRecord/09_DB_payment_plan_migrations_two_rows_62694.png`.
 - **Full test-case document (2026-10-15):** `~/Desktop/QA_Documents/Testcases Scripts/TC_Payment_Plan_Migration.xlsx`,
   from `TC_Template_Enanched_13Oct.xlsx`. The template format was verified unchanged (sheets, data validations, merged
   cells, column widths, conditional formats, freeze panes).
-  - 88 TCs / 136 step rows:
+    - 88 TCs / 136 step rows:
 
-    | Scenario | Area | TCs |
-    |---|---|---|
-    | SC001 | PPM screen | 14 |
-    | SC002 | Account Statement V2→V1 | 16 |
-    | SC003 | V2→V1 email | 18 |
-    | SC004 | V1→V2 email | 13 |
-    | SC005 | Eligibility / billing cron | 7 |
-    | SC006 | Manual & non-functional | 20 |
+      | Scenario | Area | TCs |
+          |---|---|---|
+      | SC001 | PPM screen | 14 |
+      | SC002 | Account Statement V2→V1 | 16 |
+      | SC003 | V2→V1 email | 18 |
+      | SC004 | V1→V2 email | 13 |
+      | SC005 | Eligibility / billing cron | 7 |
+      | SC006 | Manual & non-functional | 20 |
 
-  - Iteration 1 is filled from automation runs: 50 PASS, 6 FAIL (Bug 1 ×2, Bug 3, Bug 4 ×2, minor content),
-    32 NOT EXECUTED.
-  - The Test Summary is filled; QueryLogs has Q1–Q6. The superseded 13 Oct draft `TC_Payment_Plan_Migration_13Oct.xlsx`
-    is kept.
-  - The user plans to update the automation after the dev fixes Bugs 1/3/4 (and possible approved enhancements).
+    - Iteration 1 is filled from automation runs: 50 PASS, 6 FAIL (Bug 1 ×2, Bug 3, Bug 4 ×2, minor content),
+      32 NOT EXECUTED.
+    - The Test Summary is filled; QueryLogs has Q1–Q6. The superseded 13 Oct draft
+      `TC_Payment_Plan_Migration_13Oct.xlsx`
+      is kept.
+    - The user plans to update the automation after the dev fixes Bugs 1/3/4 (and possible approved enhancements).
 
 ## Requirements — Daily Observer Data (`DailyObserverDataTest.java`)
 
@@ -3431,8 +3513,6 @@ commas, so TC_018/TC_019 compare queries via `normalizeQuery()`. Records #206 an
 `~/Desktop/QA_Documents/Testcases Scripts/TC_Daily_Observer_Data.xlsx`, in the same format as
 `TC_Payment_Plan_Migration.xlsx` (template `TC_Template_Enanched_13Oct.xlsx`): 41 TCs / 78 step rows, `SC001_TC001`–
 `SC008_TC002`. Iteration 1: 25 PASS, 2 FAIL (SC004_TC005 "Example: undefined", SC004_TC006 hidden schedule),
-14 NOT EXECUTED. QueryLogs Q1–Q6 (SELECT-only query restriction, access right, duplicates, Execute on Inactive, no
-Delete, running the crons on UAT).
 14 NOT EXECUTED. QueryLogs Q1–Q6 (SELECT-only query restriction, access right, duplicates, Execute on Inactive, no
 Delete, running the crons on UAT).
 
@@ -4489,3 +4569,238 @@ actions as Corporate Invoice (`#datatable-invoice`, 169 Payment Due rows on 03-N
   voided.
 - TC_034 → TC_037 adjust 57826 / 66151 and revert it in the same run, so the pair is reused (`-DadjustChildId`, `-DadjustInvoiceId`).
 - Sheet `TC_AdjustCorporateCredits` (after TC_CorporateCreditsIssued): 20 TCs (TC_019–037 + new TC_042 right), all Pass; Q45–Q48.
+
+## Requirements — Children → Updates → Pickup Authorization (started 2026-11-04, exploration only, NOT yet automated)
+
+Screen `https://test-franchise.footprintseducation.in/pickup_authorization` (SDA-13180 portal, SDA-13817 Hand Over;
+parent-app APIs SDA-13303 / SDA-13881). Source document: `~/Downloads/SDA-13180_SDA-13303_PICKUP_AUTHORIZATION_USER_MANUAL.md`
+v2.1, 03-Nov-2026 (the `(1)` copy is identical). Parent-app Postman collections (TC01–TC66) + test env (child 74147) are in
+Downloads. The user did the manual testing first. Their test cases and API list are still to be shared. Planned files:
+`pages/Children/Updates/PickupAuthorizationPage.java`, `testScripts/ChildrenTests/Updates/PickupAuthorizationTest.java`.
+
+**User (2026-11-04): run as Nidhi Chaturvedi** (switch via `UserRightsPage.switchUser`).
+
+Rules from the manual:
+
+- Cards: Permanent (OTP once, 3 months, max 2 active) and Temporary (scheduled within 15 days, parent authorises daily, 3 saved,
+  1 active).
+- Override: a Temporary scheduled today hides the child's Permanent cards. Only one handover per child per day.
+- Buttons are active only for today and for children marked Present.
+- Mark Hand Over needs the identity tick box. Authorise sends a centre OTP (6 digits, 5 min, 5 attempts per request, 60 s
+  resend, 5/hour, 15/child/day).
+- Rights: `View_Pickup_Authorization`, `Authorize_Pickup_Request`, `View_Pickup_Audit_Trail`.
+- Statuses: Valid, Awaiting Parent Authorisation, Parent Authorised, OTP Sent, Handed Over, Authorised, Locked, Checkout
+  Failed, Expired, Cancelled. Cancelled pickups are not shown on the page.
+- Crons: `/api/visitorpickup/<job>/` (`expirePermanentPickupCards`, `sendDailyAuthorisationReminders`,
+  `sendPickupCardExpiryReminders`, `expirePendingPickupRequests`; `?id=`, `?dry_run=1`).
+
+Confirmed live (2026-11-04, read-only):
+
+- **Rakesh:**
+  - The Center dropdown defaults to "--Select Center--", so the page shows "0 children". The manual says the user's own
+    centre is pre-selected.
+- **Nidhi:**
+  - There is no Center dropdown; her own centre is used.
+  - Header: "Pickup Authorization", "04-Nov-2026 · 4 children", keys Permanent / Temporary.
+  - Filters: Choose Date, Card Type [All, Permanent, Temporary], Status [All + the 10 statuses above], Filter.
+  - Data: `POST test-admissions…/api/visitorpickup/getCenterHandoverList/` (V1 server).
+- **Data on 04-Nov (all already released by the user's manual testing):**
+
+  | Child | Card | Result |
+  |---|---|---|
+  | 55500 Aarudra Narayan Singh | Temporary Tarun | Authorised |
+  | 69553 Aarvi Bansal | Temporary kiu | Authorised |
+  | 74961 Mokshda Singh | Temporary Sunita | Authorised |
+  | 46195 Nayansh Kaushik | Permanent tir | Handed Over |
+
+  - The three Temporary cards show "Permanent pickup persons hidden today: Temporary scheduled."
+  - Every child's box shows "Released to <name> at <time> by Nidhi Chaturvedi".
+
+**Test-data APIs (user, 2026-11-04):**
+
+- Create a card (Temporary or Permanent): `POST {{Base_URL}}visitorpickup/saveVisitorPickupCard/`, multipart.
+  - Fields: `child_id`, `parent_email` (`d_<id>_father@gmail.com`), `card_type`, `visitor_name` (max 45),
+    `relation_to_child` (Grandfather / Grandmother / Uncle / Aunt / Family Friend / Other), `visitor_photo`.
+  - The photo must be a JPG/PNG of max 4 MB with exactly one face, or the call fails with "Face not recognized…" /
+    "Multiple face recognized…".
+- Schedule a Temporary card: `POST {{Base_URL}}visitorpickup/activateVisitorPickup/` with `child_id`, `parent_email`,
+  `card_id`, `pickup_date` (yyyy-MM-dd or a comma list).
+  - Not on Saturdays, past dates, or more than 15 days ahead.
+  - A Permanent card is rejected.
+- `{{Base_URL}}` = `https://test-admissions.footprintseducation.in/api/`. No ckey in the collection.
+- Permanent → Valid needs `sendPickupCardOtp` (purpose=add) + `verifyPickupCardOtp` (otp_token from the send response
+  + the 6-digit code).
+- Parent Authorised needs `sendDailyAuthorisationOtp` + `verifyDailyAuthorisationOtp`.
+- The server stores only an OTP hash, so the code must come from the SMS / WhatsApp logs (how is not yet confirmed).
+- Collection `~/Downloads/Visitor Pickup - Parent App APIs.postman_collection.json` (user, 2026-11-04) uses
+  `parent_email = <id>_father@gmail.com` (no `d_` prefix; the older collection used `d_<id>_father@gmail.com`). Read
+  the real email from the child record. Do not build it from a pattern.
+- **Flow (user):**
+  1. Create a card via `saveVisitorPickupCard`.
+  2. Activate it via `activateVisitorPickup`.
+  3. Mark the child Present on Supermam App → Updates → Attendance (`attendance_updates`).
+  4. Do everything else on the Pickup Authorization screen.
+  5. **OTPs:** read them from the SMS View or Email View screen.
+- **Attendance screen (`attendance_updates`, confirmed live as Nidhi, read-only):**
+  - Heading "Attendance Updates", note "1). Children currently in pause are not listed here."
+  - Room select `select[name=set_room_id]` (select2, "All Rooms" = -1, with "Please select a room!" until a room is
+    chosen; Pre Nursery B = 11). Date `#activity_date` (datepicker, "4 Nov, 2026"). GO `#btn_submit` (submits the form).
+  - One row per child; the name links to `pop_child_info?pop=yes&child_id=<id>`.
+  - Buttons: `button.attendance_button.present` "CHECK IN" / `.checkout` "CHECK OUT" / `.absent` "ABSENT", all with the
+    same id `attendance_button_<childId>`. A used button becomes disabled.
+  - The result shows in `#checkin_attendance_<id>` ("Check In [November 4, 11:51 AM]") / `#checkout_attendance_<id>` /
+    `#absent_attendance_<id>`. The click handler is `AttendanceUpdates(this, true)` from `teacher_app.js`.
+  - A Pickup Authorization release fills the Check Out (74961: Check In 11:52 AM, Check Out 12:01 PM, all 3 buttons
+    disabled).
+- **Real-world flow (user, 2026-11-04):**
+  - The parent (father or mother) creates the Temporary/Permanent card in the Android/iOS app. In the tests, the
+    `saveVisitorPickupCard` / `activateVisitorPickup` APIs stand in for the app.
+  - The Pickup Authorization screen is where staff release the child:
+    - **Permanent** card → **Mark Hand Over**.
+    - **Temporary** card → **Authorise** via the centre OTP.
+  - Either way, the attendance **checkout is marked automatically**.
+- **JIRA requirement (user, 2026-11-04).** Two parts:
+  1. Original portal task (SDA-13180):
+     - Today's requests are shown as cards.
+     - **Authorise:** a centre OTP goes to the father's or mother's number on file only. Delivered by SMS, with
+       WhatsApp as fallback.
+     - A correct OTP marks checkout automatically and notifies both parents.
+     - OTP rules: 5 attempts then locked; 60 s resend wait; hourly/daily caps.
+     - Rights:
+       - `View_Pickup_Authorization`
+       - `Authorise_Pickup_Request` (in the JIRA text; the manual and code say `Authorize_Pickup_Request`)
+       - `View_Pickup_Audit_Trail` (narrower)
+     - Staff are restricted to their own centre.
+  2. Extension:
+     - Permanent / Temporary cards. The page is grouped by child.
+     - Override rule: a Temporary card scheduled today hides the Permanent ones.
+     - Hand Over without an OTP for a Valid Permanent card or a Parent Authorised Temporary card. Hand Over is
+       rejected for an unauthorised Temporary card.
+     - One handover per child per day.
+     - Expired Permanent cards are hidden.
+     - Every event goes to the audit trail with its card type.
+  - The junior QA sheet `~/Downloads/Child Pickup Authorization dashboard_TCs.xlsx` is outdated (7-day window, 2 cards).
+    The user asked for new test cases in the template, written from the manual + JIRA + live exploration.
+- **Confirmed live (2026-11-04, Nidhi = Center Head, centre_id 210 "Sector 122, Noida", acting user 8488):**
+  - **Page `pickup_authorization`:**
+    - Form `#frm-pickup-authorization`: date `#pickup_date` (`input type=date`, max = today); `#filter_card_type`
+      [""=All, Permanent, Temporary]; `#filter_status` [""=All, Active=Valid, Scheduled=Awaiting Parent
+      Authorisation, Parent_Authorised, OTP_Sent, Handed_Over, Authorised, Checkout_Failed, Locked, Expired,
+      Cancelled]; `#btn_submit` Filter.
+    - Children are in `#pickup_request_cards > .pickup-child[data-child-id]`. The head reads "<Name> (#id) <room>";
+      notes are in `.clx-pa-child-notes`.
+    - Each card is a `.pickup-card[data-status][data-card-type]` with pills (type + status), `h4` name, `.clx-tag`
+      relationship, `.clx-pa-meta` (Child / Class / Room / Pickup Date / "Valid till dd-Mon-yyyy"), and
+      `.clx-pa-actions`.
+    - Buttons:
+      - Authorise = `a[href^=pop_authorise_pickup?pop=yes&request_id=<id>&center_id=210]`
+      - Mark Hand Over = `a.clx-pa-handover[href^=pop_handover_pickup?pop=yes&center_id=210&child_id=<id>&request_id=<0 for Permanent>&card_id=<id>]`
+      - View Audit Trail = `a[href^=pop_pickup_audit_trail?pop=yes&child_id=<id>&center_id=210]`
+  - **Authorise popup ("Authorise Pickup"):**
+    - Layout: photo, name, relation tag, Child / Class / Pickup Date. Info text: "Send OTP to one of the child's
+      parents. The OTP can only be sent to a number already in the system."
+    - Radios `.recipient-type` [Father, Mother], each showing the number. `#btn_send_otp` is disabled until a parent
+      is chosen.
+    - Send → "OTP sent to Father XXXXXX5901 on WhatsApp." in `.alert-ajax-response`. Then `.otp-section` shows 6
+      `.otp-digit` inputs, `#otp_expires_in` (05:00 countdown), `#otp_attempts_left` 5, and `#btn_resend_otp`
+      "Resend OTP (00:56" countdown.
+    - `#btn_verify_otp` "Verify & Authorise" is enabled only once 6 digits are entered (keyup).
+    - APIs (V1 host): `sendPickupOtp` / `resendPickupOtp` / `verifyPickupOtpAndAuthorize`. Success reloads the page
+      after 2 s.
+  - **Hand Over popup ("Hand Over Pickup"):**
+    - Layout: photo, name, relation, type pill, "Valid till …", "Child: <b>Name (#id)</b>", Class / Room, Pickup
+      Date. Note: "Match the visitor's face with the photo before handing over. No OTP is needed for this pickup."
+    - Checkbox `#identity_verified` "I have verified the visitor's identity against the photo."; `#btn_handover`
+      "Mark Hand Over" is disabled until ticked.
+    - API: `api/visitorpickup/handoverPickup`. The message goes in `.alert-ajax-response`; reload after 2 s.
+  - **Audit popup ("Pickup Audit Trail"):**
+    - Head: photo, name, "Class / Room", "Child ID", "Date of Birth". Summary `dl.clx-pa-summary`: Total Pickup
+      Requests / Last Checkout / Last Pickup Status (pill).
+    - "Audit Events" table `#pickup_audit_events` (DataTables): Date & Time | Card Type | Event | Performed By | Role
+      | Channel | Detail. Search box; "Download Data" (`a.buttons-csv`).
+  - **OTPs:**
+    - Nidhi cannot open SMS View ("Sorry! You are not authorise to access this screen.") or Email View ("Access
+      denied").
+    - As **Rakesh**, SMS View shows both the centre OTP and the parent card OTP: SMS TYPE "Pickup Authorization",
+      text "Your One Time Password (OTP) is 466466. This OTP will be valid for next 5 mins.- Footprints".
+    - Times are UTC. The number is logged as 7503664514, even when the popup says WhatsApp.
+    - The tests use a 2nd Chrome window logged in as Rakesh for SMS View.
+  - **Data and attendance:**
+    - The API chain was verified: save Permanent → `sendPickupCardOtp` add → OTP from SMS View → `verifyPickupCardOtp`
+      → "Visitor verified. Valid till 04-Feb-2027." → the card shows Valid + Mark Hand Over.
+    - Temporary save + activate today → "Pickup scheduled for 04 Nov(Wed)." with request status_label "Awaiting
+      Parent Authorisation", and a warning "Permanent pickup persons will not be allowed on these dates."
+    - `parent_email` `<id>_father@gmail.com` worked for 48174, 67538, 67602, 58452, 46190, 67909.
+    - Attendance CHECK IN shows a native confirm "Are you sure want to mark child Present?". The row then shows
+      "Check In [November 04, 2026 13:34 PM]".
+  - **Exploration data (04-Nov):**
+    - 58452 Amay: Temporary card 52 / request 126, centre OTP sent (Awaiting → OTP Sent).
+    - 67909 Shivigya: Permanent card 53, Valid.
+    - 45396 ("Demo Sector 122, Noida") checked in by the exploration.
+
+### Automation built (2026-11-04) — Iteration 1: 29 Pass, 0 Fail, 2 On Hold, 1 In Progress, 8 Not Executed
+
+Files:
+
+- `pages/Children/Updates/PickupAuthorizationPage.java`
+- `pages/SupermamApp/Updates/AttendanceUpdatesPage.java` (new sub-package)
+- `testScripts/ChildrenTests/Updates/PickupAuthorizationTest.java` (31 tests)
+- `PickupAuthorizationtestng.xml`
+- `testData/pickup_visitor_photo.jpeg` (= `~/Downloads/childA.jpeg`, one face, as the user asked)
+
+Additive changes elsewhere:
+
+- `APIs.java`: Visitor Pickup methods (`saveVisitorPickupCard`, `activateVisitorPickup`, `send/verifyPickupCardOtp`,
+  `send/verifyDailyAuthorisationOtp`, `deactivateVisitorPickup`, `getVisitorPickupCards`).
+- `SMSView_Page.getLatestRowTextBySmsType()` + `extractOtp()`.
+- `IAutoConstant.PICKUP_AUTHORIZATION_URL` / `ATTENDANCE_UPDATES_URL`.
+- `Navigations.goToPickupAuthorization()` / `goToAttendanceUpdates()`.
+
+Workbook: `~/Desktop/QA_Documents/Testcases Scripts/TC_Pickup_Authorization.xlsx`, sheet `TC_PickupAuthorization`.
+
+- 40 TCs, SC001–SC009, plus QueryLogs Q1–Q7.
+- Builder (session-only): scratchpad `build_pickup.py` + `results.json`.
+
+How a run works:
+
+- Runs as Nidhi. A 2nd Chrome window logged in as Rakesh reads OTPs on SMS View.
+- Each run takes ~5 FRESH children from Nidhi's centre (no attendance today + no visitor cards). It creates the cards
+  through the APIs and CHECKs IN on Attendance.
+- About 15 children in her centre now have test cards. When none are fresh, the action tests SKIP.
+- `-DresumeKids=perm=<id>,otp=<id>,parent=<id>,lock=<id>` reuses children that already hold today's cards.
+- `-DpickupChildren=<id,...>` limits the pool.
+
+Gotchas found:
+
+- **SMS View:** it has a hidden ID column, so the SMS TYPE cell is matched by text. The Rakesh window must be maximised:
+  in a narrow window the responsive table hides cells, and `getText()` returns "".
+- **Popup messages:**
+  - They render in a sibling `div.flash-msg > .alert` after `.alert-ajax-response`, and fade in ~2 s.
+  - Success reloads the page after 2 s.
+  - Wrong-OTP results are also detected through the `#otp_attempts_left` change.
+- **Pills:** they are CSS-uppercased, so read card text with `textContent`.
+- **Clicks:** Mark Hand Over needs a REAL click (a JS click did not submit). The identity tick works with a real click.
+- **Copied-link tests:** they re-point an existing popdown link (View Audit Trail) at the URL. An injected `<a>` is not
+  wired up by the popdown script.
+- **Locked card:** the Authorise button is rendered `disabled` (faded), not removed.
+- **Attempts:** they are per request across resends: 5→4→3, resend, 2→1→locked. Audit detail "OTP locked after 3
+  incorrect attempts" (QueryLogs Q7).
+- **Copied Hand Over link on an "OTP Sent" Temporary card:** it shows "This pickup cannot be handed over. Please refresh
+  the Pickup Authorization page." (QueryLogs Q6).
+
+Live results on 04-Nov:
+
+| Child | Result |
+|---|---|
+| 67909 | Handed over (Permanent) |
+| 53603 | Handed over (Temporary, parent authorised) |
+| 74684 | Released by centre OTP |
+| 67499 | Locked |
+| 54031 | Handed over in a manual debug |
+
+Pending, with a fresh child:
+
+- Re-run `sc004_tc006` and `sc006_tc002`: both worked in the app, but the tests were fixed after the run.
+- Re-run `sc007_tc002`.
+- SC009 (other users / emails / crons) is not automated; see QueryLogs Q2–Q4.
+- The user entered an OTP manually during run 3. No result was attributed to it.
