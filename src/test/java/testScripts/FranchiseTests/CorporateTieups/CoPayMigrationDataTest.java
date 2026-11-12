@@ -3,11 +3,13 @@ package testScripts.FranchiseTests.CorporateTieups;
 import org.openqa.selenium.JavascriptExecutor;
 import org.testng.Assert;
 import org.testng.Reporter;
+import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.CoPayMigrationDataPage;
 import pages.Navigations;
+import pages.Settings.SystemLogs.UserRightsPage;
 import utils.BaseTest;
 
 import java.io.BufferedReader;
@@ -27,7 +29,7 @@ import java.util.regex.Pattern;
 // ═══════════════════════════════════════════════════════════════
 // CO-PAY MIGRATION DATA (Franchise → Corporate Tieups → Co-Pay Migration Data, /copay_migration_data)
 // Source: TC_Corporate Tie-ups.xlsx SC_008_TC_001–007, updated to the live screen + new TCs →
-// TC_Corporate_Tieups.xlsx, sheet TC_CoPayMigrationData. Runs as Rakesh.
+// TC_Corporate_Tieups.xlsx, sheet TC_CoPayMigrationData. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh).
 // Saves (user, 2026-11-03): TC_007 clicks Update on child 56670 (Aadvik Chandna) with the popup's pre-filled plans —
 // parent 7,399 + corporate 7,400 monthly, yearly 16,000 for both.
 // ═══════════════════════════════════════════════════════════════
@@ -49,6 +51,16 @@ public class CoPayMigrationDataTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Co-Pay Migration Data");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Co-Pay Migration Data in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }
@@ -328,7 +340,11 @@ public class CoPayMigrationDataTest extends BaseTest {
         String href = migrationPage.getUpdateHref(UPDATE_CHILD);
         Assert.assertFalse(href.isEmpty(), "❌ No Update link for " + UPDATE_CHILD);
         Map<String, String> p = planParams(href);
-        Reporter.log("   Before: " + migrationPage.getRowText(UPDATE_CHILD) + "\n   Plans to set: " + p, true);
+        String rowBefore = migrationPage.getRowText(UPDATE_CHILD);
+        // a row flagged "its seems incorrect plan set" is not updated by design (user, 2026-11-12, Q53) — needs another child
+        if (rowBefore.contains("incorrect plan set"))
+            throw new SkipException(UPDATE_CHILD + " is flagged 'its seems incorrect plan set' — Update is not applied for it; use -DcopayMigrationChild=<child without the note>");
+        Reporter.log("   Before: " + rowBefore + "\n   Plans to set: " + p, true);
         String before = openAccountStatementText(UPDATE_CHILD);
         Reporter.log("   Account Statement before: monthly parent " + accountStatementPlan(before, "Monthly", "Parent") + " / corporate "
                 + accountStatementPlan(before, "Monthly", "Corporate") + " | yearly parent " + accountStatementPlan(before, "Yearly", "Parent")

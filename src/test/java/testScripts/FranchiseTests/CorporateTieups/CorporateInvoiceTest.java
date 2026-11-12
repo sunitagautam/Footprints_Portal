@@ -9,6 +9,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.CorporateInvoicePage;
 import pages.Navigations;
+import pages.Settings.SystemLogs.UserRightsPage;
 import utils.BaseTest;
 
 import java.io.BufferedReader;
@@ -25,7 +26,7 @@ import java.util.Map;
 // ═══════════════════════════════════════════════════════════════
 // CORPORATE INVOICE (Franchise → Corporate Tieups → Corporate Invoice, /corporate_invoice)
 // Source: "TC_Corporate Tie-ups.xlsx" SC_005 (17 TCs) → TC_Corporate_Tieups.xlsx, sheet TC_CorporateInvoice,
-// updated to the live screen + new TCs from exploration. Runs as Rakesh.
+// updated to the live screen + new TCs from exploration. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh).
 //
 // Nothing here is saved: the Void popup is only opened and submitted with an empty reason (blocked client side).
 // Not automated yet (they save, or need a right): TC_010 raiseCoPayInvoice API, TC_011 mark payment,
@@ -47,6 +48,16 @@ public class CorporateInvoiceTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Corporate Invoice");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Corporate Invoice in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

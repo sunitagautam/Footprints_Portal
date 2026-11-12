@@ -27,7 +27,7 @@ import java.util.List;
 // TIE-UPS DETAILS (Franchise → Corporate Tie-ups → Tie Ups Details)
 // Source: TC_Corporate_Tieups.xlsx, SC_001 (converted from
 // "TC_Corporate Tie-ups.xlsx" + 10 new cases found while exploring).
-// Runs as Rakesh (user, 2026-10-26 — the Shivali Gupta switch fails).
+// Runs as Divya (EP-12693), Lead Executive — Update_Corporate_Offer (user, 2026-11-12; was Rakesh).
 //
 // Priorities 1–42: cases that SAVE NOTHING (list, filters, search,
 // download, pagination, sorting, popups, form views, validation).
@@ -43,8 +43,8 @@ public class Tieup_DetailsTest extends BaseTest {
             "Status", "Last Updated", "Contact Details", "Actions");
     private static final List<String> EXPORT_COLUMNS = Arrays.asList("Company Name", "Fee Payer",
             "Monthly Guarantee Type", "Monthly Guarantee Amount", "Monthly Guarantee Admission");
-    private static final List<String> ALL_ACTIONS = Arrays.asList("Update", "Tieup History Log", "View Offer",
-            "Admission Request");
+    // Divya's icons (2026-11-12): no Admission Request — that needs Corporate_Invitation_Request
+    private static final List<String> ALL_ACTIONS = Arrays.asList("Update", "Tieup History Log", "View Offer");
     private static final List<String> PAYER_OPTIONS = Arrays.asList("Corporate", "Parent", "Waive-off");
     private static final String[] PAYER_IDS = {"registration_fee_payer", "transport_payer", "kit_payer",
             "monthly_fee_payer", "annual_fee_payer"};
@@ -72,6 +72,17 @@ public class Tieup_DetailsTest extends BaseTest {
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
         tieupPage = new Tieup_DetailsPage(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx: Divya (EP-12693), Lead Executive — has
+        //    Update_Corporate_Offer (Add / Edit Corporate Tie-ups). Rakesh lost it when the test DB was synced with live (2026-11-12).
+        String user = getUserForScreen("Tieup Details");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Tieup Details in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }
@@ -150,7 +161,8 @@ public class Tieup_DetailsTest extends BaseTest {
         Assert.assertTrue(tieupPage.isPaginationVisible(), "❌ Pagination");
         Assert.assertTrue(tieupPage.getInfoText().matches("Showing 1.10 of \\d+ entries"), "❌ Info: " + tieupPage.getInfoText());
         Assert.assertEquals(tieupPage.getVisibleColumnHeaders(), COLUMNS, "❌ Columns");
-        Assert.assertEquals(tieupPage.getFirstRowActionTitles(), ALL_ACTIONS, "❌ Action icons for Rakesh");
+        Reporter.log("   Action icons: " + tieupPage.getFirstRowActionTitles(), true);
+        Assert.assertEquals(tieupPage.getFirstRowActionTitles(), ALL_ACTIONS, "❌ Action icons for Divya");
         Reporter.log("✅ SC_001_TC_002 PASSED", true);
     }
 
@@ -1012,7 +1024,7 @@ public class Tieup_DetailsTest extends BaseTest {
         Assert.assertTrue(row.contains(today()), "❌ Last Updated is not today (" + today() + "): " + row);
         String log = latestHistory(v1Title);
         Assert.assertTrue(log.contains(reason), "❌ Reason not in history: " + log);
-        Assert.assertTrue(log.contains("Rakesh Singh"), "❌ Changed By not in history");
+        Assert.assertTrue(log.contains("Divya"), "❌ Changed By (Divya) not in history");
         Assert.assertTrue(log.contains("6") && log.contains("7"), "❌ Old → new value not in history");
         Reporter.log("✅ SC_001_TC_036 / TC_022 PASSED", true);
     }
@@ -1146,10 +1158,10 @@ public class Tieup_DetailsTest extends BaseTest {
     // ════════════════════════════════════════════════════════════════════
     //  SC_001_TC_041 — Action icons by user rights (switches user → runs last)
     // ════════════════════════════════════════════════════════════════════
-    @Test(priority = 99, description = "SC_001_TC_041 — Action icons by user rights (Rakesh vs Jaydeep Kar)")
+    @Test(priority = 99, description = "SC_001_TC_041 — Action icons by user rights (Divya vs Jaydeep Kar)")
     public void tc041_actionIconsByRights() throws Exception {
         Reporter.log("▶ SC_001_TC_041 — Action icons by rights", true);
-        Assert.assertEquals(tieupPage.getFirstRowActionTitles(), ALL_ACTIONS, "❌ Rakesh's icons");
+        Assert.assertEquals(tieupPage.getFirstRowActionTitles(), ALL_ACTIONS, "❌ Divya's icons");
         navigations.goToUserRights();
         new UserRightsPage(driver).switchUser("Jaydeep Kar");
         Thread.sleep(2000);

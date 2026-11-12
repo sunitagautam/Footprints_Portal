@@ -23,7 +23,7 @@ import java.util.Set;
 // ═══════════════════════════════════════════════════════════════
 // CORPORATE ADMISSION COUNT (Franchise → Corporate Tieups → Corporate Admission Count, /tieup_admission_count)
 // New screen — no source test cases; written from the requirement the user shared (2026-11-02) + live screen →
-// TC_Corporate_Tieups.xlsx, sheet TC_CorporateAdmissionCount. Right View_Corporate_Admission_Count. Runs as Rakesh.
+// TC_Corporate_Tieups.xlsx, sheet TC_CorporateAdmissionCount. Right View_Corporate_Admission_Count. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh).
 // Read-only: nothing is saved.
 // ═══════════════════════════════════════════════════════════════
 public class CorporateAdmissionCountTest extends BaseTest {
@@ -38,6 +38,16 @@ public class CorporateAdmissionCountTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Corporate Admission Count");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Corporate Admission Count in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

@@ -379,6 +379,8 @@ public class TieupPlansPricingTest extends BaseTest {
         Thread.sleep(3000);
         Tieup_DetailsPage tieup = new Tieup_DetailsPage(driver);
         Assert.assertTrue(tieup.isFormLoaded(), "❌ Update form did not load");
+        // ✅ never touch another tie-up: offer IDs change when the test DB is synced (offer 275 became a real tie-up, 2026-11-12)
+        Assert.assertEquals(tieup.getFieldValue("offer_title_id"), QA_OFFER, "❌ Update form is for another tie-up");
         tieup.selectByText("tieup_type", "Onsite");
         tieup.enterUpdateReason("QA auto: Plans and Pricing TC_010 tie-up type Onsite");
         tieup.clickUpdate();

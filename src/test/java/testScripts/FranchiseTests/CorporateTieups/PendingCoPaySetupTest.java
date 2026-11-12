@@ -8,6 +8,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.PendingCoPaySetupPage;
 import pages.Navigations;
+import pages.Settings.SystemLogs.UserRightsPage;
 import utils.BaseTest;
 
 import java.io.BufferedReader;
@@ -21,7 +22,7 @@ import java.util.List;
 // ═══════════════════════════════════════════════════════════════
 // PENDING CO-PAY SETUP (Franchise → Corporate Tieups → Pending Co-Pay Setup, /pending_copay_setup)
 // Source: TC_Corporate Tie-ups.xlsx SC_004_TC_001–008, updated to the live screen + new TCs →
-// TC_Corporate_Tieups.xlsx, sheet TC_PendingCoPaySetup. Runs as Rakesh (Copay_Update_Access).
+// TC_Corporate_Tieups.xlsx, sheet TC_PendingCoPaySetup. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh) (Copay_Update_Access).
 // Saves (user, 2026-11-03): TC_007 sets child 74169's Co-Pay plans per its invite breakup — corporate 8,998, parent
 // 14,301 (= centre fee 23,299 − 8,998), billing from Dec 2026, registration fee 11,499 (centre V2 fee) paid by Parent.
 // ═══════════════════════════════════════════════════════════════
@@ -40,6 +41,16 @@ public class PendingCoPaySetupTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Pending Co-Pay Setup");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Pending Co-Pay Setup in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.AdjustCorporateCreditsPage;
 import pages.Franchise.CorporateTieups.CorporateInvoicePage;
 import pages.Navigations;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Support.FinancialReports.AccountStatementPage;
 import utils.BaseTest;
 
@@ -26,13 +27,14 @@ import java.util.Map;
 // ═══════════════════════════════════════════════════════════════
 // ADJUST CORPORATE CREDITS (Franchise → Corporate Tieups → Adjust Corporate Credits, /corporate_invoice?type=due)
 // Source: "TC_Corporate Tie-ups.xlsx" SC_011_TC_019–037 → TC_Corporate_Tieups.xlsx, sheet TC_AdjustCorporateCredits.
-// Runs as Rakesh. This class covers TC_019–033 (user, 2026-11-03).
+// Runs as Rakshita Singh (EP-14768, SME - Customer Support) via input_UserRights.xlsx "Adjust Corporate Credits" (user, 2026-11-12;
+// was Rakesh). This class covers TC_019–033 (user, 2026-11-03).
 //
 // Saves (approved for corporate invoices, 28-Oct-2026): TC_031 marks one Payment Due invoice paid, TC_032 voids one —
 // each takes an invoice with the Void icon.
 // TC_034–037 (user, 03/04-Nov-2026): adjust the corporate credit balance against child 57826's invoice 66151, then revert
 // it — the revert restores the invoice and the balance, so the same pair is reused every run (-DadjustChildId /
-// -DadjustInvoiceId). The Revert icon needs the right Revert_Credit_Adjustment (given to Rakesh on 04-Nov-2026).
+// -DadjustInvoiceId). The Revert icon needs the right Revert_Credit_Adjustment.
 // ═══════════════════════════════════════════════════════════════
 public class AdjustCorporateCreditsTest extends BaseTest {
 
@@ -56,6 +58,16 @@ public class AdjustCorporateCreditsTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Adjust Corporate Credits");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Adjust Corporate Credits in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

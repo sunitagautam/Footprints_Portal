@@ -8,6 +8,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.CorporateCreditsIssuedPage;
 import pages.Navigations;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Support.FinancialReports.AccountStatementPage;
 import pages.Support.RecentCustomerRequestsPage;
 import pages.Support.Regular_ServiceRequests;
@@ -28,7 +29,7 @@ import java.util.Locale;
 // ═══════════════════════════════════════════════════════════════
 // CORPORATE CREDITS ISSUED (Franchise → Corporate Tieups → Corporate Credits Issued, /issue_corporate_credits)
 // Source: TC_Corporate Tie-ups.xlsx SC_011_TC_001–018, updated to the live screen + new TCs →
-// TC_Corporate_Tieups.xlsx, sheet TC_CorporateCreditsIssued. Runs as Rakesh (View_Corporate_Invoice +
+// TC_Corporate_Tieups.xlsx, sheet TC_CorporateCreditsIssued. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh) (View_Corporate_Invoice +
 // Override_Corporate_Payer).
 // Saves (user, 2026-11-03): issues a Rs 100 corporate credit on child 37261, re-links it to another invoice of the
 // same child, then revokes it — all in one run, so nothing is left behind.
@@ -61,6 +62,16 @@ public class CorporateCreditsIssuedTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Corporate Credits Issued");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Corporate Credits Issued in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

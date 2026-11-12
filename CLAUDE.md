@@ -4313,10 +4313,10 @@ Files: `pages/Franchise/CorporateTieups/CoPayMigrationDataPage.java`,
   `api/corporate/updateCoPayNewPlan4Migration/` → `{"status":"ok","message":"Details successfully Updated"}` → `location.reload()` at
   once (the page object keeps the reply in sessionStorage `qaCopayMigration`).
 
-**🐛 Bug (Medium, 05-Nov-2026, user: plans must change at once):** Update on **56670** (Aadvik Chandna; approved by the user) returns ok
-three times, but the Account Statement keeps parent 7,053 / corporate 7,053 monthly and corporate yearly 15,000 (parent yearly none);
-Child and Subscription History stay empty; the grid row is unchanged. `Bug Evidence/Bug_CoPayMigration_UpdateNotApplied.md` +
-`CoPayMigration_UpdateNotApplied/`. `tc007_updatePlans` fails until fixed (`-DcopayMigrationChild=` to use another child).
+**Not a bug (user, 2026-11-12; first logged as a Medium bug on 05-Nov):** Update on **56670** replies "Details successfully Updated" but the
+plans stay unchanged — the row shows the red note "its seems incorrect plan set" (Q53), and such rows are not updated by design. Since the
+DB sync the popup pre-fills parent 7,400 / corporate 499 / yearly 16,000 / 15,000. `tc007_updatePlans` now skips a flagged row; pass a child
+without the note via `-DcopayMigrationChild=`. `Bug_CoPayMigration_UpdateNotApplied.md` is marked CLOSED.
 
 **Status (05-Nov):** 9 pass + TC_007 fail (bug). Sheet `TC_CoPayMigrationData` (after TC_PendingCoPaySetup): 10 TCs (SC_008_TC_001–007 +
 new TC_008 Status filter, TC_009 Update popup, TC_010 no plan), 9 Pass, 1 Fail; Q52 (grid vs CSV diff for discounted children),
@@ -4359,6 +4359,45 @@ Login password changed the same day: Rakesh / `Test!123` (`IAutoConstant.PASSWOR
 before an expiry; TC_038–040 manual — Freshdesk); Q54–Q56. Test Summary 268 TCs / 214 pass.
 - **TC_035 Fail (07-Dec):** SPOC reminders CC "…, tieup.admissions@…, , FP_TIEUP_EXPIRY_NOTIFY_EMAIL" — the config key name instead of the
   configured Rakesh / Divya emails (plus an empty entry). Q56: missing setting on test or a bug; not yet confirmed as a bug.
+
+### Corporate Tie-ups — switch users and status after the DB sync (2026-11-12)
+
+The test DB was synced with live (by the manager); offer IDs and rights changed, QA test records are gone, and the server clock
+moves (it showed Dec 7, then Nov 12). Login password is now `Test!123`. Each class switches in `@BeforeClass` via
+`getUserForScreen("<Screen>")` (`testData/input_UserRights.xlsx`):
+
+| User | Screens |
+|---|---|
+| Rakshita Singh (EP-14768, user_id 4768) | Adjust Corporate Credits, Corporate Credits Issued, Co-Pay Migration Data, Pending Co-Pay Setup, Corporate Invoice, Admission Records, Admission Invites, Corporate Admission Count, Parent Company Report, Corporate Company, Tie-up Expiry Migration |
+| Divya (EP-12693, user_id 2693) | Tieup Details (has Update_Corporate_Offer; icons Update / Tieup History Log / View Offer — no Admission Request) |
+| Rakesh (no switch) | Tieup Plans and Pricing (only he gets "Apply New Fee Structure") |
+
+`View_Corporate_Admission_Count` was assigned to Rakshita on test for the two report screens (`Update_Corporate_Offer` was tried for
+the Apply button, did not help, and was removed). Rakesh can no longer Add tie-ups or see the Co-Pay Migration Update link.
+
+**Full run 2026-11-12 (13 suites):** Tieup Details 24/42 · Admission Invites 12/13 (+11 skipped) · Admission Records 14/18 · Corporate
+Admission Count 11/14 · Corporate Invoice 18/20 · Parent Company Report 8/14 · Corporate Company 0 (11 skipped, page did not load in
+the run — passes alone) · Tieup Plans and Pricing 8/17 · Tie-up Expiry Migration 7/7 · Adjust Corporate Credits 11/15 · Pending Co-Pay
+Setup 5/7 · Co-Pay Migration Data 9/9 · Corporate Credits Issued 13/18. Excluded (saves on pre-sync child IDs): Co-Pay TC_007 (56670),
+Pending Co-Pay TC_007 (74169), Corporate Credits tc013b center shift (62383).
+
+**To do:**
+- Fresh test data: a QA V2 tie-up (Tieup Details TC_052 creates it — the 5 "contract did not upload" failures were temporary; TC_050
+  alone passed and created "QA Auto Tieup V1 12111629"), Tieup Plans' QA_OFFER (offer 275 is now "Synopsis - Malad, Mumbai"; every save
+  helper checks the title, TC_010 included), Adjust TC_034 child/invoice (57826 / 66151 no longer due), Pending Co-Pay child, Co-Pay
+  Migration child without the "incorrect plan set" note, Corporate Credits center-shift child.
+- **Leftover:** Corporate Credits TC_005 issued credit **397** (Rs 100, Zayd Bin Zumar 37261, PI/60870); as Rakshita it shows no Link /
+  Revoke icon, so it was not revoked — to be removed.
+- Tests that switch to a second user or open User Rights (Tieup Details TC_041, Admission Records TC_013/014, Admission Count
+  TC_002/013, Parent Company TC_002/014) must start as Rakesh — Rakshita / Divya cannot open User Rights.
+- Expected values that differ for the new users: Admission Invites Tie-Up Types (Rakshita sees 4), Admission Records columns (7 incl.
+  Child ID + Action), Tieup Details popover fields (TC_008/035, probably ALLOW_TIEUP_SENSITIVE_DATA).
+- Query: Corporate Invoice / Adjust void now answers "Void operation restricted to transport, extended services or one-time charges"
+  (new rule after the sync, or bug?).
+- Open Low bugs still present: Admission Count / Parent Company popup date format, Parent Company no export, no Counts tooltip.
+- Bugs verified 2026-11-12: invoice PDF HTTP 500 — fixed; Co-Pay Migration Update — not a bug; login SQL-style username "OOPS! USER
+  DISABLED" — still present (`Bug Evidence/Bug_Login_SQLInjectionUserDisabled.md`, High); expiry email CC — not verifiable (no new
+  reminders while the server date is Nov 12).
 ### Corporate Credits Issued (SC_011) — automation (2026-11-03, as Rakesh)
 
 Files: `pages/Franchise/CorporateTieups/CorporateCreditsIssuedPage.java`,

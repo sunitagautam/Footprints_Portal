@@ -22,7 +22,7 @@ import java.util.Set;
 // ═══════════════════════════════════════════════════════════════
 // PARENT COMPANY REPORT (Franchise → Corporate Tieups → Parent Company Report, /existing_children_parent_company_report)
 // New screen — no source test cases; written from the requirement the user shared (2026-11-02) + live screen →
-// TC_Corporate_Tieups.xlsx, sheet TC_ParentCompanyReport (SC_015). Right View_Corporate_Admission_Count. Runs as Rakesh.
+// TC_Corporate_Tieups.xlsx, sheet TC_ParentCompanyReport (SC_015). Right View_Corporate_Admission_Count. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh).
 // Test data: on the test environment every parent company is "Dummy" (user). Read-only: nothing is saved.
 // TC_010 (popup export), TC_011 (Counts tooltip), TC_012 (date format) assert the requirement and fail until the
 // Low bugs are fixed.
@@ -40,6 +40,16 @@ public class ParentCompanyReportTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Parent Company Report");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Parent Company Report in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

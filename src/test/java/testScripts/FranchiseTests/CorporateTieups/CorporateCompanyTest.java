@@ -8,6 +8,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.CorporateCompanyPage;
 import pages.Navigations;
+import pages.Settings.SystemLogs.UserRightsPage;
 import utils.BaseTest;
 
 import java.io.BufferedReader;
@@ -19,7 +20,7 @@ import java.util.List;
 
 // ═══════════════════════════════════════════════════════════════
 // CORPORATE COMPANY (Franchise → Corporate Tieups → Corporate Company, /corporate_company)
-// Source: "TC_Corporate Tie-ups.xlsx" SC_006 (10 TCs) → TC_Corporate_Tieups.xlsx, sheet TC_CorporateCompany. Runs as Rakesh.
+// Source: "TC_Corporate Tie-ups.xlsx" SC_006 (10 TCs) → TC_Corporate_Tieups.xlsx, sheet TC_CorporateCompany. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh).
 //
 // Saves (user, 2026-10-28: one QA company, reused): TC_008 adds "QA Auto Company" (Noida, Uttar Pradesh, Active) only
 // when it does not exist yet — the same name is never submitted twice; TC_010 edits its address each run.
@@ -39,6 +40,16 @@ public class CorporateCompanyTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Corporate Company");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Corporate Company in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

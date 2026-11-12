@@ -11,6 +11,7 @@ import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.AdmissionInvitesPage;
 import pages.Franchise.CorporateTieups.Tieup_DetailsPage;
 import pages.Navigations;
+import pages.Settings.SystemLogs.UserRightsPage;
 import pages.Settings.SystemLogs.EmailView_Page;
 import utils.BaseTest;
 
@@ -28,7 +29,7 @@ import java.util.Locale;
 // ═══════════════════════════════════════════════════════════════
 // ADMISSION INVITES (Franchise → Corporate Tieups → Admission Invites)
 // Source: "TC_Corporate Tie-ups.xlsx" SC_002 (20 TCs) → TC_Corporate_Tieups.xlsx,
-// sheet TC_AdmissionInvites. Runs as Rakesh (user, 2026-10-27).
+// sheet TC_AdmissionInvites. Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh) (user, 2026-10-27).
 //
 // Priorities 1–29: nothing is saved (view, validation, filters, download…).
 // Priorities 30+: SAVES on UAT, only on QA data:
@@ -75,6 +76,16 @@ public class AdmissionInvitesTest extends BaseTest {
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
         invitesPage = new AdmissionInvitesPage(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Admission Invites");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Admission Invites in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }

@@ -10,6 +10,7 @@ import org.testng.annotations.Test;
 import pages.Franchise.CorporateTieups.AdmissionRecordsPage;
 import pages.Navigations;
 import pages.Settings.SystemLogs.UserRightsPage;
+import pages.Settings.SystemLogs.UserRightsPage;
 import utils.BaseTest;
 
 import java.io.BufferedReader;
@@ -25,7 +26,7 @@ import java.util.Locale;
 // ═══════════════════════════════════════════════════════════════
 // ADMISSION RECORDS (Franchise → Corporate Tieups → Admission Records, /corporate_admissions)
 // Source: "TC_Corporate Tie-ups.xlsx" SC_003 (14 TCs) → TC_Corporate_Tieups.xlsx, sheet TC_AdmissionRecords,
-// updated to the live screen + new TCs from exploration (user, 2026-10-28). Runs as Rakesh.
+// updated to the live screen + new TCs from exploration (user, 2026-10-28). Runs as Rakshita Singh (EP-14768, SME - Customer Support; user 2026-11-12, was Rakesh).
 //
 // Priorities 1–29: nothing is saved.
 // Priority 30 (TC_009) SAVES: changes one record's Employee Code and restores the original value
@@ -53,6 +54,16 @@ public class AdmissionRecordsTest extends BaseTest {
     @BeforeClass(alwaysRun = true)
     public void setUp() throws Exception {
         navigations = new Navigations(driver);
+        acknowledgePolicyNotificationIfPresent();
+        closeNotificationDropdownIfOpen();
+
+        // ✅ switch to the screen's user from testData/input_UserRights.xlsx (Rakshita Singh, user 2026-11-12)
+        String user = getUserForScreen("Admission Records");
+        Assert.assertFalse(user.isEmpty(), "❌ No user found for Admission Records in Excel");
+        navigations.goToUserRights();
+        new UserRightsPage(driver).switchUser(user);
+        System.out.println("✅ Switched to: " + user);
+        Thread.sleep(2000);
         acknowledgePolicyNotificationIfPresent();
         closeNotificationDropdownIfOpen();
     }
