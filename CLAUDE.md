@@ -69,7 +69,7 @@ src/test/java/
 ### Key design decisions
 
 **BaseTest lifecycle** — Every test class extends `BaseTest`. `@BeforeClass` launches Chrome, navigates to the login
-URL, logs in with the default user (`Rakesh` / `Dev@123` from `IAutoConstant`), then automatically cycles through and
+URL, logs in with the default user (`Rakesh` / `Test!123` from `IAutoConstant`; changed from `Dev@123` on 2026-11-12), then automatically cycles through and
 acknowledges any pending policy notification popups (up to 10 bells), then hides the notification dropdown via JS to
 prevent click interception.
 

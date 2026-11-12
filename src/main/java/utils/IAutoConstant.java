@@ -86,7 +86,7 @@ public final class IAutoConstant {
     // LOGIN CREDENTIALS
     // ═══════════════════════════════════════════════
     public static final String USERNAME = "Rakesh";
-    public static final String PASSWORD = "Dev@123";
+    public static final String PASSWORD = "Test!123";
 
 
     // ═══════════════════════════════════════════════
