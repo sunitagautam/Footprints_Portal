@@ -4871,3 +4871,28 @@ Pending, with a fresh child:
   | 54761 | Parent authorised |
   | 48155 | Locked |
   | 45396 | Not present + cancelled — it is a "Demo Sector 122, Noida" child; prefer a real one next time |
+
+**12-Nov-2026: Q6 raised as a Low bug** (user):
+
+- Report: `~/Desktop/QA_Documents/Bug Evidence/Bug_PickupAuthorization_HandOverRefusalMessage.md`. Screenshots in
+  `PickupAuthorization_HandOverRefusalMessage/` (children 65189, 64379 on 05-Nov; 74684 on 04-Nov).
+- The generic text shows as soon as the copied `pop_handover_pickup` link opens (server-side, before any tick).
+- JIRA ID: pending.
+- Workbook Iteration 1:
+  - SC004_TC002 = Fail at step 2 (steps 1, 3, 4 Pass).
+  - Q6 Closed.
+  - Test Summary rows 7/13 = 40 / 30 Pass / 1 Fail / 1 On Hold / 8 NE (96.8%); defect rows 19/25 = Low 1, Total 1.
+
+**UAT changed by 12-Nov (seen while trying to reproduce):**
+
+- The portal clock showed **Dec 7, 08:04 AM**.
+- Rakesh's password is now `Test!123` (user confirmed; uncommitted change in `IAutoConstant.java`).
+- **Nidhi Chaturvedi no longer has access to /pickup_authorization** ("Sorry! You are not authorise to access this
+  screen."). The suite cannot run as her until the right is back, or a user with the pickup rights is given.
+- The attendance pool was empty at 08:04 (before the 09:00 start).
+
+**12-Nov-2026 (afternoon): Nidhi's access restored.** As Rakesh, assigned `View_Pickup_Authorization`,
+`Authorise_Pickup_Request` and `View_Pickup_Audit_Trail` to Nidhi Chaturvedi (user_id 8488, FEP-18488) on
+`manage_user_rights` (reference "QA: Pickup Authorization automation"). The real right name is **`Authorise_Pickup_Request`**
+(British spelling, as in the JIRA); `Authorize_Pickup_Request` (manual / code) does not exist in the rights list. After a
+switch to Nidhi the page loads: "12-Nov-2026 · 8 children". The server clock was back to Nov 12, 04:08 PM.
