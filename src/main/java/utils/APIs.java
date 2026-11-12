@@ -1030,6 +1030,38 @@ public class APIs {
     }
 
     // ═══════════════════════════════════════════════
+    // TIE-UP EXPIRY MIGRATION (Franchise → Corporate Tieups → Tie-up Expiry Migration Admissions, SC_009). No ckey.
+    // sendExpiryReminder        : weekly cron (Monday) — reminders 60/30/15/7 days before expiry, creates the expiry
+    //                             migration entries ("Expiry Reminder Sent") for ALL tie-ups (no offer_id in the spec).
+    // processTieupExpiryMigration: moves the offer's admissions to regular terms on/after their migration date
+    //                             ("Benefit Removed"); the Tieup Details icon POSTs offer_id.
+    // processTieupRenewal       : restores migrated admissions after a renewal ("Benefit Restored" / "Cancelled").
+    // ═══════════════════════════════════════════════
+    public static Response sendTieupExpiryReminder() {
+        String endpoint = "corporate/sendExpiryReminder";
+        System.out.println("▶ Tie-up Expiry: sendExpiryReminder\n   URL: " + ADMISSIONS_BASE_URL + endpoint);
+        Response response = given().baseUri(ADMISSIONS_BASE_URL).when().get(endpoint).then().extract().response();
+        System.out.println("✅ sendExpiryReminder — Status: " + response.getStatusCode() + "\n   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    public static Response processTieupExpiryMigration(String offerId) {
+        return tieupExpiryPost("corporate/processTieupExpiryMigration/", offerId);
+    }
+
+    public static Response processTieupRenewal(String offerId) {
+        return tieupExpiryPost("corporate/processTieupRenewal/", offerId);
+    }
+
+    private static Response tieupExpiryPost(String endpoint, String offerId) {
+        System.out.println("▶ Tie-up Expiry: " + endpoint + " offer_id=" + offerId + "\n   URL: " + ADMISSIONS_BASE_URL + endpoint);
+        Response response = given().baseUri(ADMISSIONS_BASE_URL).formParam("offer_id", offerId)
+                .when().post(endpoint).then().extract().response();
+        System.out.println("✅ " + endpoint + " — Status: " + response.getStatusCode() + "\n   Response: " + response.getBody().asString());
+        return response;
+    }
+
+    // ═══════════════════════════════════════════════
     // VISITOR PICKUP (Parent App APIs, SDA-13303 / SDA-13881) — used as test-data setup for
     // Children → Updates → Pickup Authorization. In real life the parent does these steps in the app.
     // All are POST {{Base_URL}}visitorpickup/<method>/ as form-data; no ckey.

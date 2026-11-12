@@ -75,6 +75,8 @@ public final class IAutoConstant {
             "https://test-franchise.footprintseducation.in/pending_copay_setup";
     public static final String COPAY_MIGRATION_DATA_URL =
             "https://test-franchise.footprintseducation.in/copay_migration_data";
+    public static final String TIEUP_EXPIRY_MIGRATION_URL =
+            "https://test-franchise.footprintseducation.in/tieup_expiry_migrations";
     // Teacher Payout Report — direct URL only (not linked in any menu yet, 2026-11-02)
     public static final String TEACHER_PAYOUT_REPORT_URL =
             "https://test-franchise.footprintseducation.in/teacher_payout_report_details";

@@ -4321,6 +4321,44 @@ Child and Subscription History stay empty; the grid row is unchanged. `Bug Evide
 **Status (05-Nov):** 9 pass + TC_007 fail (bug). Sheet `TC_CoPayMigrationData` (after TC_PendingCoPaySetup): 10 TCs (SC_008_TC_001–007 +
 new TC_008 Status filter, TC_009 Update popup, TC_010 no plan), 9 Pass, 1 Fail; Q52 (grid vs CSV diff for discounted children),
 Q53 (red note). Test Summary 227 TCs / 208 pass; defects 4 Medium + 8 Low.
+
+### Tie-up Expiry Migration Admissions (SC_009) — automation (2026-12-07, as Rakesh)
+
+Files: `pages/Franchise/CorporateTieups/TieupExpiryMigrationPage.java`,
+`testScripts/FranchiseTests/CorporateTieups/TieupExpiryMigrationTest.java` (7 read-only tests), `TieupExpiryMigrationtestng.xml`;
+additive `IAutoConstant.TIEUP_EXPIRY_MIGRATION_URL`, `Navigations.goToTieupExpiryMigration()`, `APIs.sendTieupExpiryReminder()` /
+`processTieupExpiryMigration(offerId)` / `processTieupRenewal(offerId)` (V1, no ckey; not called by the tests).
+
+**Confirmed live:**
+
+- Heading h2 "Tie-up Expiry Migration Admissions". Form `#frm_invoice_report`: Company `#sr_corporate_company` (select2,
+  "--All Companies--"), Filter `#btn_submit`, Clear `a.clx-btn-link`. Table `.dt-admission-invite`, 20 per page (10/20/50/100), order
+  Offer Title desc; search placeholder "Filter these entries". Columns: Child Name | Center | Company | Offer Title | Offer Expiry Date |
+  Offer Status | Migration Status | Migration Date | Renewal Expiry Date, + "never" Child ID / Child Name. Rows come server-side from the
+  **V2** API `corporatetieupplans/ListTieupExpiryMigrations/`. Download = client CSV `Tieup_Expiry_Migration_Records.csv` (10 columns).
+- **The grid is empty on test.** `sendExpiryReminder` (GET V1, global — no offer_id) was run on 06-Nov ("Total 8 Reminder sent and 19 tie-ups
+  marked Expired successfully") and 07-Dec ("Total 11 Reminder sent and 4 tie-ups marked Expired successfully"). Each run sends the consolidated
+  "Information of corporate tie-ups expiring soon" (To Sumathi.raj, ashwani.kumar, varsha.jha, CC tieup.admissions; table Company | Status |
+  Expiry Date | Admissions Count | Migration Date = 28th of the expiry month) and per-tie-up SPOC "Renewal reminder for Footprints - <Company>
+  tie-up benefits expiring on <dd-Mon-yyyy>" (a Freshdesk ticket payload, priority 4), and sets overdue Active tie-ups Expired. It created **no
+  row and no parent reminder** (Q54). `processTieupExpiryMigration` offer_id=134 → `{"status":"ok","message":"No data Found"}`.
+- Tieup Details JS has `migrationAdmissionsToRegular(offerID)` (confirm "Are you sure want to migrate admissions to regular terms?") and
+  `restoreAdmissionsToRenewal(offerID)` ("…restore admissions to latest contractual terms?"); no tie-up shows these icons while there are no entries.
+- **User decision (2026-12-07):** automate read-only only; the reminder → migration → restore flow waits for dev's answer to Q54. Test tie-up for
+  that flow (user): **TCS Lucknow, offer 134** "Tata Consultancy Services Limited(Short Term Plan - Lucknow)" — Employee Pay, Center Fee, V2,
+  End Date 11-Nov-2026, now **Expired** (by the cron), 3 admissions.
+
+**⚠ Test DB refreshed (by 07-Dec-2026, server date Dec 7):** all "QA Auto Tieup …" tie-ups are gone and offer IDs were reassigned — offer
+275 is now the real "Synopsis - Malad, Mumbai". A temporary class saved an End Date change to it by mistake (08-Oct-2027 → 31-Dec-2026); the End
+Date was reverted the same day, but its **Contract Document now holds a folder URL** (`…/uploads/corporate_tieup/corporate_tieup`, was "Not
+Set") that the form can't clear. Earlier screens' test data (QA Auto Company, children 56670 / 62383 etc.) must be re-checked before reuse.
+Login password changed the same day: Rakesh / `Test!123` (`IAutoConstant.PASSWORD`, `testData/input_Credential.xlsx`).
+
+**Status (07-Dec):** 7/7 pass. Sheet `TC_TieupExpiryMigration` (after TC_CoPayMigrationData): 41 TCs (SC_009_TC_001–040 + new TC_041 Clear) —
+6 Pass, 1 Fail (TC_035), 6 In Progress, 3 Blocked (TC_010/011/020, Q54), 25 Not executed (21 need expiry rows; TC_037 needs a run 7 days
+before an expiry; TC_038–040 manual — Freshdesk); Q54–Q56. Test Summary 268 TCs / 214 pass.
+- **TC_035 Fail (07-Dec):** SPOC reminders CC "…, tieup.admissions@…, , FP_TIEUP_EXPIRY_NOTIFY_EMAIL" — the config key name instead of the
+  configured Rakesh / Divya emails (plus an empty entry). Q56: missing setting on test or a bug; not yet confirmed as a bug.
 ### Corporate Credits Issued (SC_011) — automation (2026-11-03, as Rakesh)
 
 Files: `pages/Franchise/CorporateTieups/CorporateCreditsIssuedPage.java`,

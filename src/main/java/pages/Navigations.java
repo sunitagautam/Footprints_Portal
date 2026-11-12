@@ -381,6 +381,13 @@ public class Navigations {
         Thread.sleep(2500);
     }
 
+    public void goToTieupExpiryMigration() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.TIEUP_EXPIRY_MIGRATION_URL);
+        System.out.println("✅ Navigated to: Tie-up Expiry Migration Admissions");
+        Thread.sleep(2500);
+    }
+
     // ═══════════════════════════════════════════════
     // FRANCHISE → CORPORATE TIE-UPS → CORPORATE CREDITS ISSUED
     // ═══════════════════════════════════════════════
