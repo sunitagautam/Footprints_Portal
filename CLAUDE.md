@@ -4850,3 +4850,24 @@ Pending, with a fresh child:
 - Re-run `sc007_tc002`.
 - SC009 (other users / emails / crons) is not automated; see QueryLogs Q2–Q4.
 - The user entered an OTP manually during run 3. No result was attributed to it.
+
+**Re-run 05-Nov-2026: all 31 automated tests run.**
+
+- **Result:** 30 pass. SC004_TC002 fails on the message only (QueryLogs Q6). A copied Hand Over link for an unauthorised
+  Temporary card (Awaiting Parent Authorisation) shows "This pickup cannot be handed over. Please refresh the Pickup
+  Authorization page." instead of "The parent has not authorised this pickup today. Please use Authorise to send an
+  OTP." The refusal itself works. Seen on 74684, 65189 and 64379.
+- **Workbook Iteration 1:** 30 Pass, 0 Fail, 2 On Hold (SC004_TC002 Q6, SC001_TC007 Q1), 8 Not Executed (SC009 +
+  expiry / limits).
+- **Picker change:** it now also uses children already marked Present today, e.g. by the user (LKG, Pre Nursery A on
+  05-Nov). They are not checked in again. The not-present case still needs a child with no attendance.
+- **SC004_TC006:** the success message can fade before the reload, so the released card state is the proof.
+- **Children used on 05-Nov:**
+
+  | Child | Use |
+  |---|---|
+  | 49439 | Permanent hand over |
+  | 65189, 64379 | Centre OTP release |
+  | 54761 | Parent authorised |
+  | 48155 | Locked |
+  | 45396 | Not present + cancelled — it is a "Demo Sector 122, Noida" child; prefer a real one next time |

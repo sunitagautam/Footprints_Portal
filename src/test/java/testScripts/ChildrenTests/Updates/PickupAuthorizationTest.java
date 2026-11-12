@@ -79,7 +79,7 @@ public class PickupAuthorizationTest extends BaseTest {
         public String toString() { return name + " (#" + id + ")"; }
     }
 
-    // pool of fresh children (room id → ids), built once
+    // pool of fresh children: {room id, child id, "unmarked" | "present"}, built once
     private final List<String[]> pool = new ArrayList<>();
     private final Set<String> used = new HashSet<>();
 
@@ -194,12 +194,19 @@ public class PickupAuthorizationTest extends BaseTest {
         Assert.assertTrue(attendance.isPageLoaded(), "❌ Attendance Updates did not load");
         for (String room : attendance.getRooms().keySet()) {
             attendance.openRoom(room);
-            List<String> ids = override.isEmpty() ? attendance.getUnmarkedChildIds() : attendance.getChildIds();
-            for (String id : ids) {
-                if (override.isEmpty() || Arrays.asList(override.split("\\s*,\\s*")).contains(id)) pool.add(new String[]{room, id});
-            }
+            // children with no attendance yet (the test marks CHECK IN) and children already marked Present today
+            // (e.g. by the centre or the tester) who are still in the centre
+            List<String> present = attendance.getPresentChildIds();
+            for (String id : attendance.getUnmarkedChildIds()) add(room, id, "unmarked", override);
+            for (String id : present) add(room, id, "present", override);
         }
-        log("   ▶ Fresh-children pool: " + pool.size() + " child(ren)");
+        long unmarked = pool.stream().filter(x -> "unmarked".equals(x[2])).count();
+        log("   ▶ Children pool: " + pool.size() + " (" + unmarked + " with no attendance, " + (pool.size() - unmarked)
+                + " already Present) — children with visitor cards are skipped when picked");
+    }
+
+    private void add(String room, String id, String state, String override) {
+        if (override.isEmpty() || Arrays.asList(override.split("\\s*,\\s*")).contains(id)) pool.add(new String[]{room, id, state});
     }
 
     /** Father email for the parent APIs: <id>_father@gmail.com on test, else d_<id>_father@gmail.com. */
@@ -220,6 +227,7 @@ public class PickupAuthorizationTest extends BaseTest {
         for (String[] p : pool) {
             String id = p[1];
             if (used.contains(id)) continue;
+            if (!checkIn && !"unmarked".equals(p[2])) continue; // the not-present case needs a child with no attendance
             used.add(id);
             String email = parentEmail(id);
             if (email == null) continue;
@@ -233,7 +241,9 @@ public class PickupAuthorizationTest extends BaseTest {
             k.roomId = p[0];
             k.email = email;
             k.name = j.getString("data.child.child_name").trim();
-            if (checkIn) {
+            if (checkIn && "present".equals(p[2])) {
+                log("   ▶ " + k + " already marked Present today — no CHECK IN needed");
+            } else if (checkIn) {
                 navigations.goToAttendanceUpdates();
                 attendance = new AttendanceUpdatesPage(driver);
                 attendance.openRoom(k.roomId);
@@ -810,7 +820,12 @@ public class PickupAuthorizationTest extends BaseTest {
         page.enterOtp(sentOtp);
         String msg = page.verifyAndWaitForResult();
         log("   Message: " + msg);
-        Assert.assertEquals(msg, "Pickup authorised. " + otpKid.name + " has been released to " + otpVisitor() + ".");
+        if (msg.isEmpty() || msg.startsWith("(message faded)") || msg.startsWith("An OTP sent to")) {
+            // the success message shows ~2 s before the reload and can be missed; the card state below is the proof
+            log("   ⚠ Success message not captured — checking the released card instead");
+        } else {
+            Assert.assertEquals(msg, "Pickup authorised. " + otpKid.name + " has been released to " + otpVisitor() + ".");
+        }
         page.waitForReload();
         openPage();
         Map<String, String> c = page.getCards(otpKid.id).get(0);

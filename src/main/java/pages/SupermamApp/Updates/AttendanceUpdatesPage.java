@@ -82,6 +82,15 @@ public class AttendanceUpdatesPage {
         return ids;
     }
 
+    /** Children marked Present today and still in the centre (Check In, no Check Out, not Absent). */
+    public List<String> getPresentChildIds() {
+        List<String> ids = new ArrayList<>();
+        for (String id : getChildIds()) {
+            if (!getCheckInText(id).isEmpty() && getCheckOutText(id).isEmpty() && getAbsentText(id).isEmpty()) ids.add(id);
+        }
+        return ids;
+    }
+
     public boolean isChildListed(String childId) {
         return !driver.findElements(By.id("td_" + childId)).isEmpty();
     }
