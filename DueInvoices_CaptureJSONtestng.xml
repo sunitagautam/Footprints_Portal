@@ -8,7 +8,7 @@
     <!-- TC_003 — Extract UPI JSON → save to testData/jmeter_payment_data.csv -->
     <test name="TC_003 - Capture UPI JSON for JMeter">
         <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+            <class name="testScripts.SupportTests.DueInvoices_CustomerPortal_ICICI">
                 <methods>
                     <include name="captureUpiJsonForJmeter"/>
                 </methods>
@@ -19,7 +19,7 @@
     <!-- TC_004 — Extract CC/DC JSON → save to testData/jmeter_payment_data.csv -->
     <test name="TC_004 - Capture Card JSON for JMeter">
         <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+            <class name="testScripts.SupportTests.DueInvoices_CustomerPortal_ICICI">
                 <methods>
                     <include name="captureCcdcJsonForJmeter"/>
                 </methods>

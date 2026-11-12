@@ -4973,3 +4973,57 @@ Pending, with a fresh child:
 `manage_user_rights` (reference "QA: Pickup Authorization automation"). The real right name is **`Authorise_Pickup_Request`**
 (British spelling, as in the JIRA); `Authorize_Pickup_Request` (manual / code) does not exist in the rights list. After a
 switch to Nidhi the page loads: "12-Nov-2026 · 8 children". The server clock was back to Nov 12, 04:08 PM.
+
+## Requirements — Due Invoices via Customer Portal, ICICI four-button page (`DueInvoices_CustomerPortal_ICICI.java`, 2026-11-12)
+
+`DueInvoices_Testcases.java` was renamed to **`DueInvoices_CustomerPortal_ICICI.java`** (user, 2026-11-12); both suite XMLs
+and comments were updated. Suite: `DueInvoicestestng.xml` (TC_010–TC_014 only).
+
+### Confirmed live (2026-11-12, child 75535 + test runs)
+
+- **The payment page (`onlinepayment?child_id=`) has four ICICI method buttons**, `button.icici-method-item`. Each
+  button's text = the label + its convenience-charge line, so match with `starts-with(normalize-space(), label)`:
+
+  | Button | Hidden JSON | Form | Charge |
+  |---|---|---|---|
+  | UPI (active by default) | `payment_json_icici_up` | `#IciciForm_UPI` | ₹25 + GST |
+  | Credit and Debit Card | `payment_json_icici_cc` | `#IciciForm_CC` | 1% + GST |
+  | Net Banking | `payment_json_icici_nb` | `#IciciForm_NB` | none |
+  | Amex + International and corporate cards | `payment_json_icici_dc` | `#IciciForm_DC` | 3.5% + GST |
+
+  - Pay = the visible `button.icici-pay-btn` "Pay ₹ <amount>". It submits the method's form to `/icici-initiate` →
+    `pgpayuat.icici.bank.in` → return `/icici-payment-return` ("Thank You! Your payment received successfully … It will
+    be processed soon … Transaction ID …").
+  - `payment_mode`: UPI / CARD / NB / CARD; `udf1` lists every due invoice id (`a:b:c`); `udf2` = delay penalty.
+  - **Removed:** `#btn_icici_ccdc` and `payment_json_icici_ccdc`. The old TC_002 / TC_005 (and the CaptureJSON suite's
+    CC/DC capture) target the removed layout; they stay in the class but are out of `DueInvoicestestng.xml`.
+- **Child IDs (user):** Invoices screen (`IAutoConstant.INVOICES_URL`) — default filter Invoice Status Due + Overdue,
+  current year → **"Download All Invoice"** (`#download_all_invoice_list`) → `~/Downloads/Invoice_Report_<d_Month_yyyy_HHmmss>.csv`.
+  The file starts with a blank line; columns include "Child Id" and "Invoice Status" (Payment Due / Payment Overdue).
+  Active and Attrition children are both fine (user). 3,566 children on 12-Nov. Alternative (user): click the child
+  name → popup header shows the child ID.
+- The billing page always shows the `onlinepayment` link, even with nothing due. The tests check the payment page text
+  ("Due invoices not found") and move to the next child. Child 61311 (first in the file) has no Customer Portal button,
+  so it is skipped.
+- **Settlement via `Eventlistener/iciciPaymentEvents` works for all four JSONs** → `{"status":"success","message":"Transaction
+  received: <txnid>"}`, and the payment page shows "Due invoices not found". TC_010–TC_013 PASSED on 12-Nov:
+
+  | Child | Method | Amount |
+  |---|---|---|
+  | 35733 | UPI | ₹13,028.50 |
+  | 35944 | Card | ₹8,548.70 |
+  | 41300 | Net Banking | ₹7,082.00 |
+  | 43781 | Amex | ₹8,669.86 |
+
+  Also paid earlier the same day: 342 and 70735 (old TC_001 UPI).
+
+### 🐛 Bug (High, 12-Nov-2026) — gateway payment not settled
+
+- TC_014 (card through the ICICI hosted page, child **45240**, ₹9,140.60, txn `261112f5b42c70662cc`) completes at ICICI,
+  but the payment is never recorded: Payment Received 0, PI/802198 still Payment due.
+- `GET api/middleware/checkAndProcessData` returns HTTP 200 + `true` with "WordPress database error: Table
+  'ftprints_footprint.middleware_pipeline_data' doesn't exist" (likely lost in the UAT DB refresh).
+- Report: `~/Desktop/QA_Documents/Bug Evidence/Bug_DueInvoices_ICICIGatewayPaymentNotSettled.md`. JIRA ID: pending.
+- TC_014 now calls `checkAndProcessData` and fails until the table is restored.
+- The ICICI hosted page fields are unchanged (`#cardAccordionBtn`, `#nameOnCard`, `#cardNoMasked`, `#month`, `#year`,
+  `#cvv`, `#paytBtn2`, `#otp`; test card 4111…, 07/2029, CVV 328, OTP 123456).

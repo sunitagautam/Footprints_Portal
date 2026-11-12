@@ -19,6 +19,11 @@ public final class IAutoConstant {
     public static final String SMS_VIEW_URL =
             "https://test-franchise.footprintseducation.in/sms_view";
 
+    // Invoices screen — "Download All Invoice" (Due + Overdue by default)
+    // is the source of child IDs for the ICICI Customer Portal payment tests.
+    public static final String INVOICES_URL =
+            "https://test-franchise.footprintseducation.in/invoices";
+
     // Settings → Email View — confirmed live (2026-09-22): only the Rakesh
     // user has access to this screen (not other switched-to users like
     // Jaydeep Kar).

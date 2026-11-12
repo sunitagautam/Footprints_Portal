@@ -10,6 +10,7 @@ import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.Reporter;
+import org.testng.SkipException;
 import org.testng.annotations.*;
 import pages.Navigations;
 import pages.Settings.SystemLogs.SMSView_Page;
@@ -26,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-public class DueInvoices_Testcases extends BaseTest {
+public class DueInvoices_CustomerPortal_ICICI extends BaseTest {
 
     // Test card credentials (ICICI sandbox)
     private static final String ICICI_CARD_NUMBER = "4111111111111111";
@@ -793,5 +794,273 @@ public class DueInvoices_Testcases extends BaseTest {
             System.out.println("⚠ Tab cleanup: " + e.getMessage());
         }
         Thread.sleep(300);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ICICI FOUR-BUTTON PAYMENT PAGE (2026-11-12)
+    // The payment page now offers UPI / Credit and Debit Card / Net
+    // Banking / Amex + International and corporate cards, each with its
+    // own hidden JSON (payment_json_icici_up / _cc / _nb / _dc).
+    // Child IDs come from Invoices → "Download All Invoice" (Due + Overdue,
+    // Active or Attrition). One child per test; a child whose payment page
+    // says "Due invoices not found" is skipped. -DiciciChildId=<id> forces
+    // a child for a single run.
+    // ═══════════════════════════════════════════════════════════════
+    private static List<String> iciciChildPool;
+    private static final Set<String> iciciUsedChildren = new java.util.LinkedHashSet<>();
+
+    @Test(priority = 10, description = "SC_DI_TC_010 — ICICI UPI: JSON → iciciPaymentEvents → invoices settled")
+    public void tc010_iciciUpiJson() throws Exception {
+        payViaIciciJson("UPI", "up", "UPI", "SC_DI_TC_010");
+    }
+
+    @Test(priority = 11, description = "SC_DI_TC_011 — ICICI Credit and Debit Card: JSON → iciciPaymentEvents → invoices settled")
+    public void tc011_iciciCreditDebitCardJson() throws Exception {
+        payViaIciciJson("Credit and Debit Card", "cc", "CARD", "SC_DI_TC_011");
+    }
+
+    @Test(priority = 12, description = "SC_DI_TC_012 — ICICI Net Banking: JSON → iciciPaymentEvents → invoices settled")
+    public void tc012_iciciNetBankingJson() throws Exception {
+        payViaIciciJson("Net Banking", "nb", "NB", "SC_DI_TC_012");
+    }
+
+    @Test(priority = 13, description = "SC_DI_TC_013 — ICICI Amex/International/Corporate cards: JSON → iciciPaymentEvents → invoices settled")
+    public void tc013_iciciAmexJson() throws Exception {
+        payViaIciciJson("Amex + International and corporate cards", "dc", "CARD", "SC_DI_TC_013");
+    }
+
+    @Test(priority = 14, description = "SC_DI_TC_014 — ICICI Credit and Debit Card through the hosted gateway page")
+    public void tc014_iciciCardViaGateway() throws Exception {
+        Reporter.log("▶ SC_DI_TC_014 — ICICI card via gateway", true);
+        String childId = openPaymentPageForNextIciciChild();
+        String paymentTab = driver.getWindowHandle();
+        portalPage.selectIciciPaymentMethod("Credit and Debit Card");
+        Reporter.log("▶ Child " + childId + " — " + portalPage.getIciciPayButtonText(), true);
+        portalPage.clickIciciPayButton();
+
+        wait.until(d -> !d.getCurrentUrl().contains("footprintseducation.in"));
+        Reporter.log("▶ Gateway page: " + driver.getCurrentUrl(), true);
+        dumpVisibleInputs();
+        performIciciHostedCardPayment();
+
+        Assert.assertTrue(portalPage.waitForReturnToFootprints(),
+                "❌ Gateway did not return to Footprints — URL: " + driver.getCurrentUrl());
+        Reporter.log("▶ Returned to: " + driver.getCurrentUrl() + " | "
+                + ((String) ((JavascriptExecutor) driver).executeScript(
+                "return document.body.innerText;")).replaceAll("\\s+", " ").trim(), true);
+        // The return page says "It will be processed soon": settlement runs through
+        // the middleware pipeline (middleware/checkAndProcessData), as in the old TC_002.
+        Response process = APIs.getCheckAndProcessData();
+        String processBody = process.getBody().asString();
+        Reporter.log("▶ checkAndProcessData → HTTP " + process.getStatusCode() + " "
+                + processBody.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim(), true);
+        Assert.assertFalse(processBody.contains("database error"),
+                "❌ checkAndProcessData returned a database error: "
+                        + processBody.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim());
+        driver.switchTo().window(paymentTab);
+        assertDuesSettled(childId);
+        System.out.println("✅ SC_DI_TC_014 PASSED — Child: " + childId);
+    }
+
+    private void payViaIciciJson(String method, String suffix, String expectedMode, String tc)
+            throws Exception {
+        Reporter.log("▶ " + tc + " — ICICI " + method, true);
+        String childId = openPaymentPageForNextIciciChild();
+
+        portalPage.selectIciciPaymentMethod(method);
+        String active = portalPage.getActiveIciciPaymentMethod();
+        Reporter.log("▶ Active method: " + active, true);
+        Assert.assertTrue(active.startsWith(method), "❌ Method button not active: " + active);
+        String payText = portalPage.getIciciPayButtonText();
+
+        String raw = portalPage.extractIciciPaymentJson(suffix);
+        Assert.assertFalse(raw.isEmpty(), "❌ payment_json_icici_" + suffix + " empty for child " + childId);
+        org.json.JSONObject json = new org.json.JSONObject(APIs.convertSingleQuotesToDouble(raw));
+        Reporter.log("▶ JSON: " + json, true);
+        Assert.assertEquals(json.optString("payment_mode"), expectedMode, "❌ payment_mode");
+        Assert.assertEquals(json.optString("status"), "success", "❌ status");
+        String payAmount = payText.replaceAll("[^0-9.]", "");
+        Assert.assertEquals(new java.math.BigDecimal(json.optString("amount")),
+                new java.math.BigDecimal(payAmount),
+                "❌ JSON amount vs '" + payText + "'");
+
+        Response resp = APIs.postPaymentEvent(raw);
+        String body = resp.getBody().asString();
+        Reporter.log("▶ iciciPaymentEvents → HTTP " + resp.getStatusCode() + " " + body, true);
+        Assert.assertEquals(resp.getStatusCode(), 200, "❌ HTTP");
+        Assert.assertTrue(body.contains("\"success\"") && body.contains(json.optString("txnid")),
+                "❌ Unexpected response: " + body);
+
+        assertDuesSettled(childId);
+        System.out.println("✅ " + tc + " PASSED — Child: " + childId + " (" + method + ", " + payText + ")");
+    }
+
+    /** Reloads the payment page until it shows "Due invoices not found" (30 s). */
+    private void assertDuesSettled(String childId) throws InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            driver.navigate().refresh();
+            Thread.sleep(3000);
+            if (!portalPage.hasDueInvoicesOnPaymentPage()) {
+                Reporter.log("✅ Child " + childId + " — payment page: Due invoices not found", true);
+                return;
+            }
+        }
+        Assert.fail("❌ Child " + childId + " still has due invoices after payment");
+    }
+
+    /**
+     * Opens Account Statement → Customer Portal → Pay Due Invoice for the next
+     * unused child of the Invoices download, skipping children with no dues.
+     * Leaves the driver on the payment tab.
+     */
+    private String openPaymentPageForNextIciciChild() throws Exception {
+        List<String> candidates = new ArrayList<>();
+        String forced = System.getProperty("iciciChildId", "").trim();
+        if (!forced.isEmpty() && !iciciUsedChildren.contains(forced)) {
+            candidates.add(forced);
+        } else {
+            if (iciciChildPool == null) iciciChildPool = downloadDueOverdueChildIds();
+            for (String c : iciciChildPool) if (!iciciUsedChildren.contains(c)) candidates.add(c);
+        }
+        int tries = 0;
+        for (String childId : candidates) {
+            if (++tries > 15) break;
+            iciciUsedChildren.add(childId);
+            try {
+                closeAllExtraTabsSafely();
+                navigations.goToAccountStatement();
+                accountStatementPage.generateAccountStatement(childId);
+                Thread.sleep(1000);
+                Set<String> before = driver.getWindowHandles();
+                accountStatementPage.clickCustomerPortal();
+                portalPage.waitAndSwitchToNewTab(before);
+                if (!portalPage.isPayDueInvoiceBtnPresent()) continue;
+                Set<String> before2 = driver.getWindowHandles();
+                portalPage.clickPayDueInvoice();
+                portalPage.waitAndSwitchToNewTab(before2);
+                Thread.sleep(2000);
+                if (portalPage.hasDueInvoicesOnPaymentPage()) {
+                    Reporter.log("✅ Child " + childId + " — payment page open: " + driver.getCurrentUrl(), true);
+                    return childId;
+                }
+                Reporter.log("⚠ Child " + childId + " — no due invoices on payment page, next", true);
+            } catch (Exception e) {
+                Reporter.log("⚠ Child " + childId + " — could not open payment page: "
+                        + e.getMessage().split("\n")[0] + ", next", true);
+            }
+        }
+        throw new SkipException("No child with due invoices found (tried " + (tries - 1) + ")");
+    }
+
+    /**
+     * Invoices screen → "Download All Invoice" (default filter Due + Overdue,
+     * current year) → Invoice_Report_<date>.csv in ~/Downloads → unique Child Ids
+     * whose Invoice Status is Payment Due / Payment Overdue.
+     */
+    private List<String> downloadDueOverdueChildIds() throws Exception {
+        String mainTab = driver.getWindowHandle();
+        driver.get(IAutoConstant.INVOICES_URL);
+        WebElement dl = new WebDriverWait(driver, Duration.ofSeconds(30)).until(
+                ExpectedConditions.presenceOfElementLocated(By.id("download_all_invoice_list")));
+        String statuses = (String) ((JavascriptExecutor) driver).executeScript(
+                "return [...document.getElementById('sr_invoice_status').selectedOptions].map(o=>o.text).join(',');");
+        Reporter.log("▶ Invoices filter Invoice Status = " + statuses, true);
+        Assert.assertEquals(statuses, "Due,Overdue", "❌ Invoices default status filter changed");
+
+        File dir = new File(System.getProperty("user.home"), "Downloads");
+        long t0 = System.currentTimeMillis();
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", dl);
+        File report = null;
+        for (int i = 0; i < 90 && report == null; i++) {
+            Thread.sleep(1000);
+            File[] files = dir.listFiles((d, n) -> n.startsWith("Invoice_Report_") && n.endsWith(".csv"));
+            if (files != null) for (File f : files) if (f.lastModified() >= t0 - 2000) report = f;
+        }
+        Assert.assertNotNull(report, "❌ Invoice_Report_*.csv not downloaded to " + dir);
+        Thread.sleep(1500);
+        driver.switchTo().window(mainTab);
+
+        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>();
+        List<String> lines = java.nio.file.Files.readAllLines(report.toPath());
+        int childCol = -1, statusCol = -1;
+        for (String line : lines) {
+            if (line.trim().isEmpty()) continue;
+            List<String> c = parseCsvLine(line);
+            if (childCol < 0) {
+                childCol = c.indexOf("Child Id");
+                statusCol = c.indexOf("Invoice Status");
+                Assert.assertTrue(childCol >= 0 && statusCol >= 0, "❌ Report header: " + c);
+                continue;
+            }
+            if (c.size() <= Math.max(childCol, statusCol)) continue;
+            String st = c.get(statusCol);
+            if (("Payment Due".equals(st) || "Payment Overdue".equals(st)) && c.get(childCol).matches("\\d+")) {
+                ids.add(c.get(childCol));
+            }
+        }
+        Reporter.log("✅ " + report.getName() + " — " + ids.size() + " children with Due/Overdue invoices", true);
+        Assert.assertFalse(ids.isEmpty(), "❌ No Due/Overdue children in " + report.getName());
+        return new ArrayList<>(ids);
+    }
+
+    private static List<String> parseCsvLine(String line) {
+        List<String> out = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        boolean q = false;
+        for (int i = 0; i < line.length(); i++) {
+            char ch = line.charAt(i);
+            if (q) {
+                if (ch == '"' && i + 1 < line.length() && line.charAt(i + 1) == '"') { sb.append('"'); i++; }
+                else if (ch == '"') q = false;
+                else sb.append(ch);
+            } else if (ch == '"') q = true;
+            else if (ch == ',') { out.add(sb.toString().trim()); sb.setLength(0); }
+            else sb.append(ch);
+        }
+        out.add(sb.toString().trim());
+        if (!out.isEmpty()) out.set(0, out.get(0).replace("﻿", ""));
+        return out;
+    }
+
+    private void dumpVisibleInputs() {
+        Object r = ((JavascriptExecutor) driver).executeScript(
+                "return [...document.querySelectorAll('input,select,button')].filter(e=>e.offsetParent)"
+                        + ".map(e=>e.tagName+'#'+e.id+' name='+e.name+' '+(e.innerText||e.placeholder||'').trim().substring(0,40)).join(' | ');");
+        Reporter.log("▶ Gateway controls: " + r, true);
+    }
+
+    /** ICICI hosted page card steps (same fields as performICICI_CCDD_Payment, without the old #btn_icici_ccdc click). */
+    private void performIciciHostedCardPayment() throws InterruptedException {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("cardAccordionBtn"))).click();
+        Thread.sleep(1000);
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("nameOnCard"))).sendKeys(ICICI_CARD_HOLDER);
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("cardNoMasked"))).sendKeys(ICICI_CARD_NUMBER);
+        Thread.sleep(1000);
+        for (String[] sel : new String[][]{{"month", ICICI_EXPIRY_MM}, {"year", ICICI_EXPIRY_YYYY}}) {
+            WebElement el = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(sel[0])));
+            js.executeScript("arguments[0].style.cssText='display:block !important;visibility:visible !important;"
+                    + "opacity:1 !important;height:30px !important;width:80px !important;';", el);
+            wait.until(d -> new Select(d.findElement(By.id(sel[0]))).getOptions().size() > 1);
+            Select s = new Select(el);
+            try { s.selectByValue(sel[1]); } catch (Exception e) { s.selectByValue(sel[1].substring(2)); }
+            js.executeScript("var el=arguments[0];el.dispatchEvent(new Event('change',{bubbles:true}));"
+                    + "if(window.jQuery){jQuery(el).trigger('change');}", el);
+            Thread.sleep(500);
+        }
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("cvv"))).sendKeys(ICICI_CARD_CVV);
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("paytBtn2"))).click();
+        Reporter.log("▶ Pay Now clicked", true);
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("otp"))).sendKeys(ICICI_OTP);
+        wait.until(ExpectedConditions.elementToBeClickable(By.xpath(
+                "//button[contains(text(),'Verify OTP')] | //input[@value='Verify OTP']"))).click();
+        Reporter.log("▶ OTP " + ICICI_OTP + " verified", true);
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.alertIsPresent());
+            Alert a = driver.switchTo().alert();
+            Reporter.log("▶ Alert: " + a.getText(), true);
+            a.accept();
+        } catch (Exception ignored) {
+        }
     }
 }

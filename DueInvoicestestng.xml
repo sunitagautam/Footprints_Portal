@@ -1,64 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 
-<suite name="Due Invoices Payment Suite" verbose="1">
+<suite name="Due Invoices - Customer Portal ICICI" verbose="1">
 
     <parameter name="browser" value="chrome"/>
 
     <!--
     ══════════════════════════════════════════════════════════════
-     TC_001  extractUpiPaymentJson      Extract UPI JSON + POST API + mark Paid
-     TC_002  completeCardPaymentFlow    Full ICICI gateway browser payment
-     TC_005  extractCcdcJsonAndPostApi  Extract CC/DC JSON + POST API + mark Paid
+     Payment page (onlinepayment) — ICICI four-button layout, 2026-11-12.
+     Child IDs: Invoices → Download All Invoice (Due + Overdue),
+     one child per test. Force one child: -DiciciChildId=XXXX
 
-     TC_003 / TC_004 (JSON capture for JMeter) moved to:
-     DueInvoices_CaptureJSONtestng.xml
+     TC_010  UPI                                    payment_json_icici_up
+     TC_011  Credit and Debit Card                  payment_json_icici_cc
+     TC_012  Net Banking                            payment_json_icici_nb
+     TC_013  Amex + International and corporate     payment_json_icici_dc
+     TC_014  Credit and Debit Card via ICICI hosted gateway page
+
+     The old TC_002 (#btn_icici_ccdc) and TC_005 (payment_json_icici_ccdc)
+     target the removed layout and are no longer in this suite.
     ══════════════════════════════════════════════════════════════
     -->
-
-    <!-- ════ RUN ALL — TC_001, TC_002, TC_005 in order ════ -->
-    <test name="Due Invoices - All Tests">
+    <test name="Due Invoices - ICICI">
         <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
+            <class name="testScripts.SupportTests.DueInvoices_CustomerPortal_ICICI">
                 <methods>
-                    <include name="extractUpiPaymentJson"/>
-                    <include name="completeCardPaymentFlow"/>
-                    <include name="extractCcdcJsonAndPostApi"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- ════ INDIVIDUAL RUNS ════ -->
-
-    <!-- TC_001 -->
-    <test name="TC_001 - Process UPI Payment">
-        <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
-                <methods>
-                    <include name="extractUpiPaymentJson"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC_002 -->
-    <test name="TC_002 - Process Card Payment via Gateway">
-        <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
-                <methods>
-                    <include name="completeCardPaymentFlow"/>
-                </methods>
-            </class>
-        </classes>
-    </test>
-
-    <!-- TC_005 -->
-    <test name="TC_005 - Process Card JSON via API">
-        <classes>
-            <class name="testScripts.SupportTests.DueInvoices_Testcases">
-                <methods>
-                    <include name="extractCcdcJsonAndPostApi"/>
+                    <include name="tc010_iciciUpiJson"/>
+                    <include name="tc011_iciciCreditDebitCardJson"/>
+                    <include name="tc012_iciciNetBankingJson"/>
+                    <include name="tc013_iciciAmexJson"/>
+                    <include name="tc014_iciciCardViaGateway"/>
                 </methods>
             </class>
         </classes>

@@ -26,7 +26,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 /**
  * Due Invoices payment via HDFC SmartGateway.
  *
- * Built the same way as the ICICI flow in {@link DueInvoices_Testcases}, but
+ * Built the same way as the ICICI flow in {@link DueInvoices_CustomerPortal_ICICI}, but
  * for the newer HDFC SmartGateway integration that has replaced the ICICI
  * "Pay via Credit/Debit Card" / UPI buttons on the online payment page with a
  * single "Pay via HDFC SmartGateway" button.
@@ -56,7 +56,7 @@ public class DueInvoices_Via_HDFCSmartGatewayTest extends BaseTest {
 
     // ═══════════════════════════════════════════════
     // DATA PROVIDER — unique Child IDs from CSV
-    // (same source/filter as DueInvoices_Testcases)
+    // (same source/filter as DueInvoices_CustomerPortal_ICICI)
     // ═══════════════════════════════════════════════
     @DataProvider(name = "childIds")
     public Object[][] getChildIds() throws IOException {
@@ -236,7 +236,7 @@ public class DueInvoices_Via_HDFCSmartGatewayTest extends BaseTest {
     }
 
     // ═══════════════════════════════════════════════
-    // HELPERS (copied from DueInvoices_Testcases — per
+    // HELPERS (copied from DueInvoices_CustomerPortal_ICICI — per
     // the project convention of per-class duplication
     // rather than editing the existing shared class)
     // ═══════════════════════════════════════════════

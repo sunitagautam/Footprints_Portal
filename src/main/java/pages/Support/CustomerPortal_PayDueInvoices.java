@@ -2,6 +2,7 @@ package pages.Support;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -655,5 +656,95 @@ public class CustomerPortal_PayDueInvoices {
                     + driver.getCurrentUrl());
             return false;
         }
+    }
+
+    // ═══════════════════════════════════════════════
+    // ICICI PAYMENT PAGE — four-button layout (confirmed live 2026-11-12,
+    // child 75535). Buttons are button.icici-method-item: "UPI" (default),
+    // "Credit and Debit Card", "Net Banking", "Amex + International and
+    // corporate cards". Each has its own form (#IciciForm_UPI/_CC/_NB/_DC,
+    // action /icici-initiate) and hidden settlement JSON
+    // payment_json_icici_up / _cc / _nb / _dc. "Pay ₹ <amount>" is
+    // button.icici-pay-btn. Replaces the old #btn_icici_ccdc +
+    // payment_json_icici_ccdc.
+    // ═══════════════════════════════════════════════
+
+    /** True when the payment page lists due invoices (not "Due invoices not found"). */
+    public boolean hasDueInvoicesOnPaymentPage() {
+        String text = (String) ((JavascriptExecutor) driver)
+                .executeScript("return document.body.innerText;");
+        boolean due = text != null && !text.contains("Due invoices not found");
+        System.out.println((due ? "✅" : "⚠") + " Payment page has due invoices: " + due);
+        return due;
+    }
+
+    /** Clicks an ICICI method button by its label, e.g. "Net Banking". */
+    public void selectIciciPaymentMethod(String label) throws InterruptedException {
+        if (driver.findElements(By.cssSelector("button.icici-method-item")).isEmpty()) {
+            System.out.println("⚠ No ICICI method buttons. Page buttons: " + ((JavascriptExecutor) driver).executeScript(
+                    "return [...document.querySelectorAll('button,a.btn,input[type=button],input[type=submit]')]"
+                            + ".filter(e=>e.offsetParent).map(e=>e.tagName+'#'+e.id+'.'+e.className+' \\''+(e.innerText||e.value||'').trim().substring(0,50)+'\\'').join(' | ');")
+                    + " | hidden json: " + ((JavascriptExecutor) driver).executeScript(
+                    "return [...document.querySelectorAll('[id^=payment_json]')].map(e=>e.id).join(',');"));
+        }
+        WebElement btn;
+        try {
+            btn = new WebDriverWait(driver, Duration.ofSeconds(15))
+                    .until(ExpectedConditions.elementToBeClickable(By.xpath(
+                            "//button[contains(@class,'icici-method-item')][starts-with(normalize-space(),'" + label + "')]")));
+        } catch (Exception e) {
+            System.out.println("⚠ ICICI method '" + label + "' not clickable. Buttons: " + ((JavascriptExecutor) driver).executeScript(
+                    "return [...document.querySelectorAll('button.icici-method-item')].map(e=>'\\''+e.textContent.trim()+'\\' visible='+(e.offsetParent!==null)).join(' | ');")
+                    + "\n   Visible page text: " + ((JavascriptExecutor) driver).executeScript(
+                    "return document.body.innerText.replace(/\\s+/g,' ').substring(0,1500);"));
+            throw e;
+        }
+        btn.click();
+        Thread.sleep(800);
+        System.out.println("▶ ICICI method selected: " + label);
+    }
+
+    /** Label of the currently active ICICI method button. */
+    public String getActiveIciciPaymentMethod() {
+        // Button text = method label + its convenience-charge line; return the full text.
+        return driver.findElement(By.cssSelector("button.icici-method-item.active")).getText()
+                .replaceAll("\\s+", " ").trim();
+    }
+
+    /** Value of hidden field payment_json_icici_<suffix> (up / cc / nb / dc), or "". */
+    public String extractIciciPaymentJson(String suffix) {
+        String id = "payment_json_icici_" + suffix;
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                    .until(ExpectedConditions.presenceOfElementLocated(By.id(id)));
+            String json = (String) ((JavascriptExecutor) driver)
+                    .executeScript("return document.getElementById(arguments[0]).value;", id);
+            System.out.println("✅ " + id + " length=" + (json == null ? 0 : json.length()));
+            return json == null ? "" : json;
+        } catch (Exception e) {
+            System.out.println("❌ " + id + " not found: " + e.getMessage());
+            return "";
+        }
+    }
+
+    /** Text of the visible "Pay ₹ <amount>" button. */
+    public String getIciciPayButtonText() {
+        for (WebElement b : driver.findElements(By.cssSelector("button.icici-pay-btn"))) {
+            if (b.isDisplayed()) return b.getText().trim();
+        }
+        return "";
+    }
+
+    /** Clicks the visible "Pay ₹ <amount>" button (submits the active method's form). */
+    public void clickIciciPayButton() throws InterruptedException {
+        for (WebElement b : driver.findElements(By.cssSelector("button.icici-pay-btn"))) {
+            if (b.isDisplayed()) {
+                System.out.println("▶ Clicking: " + b.getText().trim());
+                b.click();
+                Thread.sleep(2000);
+                return;
+            }
+        }
+        throw new NoSuchElementException("No visible button.icici-pay-btn");
     }
 }

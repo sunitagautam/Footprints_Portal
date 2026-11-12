@@ -973,7 +973,7 @@ public class ServiceRequest_ExtendedDaycareTest extends BaseTest {
             status = recentRequestsPage.getEDRequestStatus(EARLY_RESUME_PAID_CHILD_ID);
 
             // Pay the ED invoice via the Customer Portal UPI flow (reused from the
-            // unrelated DueInvoices_Testcases feature's CustomerPortal_PayDueInvoices).
+            // unrelated DueInvoices_CustomerPortal_ICICI feature's CustomerPortal_PayDueInvoices).
             navigations.goToAccountStatement();
             accountStatementPage.generateAccountStatement(EARLY_RESUME_PAID_CHILD_ID);
             Set<String> tabsBefore = driver.getWindowHandles();
