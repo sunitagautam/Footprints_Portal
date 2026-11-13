@@ -4386,8 +4386,9 @@ Pending Co-Pay TC_007 (74169), Corporate Credits tc013b center shift (62383).
   alone passed and created "QA Auto Tieup V1 12111629"), Tieup Plans' QA_OFFER (offer 275 is now "Synopsis - Malad, Mumbai"; every save
   helper checks the title, TC_010 included), Adjust TC_034 child/invoice (57826 / 66151 no longer due), Pending Co-Pay child, Co-Pay
   Migration child without the "incorrect plan set" note, Corporate Credits center-shift child.
-- **Leftover:** Corporate Credits TC_005 issued credit **397** (Rs 100, Zayd Bin Zumar 37261, PI/60870); as Rakshita it shows no Link /
-  Revoke icon, so it was not revoked — to be removed.
+- Corporate Credits TC_005 issued credit **397** (Rs 100, Zayd Bin Zumar 37261, PI/60870); the run read the action icons too early (none
+  found), so TC_011/012 failed and it stayed. **Revoked manually as Rakshita on 2026-11-13** — she does get Link / Revoke once the row has
+  rendered; TC_011/012 need a short wait for the action cell.
 - Tests that switch to a second user or open User Rights (Tieup Details TC_041, Admission Records TC_013/014, Admission Count
   TC_002/013, Parent Company TC_002/014) must start as Rakesh — Rakshita / Divya cannot open User Rights.
 - Expected values that differ for the new users: Admission Invites Tie-Up Types (Rakshita sees 4), Admission Records columns (7 incl.
