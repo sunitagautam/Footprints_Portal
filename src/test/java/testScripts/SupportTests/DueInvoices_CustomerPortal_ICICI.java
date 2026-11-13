@@ -845,21 +845,47 @@ public class DueInvoices_CustomerPortal_ICICI extends BaseTest {
 
         Assert.assertTrue(portalPage.waitForReturnToFootprints(),
                 "❌ Gateway did not return to Footprints — URL: " + driver.getCurrentUrl());
-        Reporter.log("▶ Returned to: " + driver.getCurrentUrl() + " | "
-                + ((String) ((JavascriptExecutor) driver).executeScript(
-                "return document.body.innerText;")).replaceAll("\\s+", " ").trim(), true);
-        // The return page says "It will be processed soon": settlement runs through
-        // the middleware pipeline (middleware/checkAndProcessData), as in the old TC_002.
-        Response process = APIs.getCheckAndProcessData();
-        String processBody = process.getBody().asString();
-        Reporter.log("▶ checkAndProcessData → HTTP " + process.getStatusCode() + " "
-                + processBody.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim(), true);
-        Assert.assertFalse(processBody.contains("database error"),
-                "❌ checkAndProcessData returned a database error: "
-                        + processBody.replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim());
-        driver.switchTo().window(paymentTab);
-        assertDuesSettled(childId);
-        System.out.println("✅ SC_DI_TC_014 PASSED — Child: " + childId);
+        String returnText = ((String) ((JavascriptExecutor) driver).executeScript(
+                "return document.body.innerText;")).replaceAll("\\s+", " ").trim();
+        Reporter.log("▶ Returned to: " + driver.getCurrentUrl() + " | " + returnText, true);
+        Assert.assertTrue(returnText.contains("payment received successfully"),
+                "❌ Return page: " + returnText);
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("Transaction ID:\\s*([0-9a-z]+)").matcher(returnText);
+        Assert.assertTrue(m.find(), "❌ No Transaction ID on the return page");
+        String txnId = m.group(1);
+
+        // Settlement runs through the middleware pipeline (middleware/checkAndProcessData).
+        // Confirmed 13-Nov-2026 (45240, 45947): it can take a few minutes and more than one run.
+        // Success = the Account Statement has "Payment received … reference <txnId>".
+        // (Dues may still remain: on 45947 the processing also raised back-dated Transport
+        // invoices for Feb–Apr 2026 in the same minute.)
+        closeAllExtraTabsSafely();
+        for (int round = 1; round <= 8; round++) {
+            String process = APIs.getCheckAndProcessData().getBody().asString()
+                    .replaceAll("<[^>]+>", " ").replaceAll("\\s+", " ").trim();
+            Reporter.log("▶ checkAndProcessData (round " + round + ") → " + process, true);
+            Assert.assertFalse(process.contains("database error"),
+                    "❌ checkAndProcessData returned a database error: " + process);
+            navigations.goToAccountStatement();
+            accountStatementPage.generateAccountStatement(childId);
+            Thread.sleep(2000);
+            String ledger = ((String) ((JavascriptExecutor) driver).executeScript(
+                    "return document.body.innerText;")).replaceAll("\\s+", " ");
+            int at = ledger.indexOf(txnId);
+            if (at >= 0) {
+                int from = ledger.lastIndexOf("Payment received on", at);
+                int d = ledger.indexOf("Dues ");
+                Reporter.log("✅ Child " + childId + " — "
+                        + ledger.substring(from >= 0 ? from : at, Math.min(ledger.length(), at + txnId.length() + 12))
+                        + " | " + (d >= 0 ? ledger.substring(d, Math.min(ledger.length(), d + 20)) : ""), true);
+                System.out.println("✅ SC_DI_TC_014 PASSED — Child: " + childId + ", txn " + txnId);
+                return;
+            }
+            Thread.sleep(30000);
+        }
+        Assert.fail("❌ Child " + childId + ": no 'Payment received' row for txn " + txnId
+                + " about 4 min after the gateway payment");
     }
 
     private void payViaIciciJson(String method, String suffix, String expectedMode, String tc)

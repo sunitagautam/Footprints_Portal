@@ -5024,6 +5024,15 @@ and comments were updated. Suite: `DueInvoicestestng.xml` (TC_010–TC_014 only)
 - `GET api/middleware/checkAndProcessData` returns HTTP 200 + `true` with "WordPress database error: Table
   'ftprints_footprint.middleware_pipeline_data' doesn't exist" (likely lost in the UAT DB refresh).
 - Report: `~/Desktop/QA_Documents/Bug Evidence/Bug_DueInvoices_ICICIGatewayPaymentNotSettled.md`. JIRA ID: pending.
-- TC_014 now calls `checkAndProcessData` and fails until the table is restored.
+- **FIXED by dev — retest PASSED (13-Nov-2026).** The table was restored; `checkAndProcessData` now returns
+  `{"status":"success","message":"Request Processed Successfully"}` (or `true` when nothing is pending).
+  - Recorded: 45240 (repaid, ₹9,140.60, txn 261113f697e49ef2acc, Dues 0), 45947 (₹10,875.84), 46862 (₹13,026.93),
+    48979 (₹12,140.59, txn 261113f69eb3ee295cc). 45240's first payment (txn 261112f5b42c70662cc) was made while the
+    table was missing and is still not recorded — dev to fix by hand.
+  - Settlement takes ~1–5 min and can need more than one `checkAndProcessData` call. TC_014 now calls it in rounds
+    (30 s apart, up to 8) and passes when the Account Statement contains the return page's Transaction ID.
+  - **Open query (not a bug):** processing the payment of an overdue child raises new invoices in the same minute, so
+    Dues show again at once — 45947: Transport Feb/Mar/Apr 2026 (₹3,250 each); 46862 and 48979: Annual Fee
+    June 2026 – May 2027 (₹15,000). Looks like billing resuming after dues are cleared; awaiting confirmation.
 - The ICICI hosted page fields are unchanged (`#cardAccordionBtn`, `#nameOnCard`, `#cardNoMasked`, `#month`, `#year`,
   `#cvv`, `#paytBtn2`, `#otp`; test card 4111…, 07/2029, CVV 328, OTP 123456).
