@@ -68,10 +68,10 @@ public class CreditIssued_Testcases extends BaseTest {
     // ════════════════════════════════════════════════════════════════════
     private static final String TRANSPORT_CHILD_ID = "50875";
     private static final String TRANSPORT_CHILD_NAME = "Gyanvi Mittal";
-    // ✅ Child with Late Stay / Delay Penalty / Extended DayCare invoices
-    //    (same child as OneTime Charges). Exact invoice numbers per user.
-    private static final String CHARGES_CHILD_ID = "46195";
-    private static final String CHARGES_CHILD_NAME = "Nayansh Kaushik";
+    // ✅ Child for the Late Stay / Delay Penalty / Extended DayCare rows
+    //    (user, 2026-11-18: no such invoices on test, so they use Preschool Fee)
+    private static final String CHARGES_CHILD_ID = "53115";
+    private static final String CHARGES_CHILD_NAME = "Kiyansh Singh";
     // ✅ Set by SC002_TC_001, used by the Link / Revoke tests
     private static String newCreditId = "";
     private static String issuedInvoiceNo = "";
@@ -321,13 +321,13 @@ public class CreditIssued_Testcases extends BaseTest {
                 {CHILD_ID, CHILD_NAME, "Downgrade Credits", "Preschool Fee", "downgrade"},
                 {CHILD_ID, CHILD_NAME, "Credits - Tuition Fee", "Preschool Fee", "tuition fee"},
                 {CHILD_ID, CHILD_NAME, "Credits - Annual Fee", "Annual Preschool Fee", "annual fee"},
-                {CHARGES_CHILD_ID, CHARGES_CHILD_NAME, "Credits - Delay Penalty", "P378/2627/495", "delay penalty"},
+                {CHARGES_CHILD_ID, CHARGES_CHILD_NAME, "Credits - Delay Penalty", "Preschool Fee", "delay penalty"},
                 {CHILD_ID, CHILD_NAME, "Credits - Book Charges", "Book Set", "book"},
                 {CHILD_ID, CHILD_NAME, "Credits - Apron", "Preschool Fee", "apron"},
                 {CHILD_ID, CHILD_NAME, "Credits - School Bag", "Preschool Fee", "school bag"},
                 {CHILD_ID, CHILD_NAME, "Credits - Tee Shirt", "Preschool Fee", "tee shirt"},
-                {CHARGES_CHILD_ID, CHARGES_CHILD_NAME, "Credits - Extended DayCare", "P378/2627/493", "extended daycare"},
-                {CHARGES_CHILD_ID, CHARGES_CHILD_NAME, "Credits - Late-Stay", "P378/2627/479", "late stay"},
+                {CHARGES_CHILD_ID, CHARGES_CHILD_NAME, "Credits - Extended DayCare", "Preschool Fee", "extended daycare"},
+                {CHARGES_CHILD_ID, CHARGES_CHILD_NAME, "Credits - Late-Stay", "Preschool Fee", "late stay"},
                 {CHILD_ID, CHILD_NAME, "Credits - Non Satisfaction", "Preschool Fee", "non satisfaction"},
                 {TRANSPORT_CHILD_ID, TRANSPORT_CHILD_NAME, "Credits - Transport", "Transport Charges", "transport"},
                 {CHILD_ID, CHILD_NAME, "Credits - Registration", "Registration Fee", "registration"},

@@ -2323,6 +2323,10 @@ additive `IAutoConstant.CREDITS_ISSUED_URL` + `Navigations.goToCreditsIssued()`.
     - Registration → Registration Fee
     - Delay Penalty → **P378/2627/495**, Extended DayCare → **P378/2627/493**, Late-Stay → **P378/2627/479** (all on
       child **46195 Nayansh Kaushik**, same child as OneTime Charges)
+      - **Superseded (user, 2026-11-18):** after the DB sync no child on test has Delay Penalty / Extended DayCare /
+        Late-Stay invoices (46195 and 53115 checked). The three rows now use **Preschool Fee** on child **53115
+        Kiyansh Singh**. Run 18-Nov: credits 155159 / 155160 / 155161 on P378/2627/190. Earlier the same day:
+        155156–155158 on 46195 (P378/2627/142), not revoked.
     - every other type → Preschool Fee
     - Main child: **73041 Kartikey Jaiswal** (has B/, K/, P378 and T/ paid invoices). Other children checked: 73875 has
       only due PI/ invoices (unusable); 73007 has no T/.
