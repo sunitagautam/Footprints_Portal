@@ -5170,3 +5170,31 @@ November,2026"; Resend keeps the same row. Email (Email View, Subject "Footprint
 (live domain on test — Q10), valid 3 days. SC011_TC_001 fails: Issue On "15:20 PM" (24-hour + PM, 3,493 rows, Q9).
 386 child names have a leading/trailing space — DataTables sorts on the raw text, so the sort test compares that key.
 Child 53113 has two Open links (6408/6409, Q8).
+
+### Payment Disputes — automated 2026-11-19 (as Jaydeep Kar), 20 tests, 19 pass
+
+Files: `PaymentDisputesPage.java`, `PaymentDisputesTest.java`, `PaymentDisputestestng.xml`; additive
+`IAutoConstant.PAYMENT_DISPUTES_URL`, `Navigations.goToPaymentDisputes()`. Workbook sheet `TC_PaymentDisputes`
+(24 TCs, QueryLogs Q15–Q22).
+
+- **User:** Rakesh has no `Manage_Payment_Dispute` — no Resolve icon, and Add New Disputes
+  (`mark_disputes?pop=yes&func=addDisputes`) shows "Sorry! You are not authorise to access this screen.". Per the
+  standing rule the test switches to **Jaydeep Kar** (`input_UserRights.xlsx` row `Jaydeep Kar | Payment Disputes |
+  Manage_Payment_Dispute`).
+- **Saves (user, 2026-11-19: "Yes, on own dispute", "Any Active child"):** each run adds two disputes for the first
+  Active child that has a Completed dispute but no pending one (override `-DpdChild`), logs a call, and resolves both, so
+  the child ends with no pending dispute. 19-Nov runs used child **2799** Demo Pashchim1 (dispute ids 4860/4861 in run 1, 4862 + one more
+  in run 2).
+- Add popup: Child ID + "Fetch Child Details" first; Type `#invoice_payment_dispute` [Invoice, Offline Payment, Online
+  Payment, Policy] and Comment `#note_text` appear only after the fetch. Messages: "Please select child.", "Type is
+  required.", "Comment is  required." (double space), unknown ID → "No Details Found!", success "Dispute added
+  successfully".
+- Call log / resolve popup form `#user_note` (`comment_list?pop=yes&child_id=<base64>&func=update_call_log|
+  resolve_dispute&…&comment_module_id=<dispute id>`): confirm "Are you sure want to add this Call Log ?" for both;
+  "Call Log updated successfully" / "Dispute marked resloved completed successfully". A completed row's Call History is
+  `comment_list` without `func` — pick it by `comment_module_id` (a child can have several disputes; all rows share the
+  HTML id `emp-row-<child id>`).
+- Row colours (style `color:red|orange !important`): 13–14 days orange, 15+ days red, new rows none, completed rows none.
+- **Q15 candidate bug:** for Jaydeep Kar the default Admission Type (blank) applies "Regular" (API param) — 33 rows,
+  Corporate shows 7 others; for Rakesh blank shows all 40. The test asserts Corporate + Regular = all and fails.
+- CSV `Customers_Paying_Offline_Disputes_<yyyyMMddHHmmss>.csv` (8 columns, no Attrition Date / Actions).
