@@ -5041,3 +5041,123 @@ and comments were updated. Suite: `DueInvoicestestng.xml` (TC_010–TC_014 only)
     June 2026 – May 2027 (₹15,000). Looks like billing resuming after dues are cleared; awaiting confirmation.
 - The ICICI hosted page fields are unchanged (`#cardAccordionBtn`, `#nameOnCard`, `#cardNoMasked`, `#month`, `#year`,
   `#cvv`, `#paytBtn2`, `#otp`; test card 4111…, 07/2029, CVV 328, OTP 123456).
+
+## Requirements — Support → Financial Updates (all sub-modules, started 2026-11-18)
+
+Source: `~/Downloads/TC_Support_Financial_Updates_2026 (1).xlsx`. User (2026-11-18): automate every Support → Financial
+Updates sub-module from its test cases, explore each screen too, and add new cases for whatever the sheets miss.
+OneTime Charges and Credits Issued are already done.
+
+| Sub-module | URL | Sheet | TCs |
+|---|---|---|---|
+| Update Payments | `invoices?type=due` | `TC_Update Payments` | 19 |
+| Delay Penalty Waivers | `waive-off_delay_penalty` | `TC_DelayPenalty Waivers` | 27 |
+| Payment Disputes | `payment_disputes` | `TC_Payment Disputes` | 23 |
+| Non Satisfaction Refunds | `non_satisfaction_refund` | `TC_Non Satisfaction Refunds` | 12 |
+| Backend Update Requests | `backend_update_requests` | `TC_Backend Update Requests` | 24 |
+| Refunds Issued | `refund_list` | `TC_Refunds Issued` | 47 |
+| Security Fee | `security_deposit` | none | — |
+| Security Offsetting | `security_offsetting` | none | — |
+
+**Decisions (user, 2026-11-18):**
+
+- Run as **Rakesh**; switch to Jaydeep Kar only on a screen where Rakesh is missing actions (add an
+  `input_UserRights.xlsx` row for it).
+- Saving actions allowed on UAT: void / adjust invoices; send / resend waive-off links; add disputes, non-satisfaction
+  refund requests (incl. approve / reject) and backend requests; the refund workflow (Add New Refund, Verify / Transfer
+  / Return). The Upload Transfer Initiated / Refunded file uploads are NOT included unless the user says so.
+- Test cases: a NEW workbook `~/Desktop/QA_Documents/Testcases Scripts/TC_Support_Financial_Updates.xlsx` from
+  `TC_Template_Enanched_13Oct.xlsx`, one sheet per screen (`TC_UpdatePayments`, …), cases updated to the live screen
+  plus new ones, Iteration 1 from the runs.
+- One screen at a time: automate, run, report, one commit per screen. Order: Update Payments first.
+
+### Update Payments — confirmed live (2026-11-18, Rakesh, read-only)
+
+- Menu "Support > Financial Updates > Update Payments". Heading h5 **"Due Payments Current Year (Jan 2026 - Nov 2026)"**
+  (follows the Invoice Date filter; the sheet expected Current Month). 3 blue notes 1)–3) Void / Adjust Invoice / Adjust
+  Excess Payment.
+- Filter form `#frm_invoice_report` (posts back): Admission ID `#sr_child_id` (number); Center `#sr_center_id[]`,
+  Ownership `#sr_ownership[]` [COCO=COCO, Franchise=Franchise, Onsite=**Corporate**], City `#sr_city_id[]` — all
+  bootstrap-multiselect, default "No Filters" (the sheet expected Center = Sector 122, Noida); Invoice Status
+  `#sr_invoice_status[]` [Due=payment_due, Overdue=payment_overdue, Paid=paid, Voided=voided], default "Due, Overdue";
+  Invoice Date `#filter_month` [Select All, **Current Year (default)**, Current Quarter, Current Month, Last Month, Last
+  Quarter, Last 3 Months, Last 6 Months, Last Year, Custom Date Range] — Custom shows **month** selects
+  `#filter_month_range_1` / `_2` (Jan 2021 …, value = month end), not date pickers. `#btn_submit` Filter, `#btn_reset`
+  Reset (both submit).
+- **No summary amounts** on the page (sheet SC003 expects Total Invoice Amount / Paid / Due).
+- Table `#dt_invoice_list`, client side, 20 per page, order Invoice Date desc. Shows **max 1,000** invoices: note
+  "* Total <b>N</b> invoices found but max 1000 invoices are shown. Please restrict your search criteria" + "Download
+  All Invoice" (`#download_all_invoice_list`, `common/download.php?func=downloadInvoiceList…`). Columns: (checkbox,
+  header `#select_all_page`) | Invoice # (badge → billing PDF `downloadpdf?q=…`) | Invoice Series | Child # (hidden) |
+  Child Name (`pop_child_info`) | Center | Room (hidden) | Program (hidden) | Amount | Paid Amount | Status | Invoice
+  Date (yyyy-MM-dd HH:mm:ss) | Payment Date | Admission Status | Due Date (yyyy-MM-dd) | Action. Download Report =
+  DataTables CSV (columns 1–14).
+- **Bulk ZIP toolbar** `#bulk_download_toolbar` (Clear Selection `#btn_clear_selection`, Download ZIP
+  `#btn_bulk_download_zip` "(N selected)") is rendered with `display:none` and no script shows it — the row checkboxes
+  still update the count. Query.
+- Action column (per row): Invoice Details popover `a.invoice_pop_details` (Child Name, Center, Invoice Status, Amount,
+  Paid Amount, Pending Amount, Due Date, Total Reminder Sent); **Adjust from Credit Balance** `a.adjust_credits_button
+  [data-type=credit_adjust]` (`icon-rulers`, tooltip Due Amount / Credit Balance); **Adjust from Security Deposit**
+  `a.adjust_credits_button[data-type=security_payment_adjust]` (`icon-pencil-ruler`); **Void** `a.void_credits_button`
+  (`icon-cancel-circle2`) — shown only when Paid Amount = 0 (partly-paid rows simply have no Void icon; no error). No
+  Adjust Excess Payment icon seen in 1,000 rows (the JS still supports `excess_payment_adjust`).
+- Adjust: native confirm "This will adjust invoice if any credits lying in customer account, Are you sure you want to do
+  it?" (security: "…any security credits lying in customer account…") → POST V1 `api/chargebeelistner/adjustCredits/`
+  (security: `api/admission/adjustSecurityPayment/`) → the icon's text becomes `data.Response`; errors flash in
+  `.form-update-message`.
+- Void: modal `#modal_void_invoice_pop` "Void Invoice Reason", `#void_reason`; empty → "Reason required"; confirm "This
+  will void invoice, Are you sure you want to do it?" → POST V1 `api/financials/voidInvoice` → "Invoice void
+  successfully", the row is removed.
+- Revert (`.revert_credit_adjustment`, confirm "Are you sure want to revert credit adjustment from invoice?") exists in
+  the JS; not seen on the default rows.
+- The list API is V2 `financials/listInvoicesDetails/` (limit 1000).
+
+### Other sub-modules — first look (2026-11-18, read-only)
+
+- **Delay Penalty Waivers:** form `#frm_delay_penalty`: Center `#waiveoff_center_id[]` (multiselect, note "Please
+  select a center to load children."), Child Status `#waiveoff_child_status` [Active, Inactive], Child
+  `#waiveoff_child_id`, `#send_link` "Send Link". Table "Waive-off Links Issued" `.dt-delay-waiveoff` (6,408 entries):
+  Child Name | Issue On | Used On | Waive-off Penalty | Status (Open / Expired …) | Action (`Resend` on Open).
+- **Payment Disputes:** form `#frm_user_list`: Center `#center_id` (All), Dispute Status `#status` [Completed,
+  Pending*], Child Status `#child_status` [Active*, Attrition], Admission Type [blank, Corporate, Regular], Search;
+  "Add New Disputes" button. Table `#datatable-pay-list`: Child Id | Child Name | Centre | Centre Directress | Last Call |
+  Comment | Added On | Added By | Attrition Date | Actions (Call → "Parents Contact Details" modal). 40 entries.
+- **Non Satisfaction Refunds:** "Issue Non Satisfaction Refund" form `#frm_refund`: Child `#refund_child_id`, date
+  `#refund_date` (pickadate), `#refund_comments`, `#add_refund` "Add Request". List form `#non_satis_refund` (Center).
+  Approve form `#frm-refund-approve` (`#refund_amount`, `#comments`), Reject `#frm-refund-reject` (`#reject_comments`).
+  Table: Child Name | Request Date | Refund Reason | Approve/Reject Comment | Refund Amount | Approved/reject Date &
+  User By | Action. 42 entries.
+- **Backend Update Requests:** form `#frm-search`: Child Name/ID, Requested To (default = logged-in user), Requested By,
+  Status multiselect (default Pending, Reopened), Type (12 types), Priority; Search / Reset; "Add Backend Requests".
+  Table `#datatable-task` (empty for Rakesh by default).
+- **Refunds Issued:** form `#dateform`: Issued from/to (default last month → today), Transfer date from/to, Refund Type,
+  Refund Status multiselect (default Advice, Verified, Bank Details Awaited, Transfer Initiated), Admission Type, Child
+  ID, Ticket ID; Submit / Reset. Buttons Add New Refund (`add_new_refund?pop=yes…`), Upload Transfer Initiated, Upload
+  Refunded Data. Row actions VERIFY / TRANSFER / RETURN; 10 per page.
+- **Security Fee** (`security_deposit`, heading "Security Deposit Fee"): date from/to, Status multiselect (Deposited,
+  Transferred, Partially Refunded, Refunded), Center; table empty for the default month.
+- **Security Offsetting:** Center, date from/to (default last 3 months); read-only table Child Id … Invoice SGST.
+
+### Automation status (2026-11-19, as Rakesh)
+
+Files per screen: `pages/Support/FinancialUpdates/<Screen>Page.java`,
+`testScripts/SupportTests/FinancialUpdates/<Screen>Test.java`, suite `<Screen>testng.xml` (UpdatePayments,
+DelayPenaltyWaivers, NonSatisfactionRefunds); additive `IAutoConstant.UPDATE_PAYMENTS_URL` /
+`DELAY_PENALTY_WAIVERS_URL` / `NON_SATISFACTION_REFUND_URL` + `Navigations.goTo…()`. Workbook
+`~/Desktop/QA_Documents/Testcases Scripts/TC_Support_Financial_Updates.xlsx` (73 TCs; builder scripts `build_fu.py`,
+`fu_lib.py`, `fu_cases_*.py` in `_builder_scripts/`); QueryLogs Q1–Q14 open. Not committed yet.
+
+- **The UAT server stalls now and then** (a page load hung 32 min on 19-Nov). Chrome 157 also drops the session at
+  times right after an accepted save (reload); the Delay Penalty / NSR tests relaunch and log in again
+  (`ensureBrowserAlive()` in `@BeforeMethod`). A save made just before a crash may still be committed — check live.
+- The "clx" redesign (19-Nov): headers contain `&nbsp;` (normalise ` `), CSS-uppercased titles, notes in
+  `.clx-note-box`.
+
+**Update Payments — 22 tests, 19 pass (run 4).** SC005_TC_003 (Adjust Excess Payment) is not automated — no icon on
+any row; the security-deposit adjust is the new SC005_TC_004. Saves made: credit adjust 870097 (child 50709, ₹4,650)
+and 870055 (50257, ₹500 part); void 814604 (41490, ₹83); security adjust 867727 (31975, ₹100). Adjust result text
+"Credits Adjusted" / "Security fee adjust successfully into invoice."; void "Invoice void successfully". The server
+keeps filter values in the PHP session — tests click Reset when a filter is not at its default. Candidate bugs (Q1–Q2):
+Invoice Status Paid / Voided ignored (API always gets payment_due + payment_overdue; tc004 / tc006 fail); Ownership
+Franchise returns 0 rows (tc003 fails). Queries: attrition child popup "No Details Found!", CSV name contains "nbsp",
+ZIP toolbar always hidden.

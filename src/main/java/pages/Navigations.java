@@ -433,4 +433,15 @@ public class Navigations {
         System.out.println("✅ Navigated to: Credits Issued");
         Thread.sleep(1500);
     }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → FINANCIAL UPDATES → UPDATE PAYMENTS
+    // Direct URL, same as Credits Issued.
+    // ═══════════════════════════════════════════════
+    public void goToUpdatePayments() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.UPDATE_PAYMENTS_URL);
+        System.out.println("✅ Navigated to: Update Payments");
+        Thread.sleep(1500);
+    }
 }

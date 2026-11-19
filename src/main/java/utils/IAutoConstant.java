@@ -41,6 +41,10 @@ public final class IAutoConstant {
     public static final String CREDITS_ISSUED_URL =
             "https://test-franchise.footprintseducation.in/issue_credits";
 
+    // Support → Financial Updates → Update Payments
+    public static final String UPDATE_PAYMENTS_URL =
+            "https://test-franchise.footprintseducation.in/invoices?type=due";
+
     // Settings → System Logs → Daily Observer Data
     public static final String DAILY_OBSERVER_DATA_URL =
             "https://test-franchise.footprintseducation.in/daily_observer_data";
