@@ -444,4 +444,15 @@ public class Navigations {
         System.out.println("✅ Navigated to: Update Payments");
         Thread.sleep(1500);
     }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → FINANCIAL UPDATES → DELAY PENALTY WAIVERS
+    // Direct URL, same as Update Payments.
+    // ═══════════════════════════════════════════════
+    public void goToDelayPenaltyWaivers() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.DELAY_PENALTY_WAIVERS_URL);
+        System.out.println("✅ Navigated to: Delay Penalty Waivers");
+        Thread.sleep(1500);
+    }
 }

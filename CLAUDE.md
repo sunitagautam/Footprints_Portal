@@ -5161,3 +5161,12 @@ keeps filter values in the PHP session — tests click Reset when a filter is no
 Invoice Status Paid / Voided ignored (API always gets payment_due + payment_overdue; tc004 / tc006 fail); Ownership
 Franchise returns 0 rows (tc003 fails). Queries: attrition child popup "No Details Found!", CSV name contains "nbsp",
 ZIP toolbar always hidden.
+
+**Delay Penalty Waivers — 19 tests, 18 pass.** Links sent: **6410** (child 63367, run 1, Chrome crashed after the save)
+and **6411** (69828 Adithya Sujay, Open). Send confirm "Are you sure want to send delay penalty waived-off link?" →
+"Delay penalty waive-off mail successfully sent"; duplicate → "Delay penalty waive-off mail already sent on 19
+November,2026"; Resend keeps the same row. Email (Email View, Subject "Footprints - Delay penalty waived-off", Body
+`ch=<base64 id>`): To `<id>_father/_mother@gmail.com`, link `http://www.footprintseducation.in/onlinepayment?q=…&ch=…`
+(live domain on test — Q10), valid 3 days. SC011_TC_001 fails: Issue On "15:20 PM" (24-hour + PM, 3,493 rows, Q9).
+386 child names have a leading/trailing space — DataTables sorts on the raw text, so the sort test compares that key.
+Child 53113 has two Open links (6408/6409, Q8).

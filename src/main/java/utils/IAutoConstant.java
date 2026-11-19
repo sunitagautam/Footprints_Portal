@@ -45,6 +45,10 @@ public final class IAutoConstant {
     public static final String UPDATE_PAYMENTS_URL =
             "https://test-franchise.footprintseducation.in/invoices?type=due";
 
+    // Support → Financial Updates → Delay Penalty Waivers
+    public static final String DELAY_PENALTY_WAIVERS_URL =
+            "https://test-franchise.footprintseducation.in/waive-off_delay_penalty";
+
     // Settings → System Logs → Daily Observer Data
     public static final String DAILY_OBSERVER_DATA_URL =
             "https://test-franchise.footprintseducation.in/daily_observer_data";
