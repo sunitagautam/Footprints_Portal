@@ -16,6 +16,10 @@ public final class IAutoConstant {
     public static final String LOGIN_URL =
             "https://test-franchise.footprintseducation.in/login";
 
+    // Account Statement — append the child id (the page generates the statement on load)
+    public static final String ACCOUNT_STATEMENT_URL =
+            "https://test-franchise.footprintseducation.in/account_statement?child_id=";
+
     public static final String SMS_VIEW_URL =
             "https://test-franchise.footprintseducation.in/sms_view";
 

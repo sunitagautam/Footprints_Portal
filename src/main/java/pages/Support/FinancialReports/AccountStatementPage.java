@@ -58,50 +58,52 @@ public class AccountStatementPage {
     // ═══════════════════════════════════════════════
     // CHILD NAME LINK (appears after generate)
     // ═══════════════════════════════════════════════
-    @FindBy(xpath = "//html//body//div[5]//div//div//div[1]//div[2]//div[3]" +
-            "//legend//div[1]/a[@title='Child Information']")
+    // Redesign (2026-11-19): the name link is the legend's pop_child_info?& anchor
+    @FindBy(xpath = "//legend//a[@title='Child Information' and starts-with(@href,'pop_child_info?&')]")
     private WebElement childNameLink;
 
     // ═══════════════════════════════════════════════
     // ACTION LINKS — span text is mixed-case inside anchor
     // ═══════════════════════════════════════════════
-    @FindBy(xpath = "//div[3]/legend/div[2]/div/div[1]/a[1]/span[text()='Add Charges']")
+    // Redesign (2026-11-19): action icons have no <span>; locate by href
+    @FindBy(xpath = "//legend//a[starts-with(@href,'add_onetime_charge')]")
     private WebElement addChargesLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[2]//span[text()='Child Plan']")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'pop_plan_view')]")
     private WebElement childPlanLink;
 
-    @FindBy(xpath = "//a[.//span[normalize-space()='Center Plan']]")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'pop_center_plan_view')]")
     private WebElement centerPlanLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[4]//span[text()='Diary Notes']")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'pop_add_notes')]")
     private WebElement diaryNotesLink;
 
-    @FindBy(xpath = "//a[.//span[normalize-space()='Child History']]")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'pop_history_view')]")
     private WebElement childHistoryLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[6]//span[text()='Child Info']")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'pop_child_info?pop=yes')]")
     private WebElement childInfoLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[7]//span[text()='Service Request']")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'pop_child_services')]")
     private WebElement serviceRequestLink;
 
-    @FindBy(xpath = "//a[.//span[normalize-space()='Customer Portal']]")
+    @FindBy(xpath = "//legend//a[contains(@href,'customer-portal.php')]")
     private WebElement customerPortalLink;
 
-    @FindBy(xpath = "//div[3]//legend//div[2]//div//div[1]//a[9]//span[text()='Customer Requests']")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'recent_update_details')]")
     private WebElement customerRequestLink;
 
     // ═══════════════════════════════════════════════
     // MIGRATION BUTTONS (all-caps anchor text)
     // ═══════════════════════════════════════════════
-    @FindBy(xpath = "//a[normalize-space(.)='MIGRATE FROM REGULAR TO CORPORATE']")
+    // Labels are CSS-uppercased and inconsistently cased in the DOM ("Regular To" / "Corporate to"), so compare upper-cased
+    @FindBy(xpath = "//a[contains(@href,'migrateAdmissionRegularCorporate') and contains(translate(normalize-space(.),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'),'FROM REGULAR TO CORPORATE')]")
     private WebElement migrateRegularToCorporateBtn;
 
-    @FindBy(xpath = "//a[normalize-space(.)='MIGRATE FROM CORPORATE TO REGULAR']")
+    @FindBy(xpath = "//a[contains(@href,'migrateAdmissionRegularCorporate') and contains(translate(normalize-space(.),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ'),'FROM CORPORATE TO REGULAR')]")
     private WebElement migrateCorporateToRegularBtn;
 
-    @FindBy(xpath = "//a[contains(.,'CO-PAY') and contains(.,'CHILD PLAN UPDATE')]")
+    @FindBy(xpath = "//legend//a[starts-with(@href,'copay_billing_update')]")
     private WebElement coPayChildPlanUpdateBtn;
 
     @FindBy(xpath = "//a[contains(.,'RECTIFY BRANCH')" +
@@ -135,7 +137,8 @@ public class AccountStatementPage {
     // ═══════════════════════════════════════════════
     // SHARED MODAL CLOSE — id="popdown-dialog"
     // ═══════════════════════════════════════════════
-    @FindBy(xpath = "//*[@id='popdown-dialog']//div//div//div//div//div[3]//button[text()='Close']")
+    // Redesign (2026-11-19): popups have only the header close icon (button.close)
+    @FindBy(css = "#popdown-dialog .close-popdown, #popdown-dialog button.close")
     private WebElement popdownCloseBtn;
 
     // ═══════════════════════════════════════════════
@@ -179,7 +182,7 @@ public class AccountStatementPage {
     // ═══════════════════════════════════════════════
     // SERVICE REQUEST MODAL
     // ═══════════════════════════════════════════════
-    @FindBy(xpath = "//select[@id='service_type'" +
+    @FindBy(xpath = "//select[@id='send_request' or @id='service_type'" +
             " or @name='service_type'" +
             " or @id='request_type']")
     private WebElement serviceTypeDropdown;
@@ -219,8 +222,8 @@ public class AccountStatementPage {
     private WebElement cancelRegistrationSubmitBtn;
     @FindBy(xpath = "//*[contains(normalize-space(.),'Cancelling Registration Processed')]")
     private WebElement cancelRegistrationSuccessBanner;
-    @FindBy(xpath = "//a[normalize-space(.)='REFUND WELCOME KIT']" +
-            " | //span[normalize-space(.)='REFUND WELCOME KIT']")
+    @FindBy(xpath = "//a[starts-with(@href,'pop_move_2_pool')]" +
+            " | //a[translate(normalize-space(.),'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')='REFUND WELCOME KIT']")
     private WebElement refundWelcomeKitBtn;
     // ═══════════════════════════════════════════════
     // RECTIFY BRANCH SELECTION (SC_010_TC_001 to SC_010_TC_019)
@@ -546,7 +549,7 @@ public class AccountStatementPage {
     public boolean isChildPlanModalVisible() {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(10))
-                    .until(ExpectedConditions.visibilityOf(yearDropdown));
+                    .until(d -> getPopupTitle().contains("Child Admission Plan"));
             return true;
         } catch (Exception e) {
             return false;
@@ -590,7 +593,7 @@ public class AccountStatementPage {
     public boolean isCenterPlanModalVisible() {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(10))
-                    .until(ExpectedConditions.visibilityOf(popdownCloseBtn));
+                    .until(d -> getPopupTitle().contains("Center Fee Plan"));
             return true;
         } catch (Exception e) {
             return false;
@@ -686,7 +689,7 @@ public class AccountStatementPage {
     public boolean isChildHistoryModalVisible() {
         try {
             new WebDriverWait(driver, Duration.ofSeconds(10))
-                    .until(ExpectedConditions.visibilityOf(popdownCloseBtn));
+                    .until(d -> getPopupTitle().contains("Child Updates History"));
             return true;
         } catch (Exception e) {
             return false;
@@ -1561,7 +1564,9 @@ public class AccountStatementPage {
                             "  el.style.display='none';" +
                             "  el.classList.remove('in','show');" +
                             "});" +
-                            "document.body.classList.remove('modal-open');"
+                            "document.body.classList.remove('modal-open');" +
+                            "var pd=document.getElementById('popdown-dialog'); if(pd){pd.style.display='none';}" +
+                            "var po=document.getElementById('popdown-opacity'); if(po){po.style.display='none';}"
             );
             Thread.sleep(500);
         } catch (Exception e) {
@@ -1713,5 +1718,378 @@ public class AccountStatementPage {
         String body = String.valueOf(((JavascriptExecutor) driver).executeScript("return document.body.innerText;")).replace('\u00a0', ' ');
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote(label) + "\\s+(-?[\\d,]+(?:\\.\\d+)?)").matcher(body);
         return m.find() ? Double.parseDouble(m.group(1).replace(",", "")) : Double.NaN;
+    }
+
+    // ═══════════════════════════════════════════════
+    // REDESIGNED UI (2026-11-19) — generic helpers
+    // Confirmed live as Jaydeep Kar on children 49149 (Regular V1), 49190 (Corporate + Co-Pay),
+    // 49194 (Attrition). Action icons in the header <legend> are plain anchors (no <span>);
+    // labels are CSS-uppercased, so raw text is read with textContent.
+    // Popups: #popdown-dialog with a header close icon (button.close); the API Debug panel
+    // (#api-debug-panel, UAT only) sits at the bottom of the page and can cover elements.
+    // ═══════════════════════════════════════════════
+    private JavascriptExecutor js() {
+        return (JavascriptExecutor) driver;
+    }
+
+    /** Hides the UAT-only "API Debug (Test)" panel so it cannot intercept clicks or screenshots. */
+    public void hideApiDebugPanel() {
+        try {
+            js().executeScript("var p=document.getElementById('api-debug-panel'); if(p){p.style.display='none';}");
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** Opens account_statement?child_id=<id> directly (the page generates the statement itself). */
+    public void openAccountStatementFor(String childId) throws InterruptedException {
+        driver.get(IAutoConstant.ACCOUNT_STATEMENT_URL + childId);
+        new WebDriverWait(driver, Duration.ofSeconds(IAutoConstant.EXPLICIT_WAIT))
+                .until(d -> !d.findElements(By.tagName("legend")).isEmpty());
+        Thread.sleep(1000);
+        hideApiDebugPanel();
+    }
+
+    /** Page heading, e.g. "Account Statement" before Generate, "Account Statement (#49149)" after. */
+    public String getPageHeading() {
+        try {
+            return driver.findElement(By.cssSelector("h4.clx-task-title")).getText().trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Whole header <legend> text as rendered (upper case), with whitespace collapsed. */
+    public String getStatementHeaderText() {
+        try {
+            return driver.findElement(By.tagName("legend")).getText().replaceAll("\\s+", " ").trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Period from the header, e.g. "SEP-2024 TO TILL DATE". */
+    public String getStatementPeriod() {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("ACCOUNT STATEMENT \\(([^)]*)\\)", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(getStatementHeaderText());
+        return m.find() ? m.group(1).trim() : "";
+    }
+
+    /** Child name as stored in the DOM (mixed case), e.g. "Dhruvam Sen Verma". */
+    public String getChildNameRaw() {
+        try {
+            return String.valueOf(js().executeScript("return arguments[0].textContent;", childNameLink)).trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * Header action links, in page order: raw label (textContent, whitespace collapsed) → tooltip (title).
+     * Covers the icon links (btn-float) and the coloured buttons (Migrate / Apply Daycare Addon / ...).
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.LinkedHashMap<String, String> getHeaderActionLinks() {
+        java.util.LinkedHashMap<String, String> map = new java.util.LinkedHashMap<>();
+        Object res = js().executeScript(
+                "var out=[]; document.querySelectorAll('legend a.btn, a.btn-apply-addon').forEach(function(a){" +
+                        " var r=a.getBoundingClientRect(); if(r.width==0) return;" +
+                        " var t=(a.textContent||'').replace(/\\s+/g,' ').trim(); if(!t) return;" +
+                        " out.push([t, a.getAttribute('title')||'', a.getAttribute('href')||'']);});" +
+                        "return out;");
+        for (Object o : (List<Object>) res) {
+            List<Object> row = (List<Object>) o;
+            map.put(String.valueOf(row.get(0)), String.valueOf(row.get(1)));
+        }
+        return map;
+    }
+
+    /** Visible header action link whose href starts with the prefix (e.g. "pop_plan_view"). */
+    public boolean isHeaderLinkVisible(String hrefPrefix) {
+        for (WebElement a : driver.findElements(By.xpath("//a[starts-with(@href,'" + hrefPrefix + "')]"))) {
+            try {
+                if (a.isDisplayed()) return true;
+            } catch (Exception ignored) {
+            }
+        }
+        return false;
+    }
+
+    /** Clicks the first visible link whose href starts with / contains the given text. */
+    public void clickHeaderLink(String hrefPart) throws InterruptedException {
+        WebElement target = null;
+        for (WebElement a : driver.findElements(By.xpath("//a[contains(@href,'" + hrefPart + "')]"))) {
+            if (a.isDisplayed()) {
+                target = a;
+                break;
+            }
+        }
+        if (target == null) throw new org.openqa.selenium.NoSuchElementException("No visible link with href containing " + hrefPart);
+        js().executeScript("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", target);
+        System.out.println("▶ Clicked link: " + hrefPart);
+        Thread.sleep(1500);
+    }
+
+    /** Section headings below the header, e.g. [Subscriptions, Transactions, Account Summary]. */
+    public List<String> getSectionHeadings() {
+        List<String> out = new java.util.ArrayList<>();
+        for (WebElement h : driver.findElements(By.tagName("h3"))) {
+            String t = h.getText().trim();
+            if (!t.isEmpty() && h.isDisplayed()) out.add(t);
+        }
+        return out;
+    }
+
+    /** Text of the "Monthly Subscription" / "Yearly Subscription" panel (heading + lines below it). */
+    public String getSubscriptionPanelText(String panelTitle) {
+        Object t = js().executeScript(
+                "var t=arguments[0]; var hs=Array.from(document.querySelectorAll('*')).filter(function(e){return e.children.length==0 && e.textContent.trim()==t;});" +
+                        "if(!hs.length) return '';" +
+                        "var n=hs[0]; for(var i=0;i<6 && n;i++){ n=n.parentElement; if(n && /Plan Name/.test(n.innerText) && n.innerText.indexOf(t)>=0 && n.innerText.length<1200) return n.innerText; }" +
+                        "return '';", panelTitle);
+        return String.valueOf(t).replace(' ', ' ').trim();
+    }
+
+    /** Transactions table header cells (first table#lead_data), whitespace collapsed. */
+    public List<String> getTransactionHeaders() {
+        List<String> out = new java.util.ArrayList<>();
+        for (WebElement th : driver.findElements(By.cssSelector("table#lead_data:not(.design_tb_sum) thead th"))) {
+            out.add(String.valueOf(js().executeScript("return arguments[0].textContent;", th)).replaceAll("\\s+", " ").trim());
+        }
+        return out;
+    }
+
+    /** Number of Transactions body rows (0 when "Account statement not retrieved"). */
+    public int getTransactionRowCount() {
+        return driver.findElements(By.cssSelector("table#lead_data:not(.design_tb_sum) tbody tr")).size();
+    }
+
+    /** Account Summary rows: label → value (first value column), e.g. "Invoice Raised" → "₹ 290,241.66". */
+    public java.util.LinkedHashMap<String, String> getAccountSummary() {
+        java.util.LinkedHashMap<String, String> map = new java.util.LinkedHashMap<>();
+        for (WebElement tr : driver.findElements(By.cssSelector("table.design_tb_sum tr"))) {
+            List<WebElement> td = tr.findElements(By.cssSelector("th, td"));
+            if (td.size() >= 2) {
+                String label = td.get(0).getText().trim();
+                if (!label.isEmpty()) map.put(label, td.get(1).getText().replace("Refresh", "").replace(' ', ' ').trim());
+            }
+        }
+        return map;
+    }
+
+    /** Selected text of the Duration From / To selects. */
+    public String[] getDurationSelections() {
+        return new String[]{
+                new Select(fromMonthSelect).getFirstSelectedOption().getText().trim(),
+                new Select(toMonthSelect).getFirstSelectedOption().getText().trim()};
+    }
+
+    public List<String> getDurationOptions(boolean from) {
+        List<String> out = new java.util.ArrayList<>();
+        for (WebElement o : new Select(from ? fromMonthSelect : toMonthSelect).getOptions()) out.add(o.getText().trim());
+        return out;
+    }
+
+    public boolean isGenerateButtonVisible() {
+        try {
+            return generateBtn.isDisplayed() && "Generate Report".equals(generateBtn.getAttribute("value"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isPdfIconVisible() {
+        return !driver.findElements(By.cssSelector("a[title='Download Account Summary']")).isEmpty()
+                && driver.findElement(By.cssSelector("a[title='Download Account Summary']")).isDisplayed();
+    }
+
+    // ─── Popups (#popdown-dialog) ───
+
+    private WebElement visiblePopup() {
+        for (WebElement d : driver.findElements(By.cssSelector("#popdown-dialog, .modal.in, .modal.show"))) {
+            try {
+                if (d.isDisplayed() && d.getSize().getHeight() > 0) return d;
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    public boolean isPopupOpen() {
+        return visiblePopup() != null;
+    }
+
+    /** Popup title (h4/h5/.modal-title or the coloured header), e.g. "Apply One Time Charges". */
+    public String getPopupTitle() {
+        WebElement p = visiblePopup();
+        if (p == null) return "";
+        for (String css : new String[]{".modal-title", ".clx-pop-head h3", ".panel-title", "h4", "h5", "h6", "h3"}) {
+            for (WebElement h : p.findElements(By.cssSelector(css))) {
+                try {
+                    String t = h.getText().replaceAll("\\s+", " ").trim();
+                    if (!t.isEmpty()) return t;
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        // some popups (e.g. Center Fee Plan) render the title as plain text, not a heading
+        for (String line : p.getText().split("\n")) {
+            if (!line.trim().isEmpty()) return line.trim();
+        }
+        return "";
+    }
+
+    /** Whole popup text as rendered. */
+    public String getPopupText() {
+        WebElement p = visiblePopup();
+        return p == null ? "" : p.getText().replace(' ', ' ');
+    }
+
+    /** Waits up to timeoutSec for a popup whose title contains the text. */
+    public boolean waitForPopupTitle(String titlePart, int timeoutSec) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(timeoutSec))
+                    .until(d -> getPopupTitle().toLowerCase().contains(titlePart.toLowerCase()));
+            return true;
+        } catch (Exception e) {
+            System.out.println("⚠ Popup title '" + titlePart + "' not seen; current: '" + getPopupTitle() + "'");
+            return false;
+        }
+    }
+
+    /** Clicks the popup's header close icon and returns true once the popup is gone. */
+    public boolean closePopupByIcon() throws InterruptedException {
+        WebElement p = visiblePopup();
+        if (p == null) return true;
+        for (WebElement b : p.findElements(By.cssSelector(".close-popdown, button.close, [data-dismiss='modal']"))) {
+            if (b.isDisplayed()) {
+                js().executeScript("arguments[0].click();", b);
+                break;
+            }
+        }
+        long end = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < end) {
+            if (visiblePopup() == null) return true;
+            Thread.sleep(200);
+        }
+        return false;
+    }
+
+    /** Visible element in the popup by CSS (null if absent / hidden). */
+    public WebElement findInPopup(String css) {
+        WebElement p = visiblePopup();
+        if (p == null) return null;
+        for (WebElement e : p.findElements(By.cssSelector(css))) {
+            try {
+                if (e.isDisplayed()) return e;
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    /** Clicks a popup element by CSS (JS click). */
+    public void clickInPopup(String css) throws InterruptedException {
+        WebElement e = findInPopup(css);
+        if (e == null) throw new org.openqa.selenium.NoSuchElementException("Not in popup: " + css);
+        js().executeScript("arguments[0].click();", e);
+        Thread.sleep(1200);
+    }
+
+    /** Option texts of a select inside the popup. */
+    public List<String> getPopupSelectOptions(String css) {
+        List<String> out = new java.util.ArrayList<>();
+        WebElement p = visiblePopup();
+        if (p == null) return out;
+        for (WebElement sel : p.findElements(By.cssSelector(css))) {
+            for (WebElement o : new Select(sel).getOptions()) out.add(o.getText().trim());
+            break;
+        }
+        return out;
+    }
+
+    /** Visible validation / flash message inside the popup ("" when none appears within 5 s). */
+    public String getPopupValidationMessage() {
+        long end = System.currentTimeMillis() + 5000;
+        while (System.currentTimeMillis() < end) {
+            WebElement p = visiblePopup();
+            if (p != null) {
+                for (WebElement e : p.findElements(By.cssSelector(
+                        ".flash-msg .alert, p.clx-ferr, label.text-danger, label.error, .error-msg"))) {
+                    try {
+                        String t = e.getText().trim();
+                        if (e.isDisplayed() && !t.isEmpty() && !t.equals("*")) return t;
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return "";
+            }
+        }
+        return "";
+    }
+
+    /** Text of a Child Info tab pane after clicking its tab, e.g. "#tab-home-address". */
+    public String getChildInfoTabText(String paneId) {
+        try {
+            WebElement pane = driver.findElement(By.cssSelector("#popdown-dialog " + paneId));
+            new WebDriverWait(driver, Duration.ofSeconds(5)).until(d -> pane.isDisplayed());
+            return pane.getText().replace(' ', ' ');
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Ids/names of the visible form fields in the Service Request popup (after picking a service). */
+    public List<String> getVisiblePopupFieldIds() {
+        List<String> out = new java.util.ArrayList<>();
+        WebElement p = visiblePopup();
+        if (p == null) return out;
+        for (WebElement e : p.findElements(By.cssSelector("input, select, textarea"))) {
+            try {
+                if (!"hidden".equals(e.getAttribute("type")) && e.isDisplayed()) {
+                    String id = e.getAttribute("id");
+                    out.add(id == null || id.isEmpty() ? e.getAttribute("name") : id);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return out;
+    }
+
+    public boolean isServiceTypeDropdownEnabled() {
+        try {
+            return serviceTypeDropdown.isEnabled();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public List<String> getServiceTypeOptions() {
+        List<String> out = new java.util.ArrayList<>();
+        for (WebElement o : new Select(serviceTypeDropdown).getOptions()) out.add(o.getText().trim());
+        return out;
+    }
+
+    /** Diary Notes list text (the notes below the form). */
+    public String getDiaryNotesListText() {
+        String all = getPopupText();
+        int i = all.indexOf("Submit");
+        return i < 0 ? all : all.substring(i + "Submit".length()).trim();
+    }
+
+    public boolean isApplyDaycareAddonVisible() {
+        return isHeaderLinkVisible("pop_extended_addon");
+    }
+
+    /** Whole Account Summary table text (both columns for corporate children). */
+    public String getAccountSummaryText() {
+        StringBuilder sb = new StringBuilder();
+        for (WebElement t : driver.findElements(By.cssSelector("table.design_tb_sum"))) sb.append(t.getText()).append('\n');
+        return sb.toString().replace('\u00a0', ' ');
     }
 }

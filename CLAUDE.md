@@ -5198,3 +5198,82 @@ Files: `PaymentDisputesPage.java`, `PaymentDisputesTest.java`, `PaymentDisputest
 - **Q15 candidate bug:** for Jaydeep Kar the default Admission Type (blank) applies "Regular" (API param) — 33 rows,
   Corporate shows 7 others; for Rakesh blank shows all 40. The test asserts Corporate + Regular = all and fails.
 - CSV `Customers_Paying_Offline_Disputes_<yyyyMMddHHmmss>.csv` (8 columns, no Attrition Date / Actions).
+
+## Requirements — Account Statement (redesigned UI, 2026-11-19) (`AccountStatement_Testcases.java`)
+
+Source: `~/Downloads/TC_Account Statement Scripts.xlsx`, sheet `Account Statement Page` (SC_001–SC_010, SC_021). The
+developer redesigned the screen. User decisions (2026-11-19):
+
+- Update the old tests in place for the new UI and retire `sc003_tc002` (the Child Plan fee-card update no longer
+  exists).
+- Allowed saves: one Diary Note per run (SC_005_TC_003). Otherwise read-only, plus empty-Submit validation clicks.
+- Cover each admission type: Regular 53113, Corporate 75508, Summer Camp 76191, Emergency Daycare 53394 (not active).
+- **Emergency Daycare 53394** shows a reduced view:
+  - Status reads "(EMERGENCY DAYCARE)".
+  - The only header action is `pop_emergency_daycare` (tooltip "Details", but labelled with the child name — Bug 6). It
+    opens the "<Name> #id EMERGENCY DAYCARE" popup: Child / Parent Information, personal + address details, Update,
+    Close.
+  - No Service Request; Subscriptions "₹ Not Available".
+
+Runs as Jaydeep Kar (`getUserForScreen("Account Statement")`).
+
+### Confirmed live (2026-11-19)
+
+- **Header icons:** plain `<a>` inside `<legend>` with no `<span>`, located by href:
+  - `add_onetime_charge`, `pop_plan_view`, `pop_center_plan_view`, `pop_add_notes`, `pop_history_view`
+  - `pop_child_info?pop=yes`, `pop_child_services`, `customer-portal.php` (opens a new tab at
+    `test.footprintseducation.in/billing?idk=`)
+  - `pop_issue_credits`, `recent_update_details` (opens a new tab)
+  - Corporate only: `copay_billing_update`, `pop_corporate_transfer`, `pop_center_transfer`
+  - Labels are CSS-uppercased. The DOM text has missing spaces: "CustomerRequests", "Corporate CenterTransfer".
+- **Header buttons** (all share `migrateAdmissionRegularCorporate`):
+  - "Migrate From Regular To Corporate" and "Migrate From Corporate to Regular", with inconsistent case.
+  - "Migrate in Long Term Payment Plan".
+  - "Apply Daycare Addon" `pop_extended_addon`.
+  - "Refund Welcome Kit" `pop_move_2_pool` (attrition).
+  - "Cancel Registration" (Summer Camp 76191, inside its window).
+- **Sections:** Subscriptions (Monthly / Yearly: Plan Name, Plan Amount, Next Billing Date, Coupons, Addons) →
+  Transactions → Account Summary.
+  - Transactions: the first `table#lead_data`; Booking Head / Booking Comments / Amount share one `<th>`.
+  - Account Summary: `table.design_tb_sum` with 13 rows. Corporate children show Parent + Corporate columns and have no
+    Promotional rows.
+  - Two tables share `id="lead_data"`.
+- **Popups:**
+  - All open in `#popdown-dialog` and close with `.close-popdown`; the old Close button is gone. `closeModalByJs()`
+    now also hides `#popdown-dialog` / `#popdown-opacity`; a leftover overlay blocked the top menu.
+  - Titles are in `.clx-pop-head h3` / `.panel-title` / plain text (Center Fee Plan).
+  - Child Plan is view-only ("Child Admission Plan": Current Admission Plan, Program / Long Term Fee (V1) ✓ / Short Term
+    Fee (V2)).
+- **Empty-Submit messages:**
+
+  | Popup | Message |
+  |---|---|
+  | Add Charges | "Please specify amount" (checked before Charge Type) |
+  | Add Credits | "Please select credit type!" |
+  | Diary Notes | "Please enter some text!" |
+
+  Diary Notes: Updated By = logged-in user (disabled); notes are listed as "@<user> : <text>".
+- **PDF icon** (`a[title='Download Account Summary']`): opens
+  `uploads/temp/AccountStatement_<id>_<from>_<to>_<ts>.pdf` in a new tab.
+- **Duration:** default "<joining month> TO TILL DATE"; From/To keep the chosen months after Generate.
+- **Attrition child** (49194): Service Request shows "You can't access services of attrition child" and the dropdown is
+  disabled.
+- **UAT "API Debug (Test)" panel:** `#api-debug-panel` covers the lower page; tests hide it via `hideApiDebugPanel()`.
+
+### Status (2026-11-19)
+
+38 tests (incl. 3 admission-type rows). All pass except:
+
+- `sc001_tc007_actionTooltips` — bug: Add Charges / Add Credits tooltip "Child Plan".
+- Skipped: `sc010_tc003` (needs `-DasRectifyChild=` in window) and the Emergency Daycare row.
+
+Report: `~/Desktop/QA_Documents/Bug Evidence/Bug_AccountStatement_RedesignUI.md` + `AccountStatement_RedesignUI/` (6 Low
+bugs, 6 queries, 14 UI suggestions). Not yet reported / committed.
+
+Full run 19-Nov: 41 runs, 38 pass, 1 fail (tooltip bug), 2 skipped. The Emergency Daycare row was later run with 53394 and passes. Workbook:
+`~/Desktop/QA_Documents/Testcases Scripts/TC_Account_Statement.xlsx`, sheet `TC_AccountStatement`.
+
+- 39 TCs: Iteration 1 has 36 Pass, 1 Fail, 1 Not executed, 1 In progress (Pass 97.3%).
+- SC_003_TC_002 is marked deprecated.
+- QueryLogs Q1–Q8 (Q6 closed); defect table: 6 Low.
+- Builder: `_builder_scripts/as_cases.py` + `build_as.py` (reuses `fu_lib.py`).
