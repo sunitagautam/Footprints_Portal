@@ -5228,6 +5228,34 @@ Files: `BackendUpdateRequestsPage.java`, `BackendUpdateRequestsTest.java`, `Back
   with no date; the lookup still returns a voided invoice; a wrong invoice number shows no message on a fresh form.
   SC002_TC_001, SC008_TC_002 and SC005_TC_006 fail until fixed.
 
+### Refunds Issued — automated 2026-11-20 (as Rakesh), 22 tests, 17 pass
+
+Files: `RefundsIssuedPage.java`, `RefundsIssuedTest.java`, `RefundsIssuedtestng.xml`; additive
+`IAutoConstant.REFUNDS_ISSUED_URL`, `Navigations.goToRefundsIssued()`. Workbook sheet `TC_RefundsIssued` (47 TCs; QueryLogs
+Q35–Q43). Evidence: `~/Desktop/QA_Documents/Bug Evidence/FinancialUpdates_RefundsIssued/` (tests save screenshots there).
+
+- **Page:** `refund_list`, heading "Refund Issued". The list API (listRefundList) is capped at 500 rows ("More than 500
+  records selected.. Please restrict your search criteria."), so look a refund up through its child, not a wide filter.
+  Table rows carry more `<td>` than `<th>`: read Child Name…Status by index 0–10, the refund id from the row class
+  `tr_<id>` and the actions from the last cell. Child ID keyup (> 3 chars) selects every status and clears the dates.
+- **Logic** is in `assets/js/refund_proccess.js` (Add, Void / Return, Incorrect Bank Details) and
+  `assets/js/refund_details.js` (Verify / Verify Transfer popup `refund_details?pop=yes&action=update&refund_id=<b64>`).
+  - Add: jQuery-validate → keyword guard (kit / book) → confirm "Are you sure, You want to issue refund?" → existing-refund
+    table → "I have verified existing refund and continue with new refund" → confirm → "Detail Updated successfully".
+  - Verify / Verify Transfer: confirm "Are you sure you want to mark as <Verify|Refunded> this refund?" → "Detail Updated
+    successfully". Verify Transfer is enabled only for 15-day withdrawal refunds; others say "Manual processing is allowed
+    only for 15-days withdrawal refunds…" (finished through the Upload Refunded Data CSV).
+  - Void / Return: `markRefundVoid()` confirm "Are you sure want to void this refund ?" (Return too — Q37) → "Refund void
+    successfully" / "Refund marked return successfully".
+  - The issuer of a refund gets no Verify action (maker-checker? Q39).
+- **Saves so far (refund workflow, standing approval):** own refunds 60258, 60259, 60260 on child 63478 (Registration Fee
+  ₹100, ticket 375022) — all Voided; refund 58850 (Dea Gupta) Verified; refund 60180 (child 75126, 15-day) Verify Transfer
+  → Refunded (reference QATXN435032); refund 60209 (child 62404) → Return. Re-runs: pass `-DrfReturnId=60209
+  -DrfReturnChild=62404 -DrfTransferId=60180 -DrfTransferChild=75126` so Return / Verify Transfer only re-check.
+  Each full run adds and voids one own refund and verifies one Advice refund issued by someone else.
+- **Bugs (Q35–Q38):** Type filter misses most refund types; Security Deposit lists a "NOT-AVAILABLE" invoice; the Return
+  confirm says "void"; the verified label reads "Vefified". SC001_TC_004, SC002_TC_004 and SC005_TC_006 fail until fixed.
+
 ## Requirements — Account Statement (redesigned UI, 2026-11-19) (`AccountStatement_Testcases.java`)
 
 Source: `~/Downloads/TC_Account Statement Scripts.xlsx`, sheet `Account Statement Page` (SC_001–SC_010, SC_021). The

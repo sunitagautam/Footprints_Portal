@@ -477,4 +477,15 @@ public class Navigations {
         System.out.println("✅ Navigated to: Backend Update Requests");
         Thread.sleep(1500);
     }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → FINANCIAL UPDATES → REFUNDS ISSUED
+    // Direct URL, same as Update Payments.
+    // ═══════════════════════════════════════════════
+    public void goToRefundsIssued() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.REFUNDS_ISSUED_URL);
+        System.out.println("✅ Navigated to: Refunds Issued");
+        Thread.sleep(1500);
+    }
 }
