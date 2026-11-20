@@ -5304,5 +5304,6 @@ Full run 19-Nov: 41 runs, 38 pass, 1 fail (tooltip bug), 2 skipped. The Emergenc
 
 - 39 TCs: Iteration 1 has 36 Pass, 1 Fail, 1 Not executed, 1 In progress (Pass 97.3%).
 - SC_003_TC_002 is marked deprecated.
-- QueryLogs Q1–Q8 (Q6 closed); defect table: 6 Low.
+- QueryLogs Q1–Q8 (Q6 closed; Q1–Q4, Q7, Q8 raised as Bugs 7–12); defect table: 3 Medium + 9 Low.
+- JIRA-format tickets for all 12 bugs: `~/Desktop/QA_Documents/Bug Evidence/JIRA_AccountStatement_RedesignUI.txt`.
 - Builder: `_builder_scripts/as_cases.py` + `build_as.py` (reuses `fu_lib.py`).
