@@ -5199,6 +5199,35 @@ Files: `PaymentDisputesPage.java`, `PaymentDisputesTest.java`, `PaymentDisputest
   Corporate shows 7 others; for Rakesh blank shows all 40. The test asserts Corporate + Regular = all and fails.
 - CSV `Customers_Paying_Offline_Disputes_<yyyyMMddHHmmss>.csv` (8 columns, no Attrition Date / Actions).
 
+### Backend Update Requests — automated 2026-11-20 (as Rakesh), 18 tests, 15 pass
+
+Files: `BackendUpdateRequestsPage.java`, `BackendUpdateRequestsTest.java`, `BackendUpdateRequeststestng.xml`; additive
+`IAutoConstant.BACKEND_UPDATE_REQUESTS_URL`, `Navigations.goToBackendUpdateRequests()`. Workbook sheet
+`TC_BackendUpdateRequests` (26 TCs: 24 source + SC009_TC_001/002 new; QueryLogs Q23–Q34).
+
+- **Saves (user, 2026-11-20: update own request, Void Invoice flow, Billing Setup Update save):**
+  - SC003_TC_002 adds an "Others" High request for child `-DbuChild` (default 50920) with Requested To = Rakesh Singh, so
+    it shows in Rakesh's default list; SC005_TC_001 updates it (Medium + Add Child History). Own requests so far:
+    5171, 5178, 5180 (all Pending, left as they are).
+  - SC005_TC_006 picks the cheapest fully-due invoice with a Void icon on Update Payments (override `-DbuVoidChild`
+    `-DbuVoidInvoice`), raises a Void Invoice request and voids it with the $ icon. Voided so far: PI/867759 (child
+    53858, request 5172) and PI/867720 (child 44899, request 5179), ₹100 each.
+  - SC005_TC_007 re-saves the child's current Pause Flag in Billing Setup Update ("Pause Flag Updated Successfully").
+- **Filters:** Requested To = --Select-- falls back to the logged-in user (Q25). The server keeps filters in the session,
+  and Reset does not clear Child Name/ Child ID — `reopen()` clears it by hand.
+- **Table:** the hidden columns carry class `never` on the `<th>`; Date of Request / Priority are only folded by the
+  responsive layout. DataTables sorts on the raw (untrimmed) cell text.
+- **Add / Update popup** `#frm_update` posts back to the page → "Details added successfully!" / "Details Updated
+  successfully!". `#invoice_number` takes the invoice id (PI/882867 → 882867); the amount comes from
+  `api/backenderpupdates/getBillingInvoicesFilter` (response is a JSON string inside JSON).
+- **$ icon** → confirm "Are you sure you want to process this Void Invoice?" → `updateInvoiceVoid` → "Invoice Voided
+  Successfully". The request stays Pending.
+- **Child History** (pop_history_view, "Backend Requests" tab): "<user> requested a "Others".<user> has completed the
+  backend request with the following comment: <note>".
+- **Bugs (Q23, Q24, Q26, Q27, Q28):** Reset keeps the child filter; name filter matches any word; void leaves "(Voided )"
+  with no date; the lookup still returns a voided invoice; a wrong invoice number shows no message on a fresh form.
+  SC002_TC_001, SC008_TC_002 and SC005_TC_006 fail until fixed.
+
 ## Requirements — Account Statement (redesigned UI, 2026-11-19) (`AccountStatement_Testcases.java`)
 
 Source: `~/Downloads/TC_Account Statement Scripts.xlsx`, sheet `Account Statement Page` (SC_001–SC_010, SC_021). The

@@ -466,4 +466,15 @@ public class Navigations {
         System.out.println("✅ Navigated to: Payment Disputes");
         Thread.sleep(1500);
     }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → FINANCIAL UPDATES → BACKEND UPDATE REQUESTS
+    // Direct URL, same as Update Payments.
+    // ═══════════════════════════════════════════════
+    public void goToBackendUpdateRequests() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.BACKEND_UPDATE_REQUESTS_URL);
+        System.out.println("✅ Navigated to: Backend Update Requests");
+        Thread.sleep(1500);
+    }
 }

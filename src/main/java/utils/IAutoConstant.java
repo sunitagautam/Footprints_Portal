@@ -57,6 +57,10 @@ public final class IAutoConstant {
     public static final String PAYMENT_DISPUTES_URL =
             "https://test-franchise.footprintseducation.in/payment_disputes";
 
+    // Support → Financial Updates → Backend Update Requests
+    public static final String BACKEND_UPDATE_REQUESTS_URL =
+            "https://test-franchise.footprintseducation.in/backend_update_requests";
+
     // Settings → System Logs → Daily Observer Data
     public static final String DAILY_OBSERVER_DATA_URL =
             "https://test-franchise.footprintseducation.in/daily_observer_data";
