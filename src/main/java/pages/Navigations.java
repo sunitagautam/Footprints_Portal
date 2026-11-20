@@ -488,4 +488,15 @@ public class Navigations {
         System.out.println("✅ Navigated to: Refunds Issued");
         Thread.sleep(1500);
     }
+
+    // ═══════════════════════════════════════════════
+    // SUPPORT → FINANCIAL UPDATES → SECURITY FEE
+    // Direct URL, same as Update Payments.
+    // ═══════════════════════════════════════════════
+    public void goToSecurityFee() throws InterruptedException {
+        closeModalIfOpen();
+        driver.get(utils.IAutoConstant.SECURITY_FEE_URL);
+        System.out.println("✅ Navigated to: Security Fee");
+        Thread.sleep(1500);
+    }
 }

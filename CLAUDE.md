@@ -5256,6 +5256,19 @@ Q35–Q43). Evidence: `~/Desktop/QA_Documents/Bug Evidence/FinancialUpdates_Refu
 - **Bugs (Q35–Q38):** Type filter misses most refund types; Security Deposit lists a "NOT-AVAILABLE" invoice; the Return
   confirm says "void"; the verified label reads "Vefified". SC001_TC_004, SC002_TC_004 and SC005_TC_006 fail until fixed.
 
+### Security Fee — automated 2026-11-20 (as Rakesh), 9 tests, 6 pass — read-only report
+
+Files: `SecurityFeePage.java`, `SecurityFeeTest.java`, `SecurityFeetestng.xml`; additive `IAutoConstant.SECURITY_FEE_URL`,
+`Navigations.goToSecurityFee()`. No source sheet: cases written from the live screen → workbook sheet `TC_SecurityFee`
+(9 TCs; QueryLogs Q44–Q49). Evidence: `~/Desktop/QA_Documents/Bug Evidence/FinancialUpdates_SecurityFee/`.
+
+- `security_deposit`, heading "Security Deposit Fee". Filters: Date From / To (pickadate; default last month, which is empty
+  on test), Status multiselect `#record_status` (option "Deposited" = value Received), Center select2; Submit / Reset.
+  Table `table.datatable-security-listing`, no actions; data range used by the tests: 1 Jan 2024 → today (141 rows).
+- **Bugs (Q44–Q48):** a selected status changes how the date range applies (Refunded 2,088 rows from 2022 vs 76 in All);
+  Transferred rows have no transfer date / amounts; Received 51434 / 51068 without Remaining Amount; the CSV is named
+  Refund_Issued_Report and misses Refund Details / Adjusted Amount; "Deposited" vs "Received".
+
 ## Requirements — Account Statement (redesigned UI, 2026-11-19) (`AccountStatement_Testcases.java`)
 
 Source: `~/Downloads/TC_Account Statement Scripts.xlsx`, sheet `Account Statement Page` (SC_001–SC_010, SC_021). The
